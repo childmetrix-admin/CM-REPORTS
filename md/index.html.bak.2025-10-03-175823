@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ChildMetrix — Maryland (Staging)</title>
+
+  <!-- Tailwind (use your deployed Tailwind or swap CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Optional: brand palette -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cm: {
+              primary: '#1C7ED6',
+              primaryDark: '#1864AB',
+              accent: '#82C91E',
+              gray: '#EEF2F6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .sidebar-transition { transition: transform 200ms ease, width 200ms ease; }
+    body.sidebar-open { overflow: hidden; }
+
+    /* Sidebar sizing */
+    #sidebar.expanded { width: 10rem; /* w-40 ~ 160px */ }
+    #sidebar.collapsed { width: 4rem;  /* w-16 ~ 64px  */ }
+
+    /* Keep icon + label in one line; hide labels when collapsed */
+    .navlink { display:flex; align-items:center; gap:.625rem; white-space:nowrap; }
+    #sidebar.collapsed .navlink .label { display:none; }
+    .navicon { display:block; width:18px; height:18px; flex:0 0 18px; }
+
+    /* Make list bullets never appear */
+    #sidebar ul { list-style: none; padding-left: 0; margin: 0; }
+
+    /* Mobile behavior: convert collapsed rail to slide-out */
+    @media (max-width: 768px) {
+      #sidebar { position: fixed; inset: calc(3.25rem) auto 0 0; z-index: 40; }
+      /* When hidden on mobile, slide off-canvas */
+      #sidebar.hidden-mobile { transform: translateX(-100%); }
+      /* When shown on mobile, use expanded width */
+      #sidebar.expanded { width: 12rem; } /* a bit wider on phones */
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-slate-800">
+
+  <div class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between px-4 md:px-6 py-3 border-b bg-white">
+      <div class="flex items-center gap-3">
+        <!-- Sidebar toggle (chevron) -->
+        <button id="sidebarToggle"
+                class="inline-flex items-center justify-center border px-2 py-1 text-sm"
+                aria-label="Hide menu" title="Hide menu">
+          <!-- left chevron (expanded) / right chevron (collapsed); JS swaps them -->
+          <svg id="chevLeft"  xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+          <svg id="chevRight" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+
+        <!-- Branding -->
+        <div class="flex items-center gap-3">
+          <img src="/_assets/logo.png" alt="ChildMetrix" class="h-8 w-auto" />
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium px-2 py-0.5 bg-cm.gray">Maryland</span>
+            <span class="text-xs font-medium px-2 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-200">Staging</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex items-center gap-3">
+        <label class="text-sm inline-flex items-center">
+          <span class="mr-2">Period</span>
+          <select id="filterPeriod" class="border px-2 py-1 text-sm">
+            <option value="current">Current</option>
+            <option value="2025_Q1">2025 Q1</option>
+            <option value="2024_Q4">2024 Q4</option>
+          </select>
+        </label>
+
+        <label class="text-sm inline-flex items-center">
+          <span class="mr-2">Geography</span>
+          <select id="filterGeo" class="border px-2 py-1 text-sm">
+            <option value="state">State</option>
+            <option value="region">Region</option>
+            <option value="county">County</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <!-- Main layout -->
+    <div class="flex flex-1 overflow-hidden">
+
+      <!-- Sidebar rail (icons always visible; labels hide on collapse) -->
+      <aside id="sidebar"
+             class="sidebar-transition bg-slate-50 border-r expanded"
+             aria-label="Primary">
+        <nav class="flex h-full flex-col">
+
+          <!-- Primary links -->
+          <div class="px-2 py-4">
+            <ul id="navList" class="space-y-0.5 text-sm">
+              <li>
+                <a href="#/home" data-target="/md/home/index.html" class="px-2 py-2 hover:bg-white navlink">
+                  <!-- home -->
+                  <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path>
+                  </svg>
+                  <span class="label">Home</span>
+                </a>
+              </li>
+              <li>
+                <a href="#/cps" data-target="/md/cps/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                  <!-- shield-check -->
+                  <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4z"></path>
+                    <path d="M9.5 12l1.8 1.8L14.5 10"></path>
+                  </svg>
+                  <span class="label">CPS</span>
+                </a>
+              </li>
+              <li>
+                <a href="#/in-home" data-target="/md/in_home/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                  <!-- users -->
+                  <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 11a4 4 0 10-8 0"></path>
+                    <path d="M3 21a7 7 0 0118 0"></path>
+                  </svg>
+                  <span class="label">In-Home</span>
+                </a>
+              </li>
+              <li>
+                <a href="#/ooh" data-target="/md/ooh/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                  <!-- home-user -->
+                  <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path>
+                    <circle cx="12" cy="14" r="2"></circle><path d="M8.5 20a5.5 5.5 0 017 0"></path>
+                  </svg>
+                  <span class="label">Out of Home</span>
+                </a>
+              </li>
+              <li>
+                <a href="#/cfsr" data-target="/md/cfsr/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                  <!-- checklist -->
+                  <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 7h9"></path><path d="M9 12h9"></path><path d="M9 17h9"></path>
+                    <path d="M5 7h.01"></path><path d="M5 12h.01"></path><path d="M5 17h.01"></path>
+                  </svg>
+                  <span class="label">CFSR</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Secondary links: sticky bottom -->
+          <div class="mt-auto sticky bottom-0 bg-slate-50 border-t">
+            <div class="px-2 py-3">
+              <ul class="space-y-0.5 text-sm text-slate-700">
+                <li>
+                  <a href="#/help" class="px-2 py-2 hover:bg-white navlink">
+                    <!-- help-circle -->
+                    <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9"></circle>
+                      <path d="M9.5 9a2.5 2.5 0 114.1 1.9c-.7.5-1.1 1-1.1 1.6V14"></path>
+                      <circle cx="12" cy="17" r="0.8"></circle>
+                    </svg>
+                    <span class="label">Help</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#/settings" class="px-2 py-2 hover:bg-white navlink">
+                    <!-- cog -->
+                    <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"></path>
+                      <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.6V22a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.8.3l-.1.1A2 2 0 013.1 17l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.6-1H1.9a2 2 0 010-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.8l-.1-.1A2 2 0 014.7 3.7l.1.1a1.7 1.7 0 001.8.3 1.7 1.7 0 001-1.6V2a2 2 0 014 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 012.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8 1.7 1.7 0 001.6 1h.1a2 2 0 010 4h-.1a1.7 1.7 0 00-1.6 1z"></path>
+                    </svg>
+                    <span class="label">Settings</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/" class="px-2 py-2 hover:bg-white navlink">
+                    <!-- log-out -->
+                    <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M15 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3"></path>
+                      <path d="M10 17l5-5-5-5"></path>
+                      <path d="M15 12H3"></path>
+                    </svg>
+                    <span class="label">Sign out</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- Content -->
+      <main class="flex-1 overflow-hidden">
+        <div class="h-full">
+          <iframe id="reportFrame"
+                  title="Report"
+                  src="/md/in_home/current/index.html"
+                  class="w-full h-[calc(100vh-3.25rem)] border-0"></iframe>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Behavior -->
+  <script>
+    // --- Sidebar expand/collapse with chevron + tooltips ---
+    (function() {
+      const sidebar = document.getElementById('sidebar');
+      const toggle  = document.getElementById('sidebarToggle');
+      const chevL   = document.getElementById('chevLeft');
+      const chevR   = document.getElementById('chevRight');
+      const KEY     = 'cm.sidebar.state'; // 'expanded' | 'collapsed'
+      const COLLAPSE_AT = 1100; // px: auto-collapse threshold
+
+      function setState(state, {persist=true} = {}) {
+        sidebar.classList.remove('expanded','collapsed','hidden-mobile');
+        if (window.innerWidth <= 768 && state === 'collapsed') {
+          // on phones: keep a slide-out model only when user asks to show
+          sidebar.classList.add('expanded','hidden-mobile'); // hidden by default
+        } else {
+          sidebar.classList.add(state);
+        }
+        // icon + labels
+        const isCollapsed = state === 'collapsed' || sidebar.classList.contains('hidden-mobile');
+        chevL.classList.toggle('hidden', isCollapsed);
+        chevR.classList.toggle('hidden', !isCollapsed);
+        toggle.setAttribute('aria-label', isCollapsed ? 'Show menu' : 'Hide menu');
+        toggle.setAttribute('title',      isCollapsed ? 'Show menu' : 'Hide menu');
+        if (persist) try { localStorage.setItem(KEY, state); } catch(e) {}
+      }
+
+      function initialState() {
+        let saved = null;
+        try { saved = localStorage.getItem(KEY); } catch(e) {}
+        if (window.innerWidth < COLLAPSE_AT) {
+          setState('collapsed', {persist:false});
+        } else {
+          setState(saved === 'collapsed' ? 'collapsed' : 'expanded', {persist:false});
+        }
+      }
+
+      // Toggle click
+      toggle.addEventListener('click', () => {
+        // Mobile special case: if hidden off-canvas, show it temporarily
+        if (window.innerWidth <= 768) {
+          const hidden = sidebar.classList.contains('hidden-mobile');
+          if (hidden) {
+            sidebar.classList.remove('hidden-mobile');
+            // While visible, treat as expanded
+            chevL.classList.add('hidden');  chevR.classList.remove('hidden');
+            toggle.setAttribute('aria-label','Hide menu');
+            toggle.setAttribute('title','Hide menu');
+          } else {
+            sidebar.classList.add('hidden-mobile');
+            chevL.classList.remove('hidden'); chevR.classList.add('hidden');
+            toggle.setAttribute('aria-label','Show menu');
+            toggle.setAttribute('title','Show menu');
+          }
+          return;
+        }
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        setState(isCollapsed ? 'expanded' : 'collapsed');
+      });
+
+      // Close slide-out if user taps outside on mobile
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth > 768) return;
+        if (sidebar.contains(e.target) || toggle.contains(e.target)) return;
+        if (!sidebar.classList.contains('hidden-mobile')) {
+          sidebar.classList.add('hidden-mobile');
+          chevL.classList.remove('hidden'); chevR.classList.add('hidden');
+          toggle.setAttribute('aria-label','Show menu');
+          toggle.setAttribute('title','Show menu');
+        }
+      });
+
+      // Respond to resizes
+      window.addEventListener('resize', () => {
+        if (window.innerWidth < COLLAPSE_AT) {
+          setState('collapsed', {persist:false});
+        } else {
+          // restore saved preference
+          let saved = null;
+          try { saved = localStorage.getItem(KEY); } catch(e) {}
+          setState(saved === 'collapsed' ? 'collapsed' : 'expanded', {persist:false});
+        }
+      });
+
+      initialState();
+    })();
+
+    // --- Router + active highlight + querystring filters ---
+    (function() {
+      const navList      = document.getElementById('navList');
+      const frame        = document.getElementById('reportFrame');
+      const filterPeriod = document.getElementById('filterPeriod');
+      const filterGeo    = document.getElementById('filterGeo');
+
+      function setActive(hash) {
+        navList.querySelectorAll('a').forEach(a => {
+          const active = a.getAttribute('href') === hash;
+          a.classList.toggle('bg-white', active);
+          a.classList.toggle('font-semibold', active);
+          a.classList.toggle('text-cm.primary', active);
+        });
+      }
+
+      function navigate() {
+        const hash = location.hash || '#/in-home';
+        setActive(hash);
+        const a = navList.querySelector(`a[href="${hash}"]`);
+        if (!a || !frame) return;
+
+        const base = a.dataset.target || '/md/in_home/current/index.html';
+        const qp = new URLSearchParams({
+          period: filterPeriod ? filterPeriod.value : 'current',
+          geo:    filterGeo ? filterGeo.value : 'state'
+        });
+        frame.src = `${base}?${qp.toString()}`;
+      }
+
+      window.addEventListener('hashchange', navigate);
+      filterPeriod?.addEventListener('change', navigate);
+      filterGeo?.addEventListener('change', navigate);
+      navigate();
+    })();
+
+    // --- Auto-resize iframe to embedded report height (same-origin) ---
+    (function() {
+      const frame = document.getElementById('reportFrame');
+      function tryResize() {
+        if (!frame) return;
+        try {
+          const doc = frame.contentDocument || frame.contentWindow.document;
+          if (!doc) return;
+          const h = Math.max(
+            doc.body.scrollHeight, doc.documentElement.scrollHeight,
+            doc.body.offsetHeight, doc.documentElement.offsetHeight,
+            doc.body.clientHeight, doc.documentElement.clientHeight
+          );
+          frame.style.height = h + 'px';
+        } catch(e) { /* cross-origin ignore */ }
+      }
+      frame?.addEventListener('load', tryResize);
+      setInterval(tryResize, 1000);
+    })();
+  </script>
+</body>
+</html>

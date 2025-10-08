@@ -1,0 +1,98 @@
+/* -------- ChildMetrix-inspired light theme -------- */
+:root{
+  --cm-bg: #f9fafb;     /* soft light */
+  --cm-surface: #ffffff;/* cards */
+  --cm-text: #1f2937;   /* slate/dark */
+  --cm-muted: #6b7280;  /* muted text */
+  --cm-primary: #0f4c75;/* deep blue */
+  --cm-accent: #0e9ba4; /* teal */
+  --cm-accent-weak:#e6f4f6; /* pale teal */
+  --cm-border: #e5e7eb; /* light gray */
+  --cm-focus: #93c5fd;  /* focus ring */
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background: var(--cm-bg);
+  color: var(--cm-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", sans-serif;
+  line-height:1.6;
+}
+
+/* Page frame */
+.header{
+  background: linear-gradient(180deg, #ffffff, #f5fafb);
+  border-bottom:1px solid var(--cm-border);
+}
+.header .wrap{max-width:1100px;margin:0 auto;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem}
+.logo{height:40px;display:block}
+.site-title{font-size:1.125rem;font-weight:600;color:var(--cm-primary);margin:0}
+
+/* Main content card */
+.container{
+  max-width:1100px;
+  margin:1.5rem auto;
+  padding:2rem;
+  background:var(--cm-surface);
+  border:1px solid var(--cm-border);
+  border-radius:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.04);
+}
+
+/* Headings & text */
+h1,h2,h3{color:var(--cm-primary);margin:0 0 .75rem}
+p{color:var(--cm-text);}
+
+/* Links & buttons */
+a{color:var(--cm-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.btn{
+  display:inline-block;
+  background:var(--cm-accent);
+  color:#fff;
+  border:0;
+  padding:.6rem 1rem;
+  border-radius:10px;
+  font-weight:600;
+  text-decoration:none;
+}
+.btn:hover{filter:brightness(0.95)}
+.btn-outline{
+  background:#fff;color:var(--cm-accent);
+  border:1px solid var(--cm-accent);
+}
+
+/* Simple panels/sections */
+.section{
+  background: var(--cm-accent-weak);
+  border:1px solid var(--cm-border);
+  padding:1rem;
+  border-radius:12px;
+  margin:1rem 0;
+}
+
+/* Footer */
+.footer{
+  color:var(--cm-muted);
+  border-top:1px solid var(--cm-border);
+  margin-top:2rem;
+  padding:1rem 0;
+}
+
+/* Inputs */
+input,select,textarea{
+  width:100%;
+  padding:.65rem .75rem;
+  border:1px solid var(--cm-border);
+  border-radius:10px;
+  background:#fff;
+}
+input:focus,select:focus,textarea:focus{
+  outline:3px solid var(--cm-focus);
+  border-color:#bfdbfe;
+}
+
+/* Utility spacing */
+.mt-1{margin-top:.5rem}.mt-2{margin-top:1rem}.mt-3{margin-top:1.5rem}
+.mb-1{margin-bottom:.5rem}.mb-2{margin-bottom:1rem}.mb-3{margin-bottom:1.5rem}
