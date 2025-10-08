@@ -1,0 +1,16 @@
+﻿# Text files → normalize to LF in repo; Windows will still check out CRLF if core.autocrlf is true
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.md   text eol=lf
+
+# Images/binaries
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg  text eol=lf  # often text; keep LF
+
+# Backups not tracked as special, but if they slip in, treat as text
+*.bak   text eol=lf
+*.save  text eol=lf
