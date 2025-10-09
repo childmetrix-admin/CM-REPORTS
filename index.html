@@ -25,7 +25,7 @@
 <body class="min-h-screen bg-[var(--cmx-bg)] text-[var(--cmx-text)] antialiased">
   <!-- Top logo -->
   <div class="flex justify-center mt-2">
-    <img src="/_assets/logo.png" alt="ChildMetrix" class="h-20 md:h-24" />
+    <img src="_assets/logo.png" alt="ChildMetrix" class="h-20 md:h-24" />
   </div>
 
   <!-- Page wrapper -->
@@ -127,8 +127,8 @@
 
   // Simple per-state routes (add more as you create them)
   const STATE_ROUTES = {
-    MD: '/md/',    // Maryland staging hub
-    KY: '/ky/',    // example: Kentucky hub if you have it
+    MD: 'md/index.html',    // Maryland staging hub
+    KY: 'ky/index.html',    // example: Kentucky hub if you have it
     // add others here as you bring them online
   };
 
@@ -142,8 +142,8 @@
       return;
     }
 
-    // Prefer explicit route if defined, else default to /{state-lower}/
-    const target = STATE_ROUTES[state] || `/${state.toLowerCase()}/`;
+    // Prefer explicit route if defined, else default to {state-lower}/index.html
+    const target = STATE_ROUTES[state] || `${state.toLowerCase()}/index.html`;
     window.location.href = target;
   });
 </script>

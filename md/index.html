@@ -18,7 +18,9 @@
               primary: '#1C7ED6',
               primaryDark: '#1864AB',
               accent: '#82C91E',
-              gray: '#EEF2F6'
+              gray: '#EEF2F6',
+              darkBlue: '#4472C4',
+              lightBlue: '#52C8FA'
             }
           }
         }
@@ -70,7 +72,7 @@
 
         <!-- Branding -->
         <div class="flex items-center gap-3">
-          <img src="/_assets/logo.png" alt="ChildMetrix" class="h-8 w-auto" />
+          <img src="../_assets/logo.png" alt="ChildMetrix" class="h-8 w-auto" />
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium px-2 py-0.5 bg-cm.gray">Maryland</span>
             <span class="text-xs font-medium px-2 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-200">Staging</span>
@@ -78,25 +80,31 @@
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="flex items-center gap-3">
-        <label class="text-sm inline-flex items-center">
-          <span class="mr-2">Period</span>
-          <select id="filterPeriod" class="border px-2 py-1 text-sm">
-            <option value="current">Current</option>
-            <option value="2025_Q1">2025 Q1</option>
-            <option value="2024_Q4">2024 Q4</option>
-          </select>
-        </label>
-
-        <label class="text-sm inline-flex items-center">
-          <span class="mr-2">Geography</span>
-          <select id="filterGeo" class="border px-2 py-1 text-sm">
-            <option value="state">State</option>
-            <option value="region">Region</option>
-            <option value="county">County</option>
-          </select>
-        </label>
+      <!-- Utility links -->
+      <div class="flex items-center gap-2">
+        <a href="#/help" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 rounded">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.5 9a2.5 2.5 0 114.1 1.9c-.7.5-1.1 1-1.1 1.6V14"></path>
+            <circle cx="12" cy="17" r="0.8"></circle>
+          </svg>
+          <span>Help</span>
+        </a>
+        <a href="#/settings" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 rounded">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"></path>
+            <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.6V22a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.8.3l-.1.1A2 2 0 013.1 17l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.6-1H1.9a2 2 0 010-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.8l-.1-.1A2 2 0 014.7 3.7l.1.1a1.7 1.7 0 001.8.3 1.7 1.7 0 001-1.6V2a2 2 0 014 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 012.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8 1.7 1.7 0 001.6 1h.1a2 2 0 010 4h-.1a1.7 1.7 0 00-1.6 1z"></path>
+          </svg>
+          <span>Settings</span>
+        </a>
+        <a href="/" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 rounded">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3"></path>
+            <path d="M10 17l5-5-5-5"></path>
+            <path d="M15 12H3"></path>
+          </svg>
+          <span>Sign out</span>
+        </a>
       </div>
     </header>
 
@@ -104,13 +112,13 @@
     <div class="flex flex-1 overflow-hidden min-h-0">
 
       <!-- Sidebar rail (icons always visible; labels hide on collapse) -->
-      <aside id="sidebar" class="sidebar-transition bg-slate-50 border-r expanded flex flex-col h-full min-h-0" aria-label="Primary">
-        <nav class="flex-1 overflow-y-auto flex flex-col">
-          <!-- Primary links -->
+      <aside id="sidebar" class="sidebar-transition bg-slate-50 border-r expanded flex flex-col" style="height: calc(100vh - 3.25rem);" aria-label="Primary">
+        <!-- Primary links -->
+        <nav class="flex-1 overflow-y-auto">
           <div class="px-2 py-4">
             <ul id="navList" class="space-y-0.5 text-sm">
               <li>
-                <a href="#/home" data-target="/md/home/index.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/home" data-target="home/index.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- home -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path>
@@ -119,7 +127,7 @@
                 </a>
               </li>
               <li>
-                <a href="#/cps" data-target="/md/cps/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/cps" data-target="cps/current/index.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- shield-check -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4z"></path>
@@ -129,7 +137,7 @@
                 </a>
               </li>
               <li>
-                <a href="#/in-home" data-target="/md/in_home/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/in-home" data-target="in_home/current/index.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- users -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M16 11a4 4 0 10-8 0"></path>
@@ -139,7 +147,7 @@
                 </a>
               </li>
               <li>
-                <a href="#/ooh" data-target="/md/ooh/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/ooh" data-target="ooh/current/index.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- home-user -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path>
@@ -149,67 +157,49 @@
                 </a>
               </li>
               <li>
-                <a href="#/cfsr" data-target="/md/cfsr/current/index.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/cfsr" data-target="cfsr/performance/cfsr_md_2025_08.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- checklist -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M9 7h9"></path><path d="M9 12h9"></path><path d="M9 17h9"></path>
                     <path d="M5 7h.01"></path><path d="M5 12h.01"></path><path d="M5 17h.01"></path>
                   </svg>
-                  <span class="label">CFSR</span>
+                  <span class="label">CFSR Data Profile</span>
                 </a>
               </li>
             </ul>
           </div>
         </nav>
-      
-          <!-- Secondary links: sticky bottom -->
-           <div class="border-t bg-slate-50 shrink-0">
-            <div class="px-2 py-3">
-              <ul class="space-y-0.5 text-sm text-slate-700">
-                <li>
-                  <a href="#/help" class="px-2 py-2 hover:bg-white navlink">
-                    <!-- help-circle -->
-                    <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"></circle>
-                      <path d="M9.5 9a2.5 2.5 0 114.1 1.9c-.7.5-1.1 1-1.1 1.6V14"></path>
-                      <circle cx="12" cy="17" r="0.8"></circle>
-                    </svg>
-                    <span class="label">Help</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#/settings" class="px-2 py-2 hover:bg-white navlink">
-                    <!-- cog -->
-                    <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"></path>
-                      <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.6V22a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.8.3l-.1.1A2 2 0 013.1 17l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.6-1H1.9a2 2 0 010-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.8l-.1-.1A2 2 0 014.7 3.7l.1.1a1.7 1.7 0 001.8.3 1.7 1.7 0 001-1.6V2a2 2 0 014 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 012.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8 1.7 1.7 0 001.6 1h.1a2 2 0 010 4h-.1a1.7 1.7 0 00-1.6 1z"></path>
-                    </svg>
-                    <span class="label">Settings</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/" class="px-2 py-2 hover:bg-white navlink">
-                    <!-- log-out -->
-                    <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M15 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3"></path>
-                      <path d="M10 17l5-5-5-5"></path>
-                      <path d="M15 12H3"></path>
-                    </svg>
-                    <span class="label">Sign out</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>        
       </aside>
 
       <!-- Content -->
-      <main class="flex-1 overflow-hidden">
-        <div class="h-full">
+      <main class="flex-1 overflow-hidden flex flex-col">
+        <!-- Secondary menu bar -->
+        <nav class="flex items-center justify-between px-4 py-2 border-b bg-white">
+          <div class="flex items-center gap-1">
+            <a href="#" id="secondaryPerformance" class="px-3 py-1.5 text-sm hover:bg-slate-50 rounded">Performance</a>
+            <a href="#" id="secondaryPresentations" class="px-3 py-1.5 text-sm hover:bg-slate-50 rounded">Presentations</a>
+            <a href="#" id="secondaryDataDict" class="px-3 py-1.5 text-sm hover:bg-slate-50 rounded">Data Dictionary</a>
+            <a href="#" id="secondaryNotes" class="px-3 py-1.5 text-sm hover:bg-slate-50 rounded">Notes</a>
+          </div>
+
+          <!-- Period selector (shown only for Performance) -->
+          <div id="periodSelector" style="display: none;">
+            <label class="text-sm inline-flex items-center gap-2">
+              <span>Report Period:</span>
+              <select id="cfsrPeriodSelect" class="border px-2 py-1 text-sm rounded">
+                <option value="cfsr_md_2025_08">2025 August</option>
+                <option value="cfsr_md_2025_02">2025 February</option>
+                <option value="cfsr_md_2024_08">2024 August</option>
+              </select>
+            </label>
+          </div>
+        </nav>
+
+        <div class="flex-1 overflow-hidden">
           <iframe id="reportFrame"
                   title="Report"
-                  src="/md/in_home/current/index.html"
-                  class="w-full h-[calc(100vh-3.25rem)] border-0"></iframe>
+                  src="in_home/current/index.html"
+                  class="w-full h-full border-0"></iframe>
         </div>
       </main>
     </div>
@@ -303,12 +293,19 @@
       initialState();
     })();
 
-    // --- Router + active highlight + querystring filters ---
+    // --- Router + active highlight + secondary menu navigation ---
     (function() {
-      const navList      = document.getElementById('navList');
-      const frame        = document.getElementById('reportFrame');
-      const filterPeriod = document.getElementById('filterPeriod');
-      const filterGeo    = document.getElementById('filterGeo');
+      const navList = document.getElementById('navList');
+      const frame   = document.getElementById('reportFrame');
+      const periodSelector = document.getElementById('periodSelector');
+      const periodSelect = document.getElementById('cfsrPeriodSelect');
+      const secondaryPerformance = document.getElementById('secondaryPerformance');
+      const secondaryPresentations = document.getElementById('secondaryPresentations');
+      const secondaryDataDict = document.getElementById('secondaryDataDict');
+      const secondaryNotes = document.getElementById('secondaryNotes');
+
+      let currentCategory = null; // Track current report category (cfsr, cps, etc.)
+      let currentSubsection = 'performance'; // Track subsection within CFSR
 
       function setActive(hash) {
         navList.querySelectorAll('a').forEach(a => {
@@ -319,23 +316,91 @@
         });
       }
 
+      function setSecondaryActive(subsection) {
+        [secondaryPerformance, secondaryPresentations, secondaryDataDict, secondaryNotes].forEach(a => {
+          a.classList.remove('bg-slate-100', 'font-semibold');
+        });
+
+        if (subsection === 'performance') secondaryPerformance.classList.add('bg-slate-100', 'font-semibold');
+        if (subsection === 'presentations') secondaryPresentations.classList.add('bg-slate-100', 'font-semibold');
+        if (subsection === 'data_dictionary') secondaryDataDict.classList.add('bg-slate-100', 'font-semibold');
+        if (subsection === 'notes') secondaryNotes.classList.add('bg-slate-100', 'font-semibold');
+      }
+
       function navigate() {
         const hash = location.hash || '#/in-home';
         setActive(hash);
         const a = navList.querySelector(`a[href="${hash}"]`);
         if (!a || !frame) return;
 
-        const base = a.dataset.target || '/md/in_home/current/index.html';
-        const qp = new URLSearchParams({
-          period: filterPeriod ? filterPeriod.value : 'current',
-          geo:    filterGeo ? filterGeo.value : 'state'
-        });
-        frame.src = `${base}?${qp.toString()}`;
+        // Determine current category
+        currentCategory = hash.replace('#/', '');
+
+        // Show/hide period selector based on category and subsection
+        if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
+          periodSelector.style.display = 'block';
+        } else {
+          periodSelector.style.display = 'none';
+        }
+
+        const base = a.dataset.target || 'in_home/current/index.html';
+        frame.src = base;
+
+        // Update secondary menu active state
+        if (currentCategory === 'cfsr') {
+          setSecondaryActive(currentSubsection);
+        }
       }
 
+      // Secondary menu navigation
+      secondaryPerformance.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentCategory === 'cfsr') {
+          currentSubsection = 'performance';
+          const period = periodSelect.value;
+          frame.src = `cfsr/performance/${period}.html`;
+          periodSelector.style.display = 'block';
+          setSecondaryActive('performance');
+        }
+      });
+
+      secondaryPresentations.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentCategory === 'cfsr') {
+          currentSubsection = 'presentations';
+          frame.src = 'cfsr/presentations/index.html';
+          periodSelector.style.display = 'none';
+          setSecondaryActive('presentations');
+        }
+      });
+
+      secondaryDataDict.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentCategory === 'cfsr') {
+          currentSubsection = 'data_dictionary';
+          frame.src = 'cfsr/data_dictionary/index.html';
+          periodSelector.style.display = 'none';
+          setSecondaryActive('data_dictionary');
+        }
+      });
+
+      secondaryNotes.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentCategory === 'cfsr') {
+          currentSubsection = 'notes';
+          frame.src = 'cfsr/notes/index.html';
+          periodSelector.style.display = 'none';
+          setSecondaryActive('notes');
+        }
+      });
+
+      // Period selector change
+      periodSelect.addEventListener('change', () => {
+        const period = periodSelect.value;
+        frame.src = `cfsr/performance/${period}.html`;
+      });
+
       window.addEventListener('hashchange', navigate);
-      filterPeriod?.addEventListener('change', navigate);
-      filterGeo?.addEventListener('change', navigate);
       navigate();
     })();
 
