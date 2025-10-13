@@ -157,7 +157,7 @@
                 </a>
               </li>
               <li>
-                <a href="#/cfsr" data-target="cfsr/performance/cfsr_md_2025_08.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/cfsr" data-target="cfsr/performance/index_auto.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- checklist -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M9 7h9"></path><path d="M9 12h9"></path><path d="M9 17h9"></path>
@@ -198,7 +198,7 @@
         <div class="flex-1 overflow-hidden">
           <iframe id="reportFrame"
                   title="Report"
-                  src="in_home/current/index.html"
+                  src="home/index.html"
                   class="w-full h-full border-0"></iframe>
         </div>
       </main>
@@ -328,7 +328,7 @@
       }
 
       function navigate() {
-        const hash = location.hash || '#/in-home';
+        const hash = location.hash || '#/home';
         setActive(hash);
         const a = navList.querySelector(`a[href="${hash}"]`);
         if (!a || !frame) return;
@@ -358,7 +358,8 @@
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
           const period = periodSelect.value;
-          frame.src = `cfsr/performance/${period}.html`;
+          // Load the interactive Shiny dashboard with profile parameter
+          frame.src = `cfsr/performance/index_auto.html?profile=${period}`;
           periodSelector.style.display = 'block';
           setSecondaryActive('performance');
         }
@@ -397,7 +398,8 @@
       // Period selector change
       periodSelect.addEventListener('change', () => {
         const period = periodSelect.value;
-        frame.src = `cfsr/performance/${period}.html`;
+        // Update the Shiny dashboard with new profile parameter
+        frame.src = `cfsr/performance/index_auto.html?profile=${period}`;
       });
 
       window.addEventListener('hashchange', navigate);
