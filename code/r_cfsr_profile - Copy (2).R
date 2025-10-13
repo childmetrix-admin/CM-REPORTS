@@ -46,12 +46,8 @@ base_data_dir <- "D:/repo_childmetrix/r_cfsr_profile/data"
 commitment <- "cfsr profile"
 commitment_description <- "national"
 
-# IMPORTANT: Set the profile period here (e.g., "2025_02", "2025_08")
-# This determines which folder the data is saved to and processed from
-profile_period <- "2025_02"
-
 # Establish current period and set up folders and global variables
-my_setup <- setup_folders(profile_period)
+my_setup <- setup_folders("2025_02")
 
 ########################################
 # EXTRACT SHARED METADATA (ONCE) ----
@@ -157,20 +153,3 @@ ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
                       ind_maltreatment_df, ind_recurrence_df)
 
 save_to_folder_run(ind_data, "csv")
-
-########################################
-# AUTO-RUN PREPARE_APP_DATA ----
-########################################
-
-message("\n=== Data processing complete ===")
-message("Now preparing data for Shiny app...\n")
-
-# Run prepare_app_data.R with the same profile_period
-prepare_script <- "D:/repo_childmetrix/r_cfsr_profile/shiny_app/prepare_app_data.R"
-if (file.exists(prepare_script)) {
-  source(prepare_script)
-  message("\n=== All done! ===")
-  message("Data ready for Shiny app at profile period: ", profile_period)
-} else {
-  warning("Could not find prepare_app_data.R at: ", prepare_script)
-}

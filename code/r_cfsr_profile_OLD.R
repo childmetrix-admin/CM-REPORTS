@@ -1,4 +1,4 @@
-# Title:          Process data from
+# Title:          Process data from 
                   # National - Supplemental Context Date - [Month YYYY] .xlsx
 
 # Purpose:        Joy
@@ -8,7 +8,7 @@
 #####################################
 
 # This file is provided to every state about every 6 months (usually February
-# & August). It show state-by-state performance and trends on the CFSR
+# & August). It show state-by-state performance and trends on the CFSR 
 # statewide data indicators and entry rates. Also shows national performance by
 # age, race/ethnicity.
 
@@ -18,7 +18,7 @@
 
 
 #####################################
-# OTHER DEPENDENCIES (e.g., files)
+# OTHER DEPENDENCIES (e.g., files) 
 #####################################
 
 # 1. Manually copy to raw folder:
@@ -46,12 +46,8 @@ base_data_dir <- "D:/repo_childmetrix/r_cfsr_profile/data"
 commitment <- "cfsr profile"
 commitment_description <- "national"
 
-# IMPORTANT: Set the profile period here (e.g., "2025_02", "2025_08")
-# This determines which folder the data is saved to and processed from
-profile_period <- "2025_02"
-
 # Establish current period and set up folders and global variables
-my_setup <- setup_folders(profile_period)
+my_setup <- setup_folders("2025_02")
 
 ########################################
 # EXTRACT SHARED METADATA (ONCE) ----
@@ -84,6 +80,7 @@ ind_entrate_df <- process_entry_rate_indicator(ver, asof$as_of_date)
 
 ind_reentry_df <- process_standard_indicator(
   sheet_name = "Reentry to FC",
+  indicator_name = "Re-entry into foster care after exiting to reunification or guardianship",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -94,6 +91,7 @@ ind_reentry_df <- process_standard_indicator(
 
 ind_perm12_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (entries)",
+  indicator_name = "Permanency in 12 mos (entries)",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -104,6 +102,7 @@ ind_perm12_df <- process_standard_indicator(
 
 ind_perm1223_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (12-23 mos)",
+  indicator_name = "Permanency in 12 mos (12-23 mos)",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -114,6 +113,7 @@ ind_perm1223_df <- process_standard_indicator(
 
 ind_perm24_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (24+ mos)",
+  indicator_name = "Permanency in 12 mos (24+ mos)",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -124,6 +124,7 @@ ind_perm24_df <- process_standard_indicator(
 
 ind_ps_df <- process_standard_indicator(
   sheet_name = "Placement stability",
+  indicator_name = "Placement stability (moves/1,000 days in care)",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -132,8 +133,13 @@ ind_ps_df <- process_standard_indicator(
 # Maltreatment in Care
 # --------------------------------------
 
+# Debug: Check sheet structure first
+# Uncomment to run debug script:
+# source("D:/repo_childmetrix/r_cfsr_profile/debug_maltreatment.R")
+
 ind_maltreatment_df <- process_standard_indicator(
   sheet_name = "Maltreatment in care",
+  indicator_name = "Maltreatment in foster care",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -144,6 +150,7 @@ ind_maltreatment_df <- process_standard_indicator(
 
 ind_recurrence_df <- process_standard_indicator(
   sheet_name = "Recurrence of maltreatment",
+  indicator_name = "Recurrence of maltx",
   ver = ver,
   as_of_date = asof$as_of_date
 )
@@ -157,20 +164,3 @@ ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
                       ind_maltreatment_df, ind_recurrence_df)
 
 save_to_folder_run(ind_data, "csv")
-
-########################################
-# AUTO-RUN PREPARE_APP_DATA ----
-########################################
-
-message("\n=== Data processing complete ===")
-message("Now preparing data for Shiny app...\n")
-
-# Run prepare_app_data.R with the same profile_period
-prepare_script <- "D:/repo_childmetrix/r_cfsr_profile/shiny_app/prepare_app_data.R"
-if (file.exists(prepare_script)) {
-  source(prepare_script)
-  message("\n=== All done! ===")
-  message("Data ready for Shiny app at profile period: ", profile_period)
-} else {
-  warning("Could not find prepare_app_data.R at: ", prepare_script)
-}
