@@ -17,7 +17,7 @@ source("functions/chart_builder.R")
 source("modules/indicator_page.R")
 
 # Load data
-rds_path <- "D:/repo_childmetrix/r_cfsr_profile/shiny_app/data/cfsr_indicators_latest.rds"
+rds_path <- "D:/repo_childmetrix/cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds"
 if (!file.exists(rds_path)) {
   stop("Data not found. Please run prepare_app_data.R first!")
 }
