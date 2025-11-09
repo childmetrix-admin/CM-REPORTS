@@ -16,12 +16,44 @@ source("functions/data_prep.R")
 source("functions/chart_builder.R")
 source("modules/indicator_page.R")
 
-# Load data
-rds_path <- "D:/repo_childmetrix/r_cfsr_profile/shiny_app/data/cfsr_indicators_latest.rds"
-if (!file.exists(rds_path)) {
-  stop("Data not found. Please run prepare_app_data.R first!")
+#####################################
+# DATA LOADING FUNCTION ----
+#####################################
+
+# Function to load data based on state and profile period
+load_cfsr_data <- function(state_code = "MD", profile_period = "latest") {
+  # Base directory for production data
+  data_dir <- "D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/data"
+
+  # Try different file naming patterns
+  possible_paths <- c(
+    # State-specific period file (preferred)
+    file.path(data_dir, paste0(state_code, "_cfsr_indicators_", profile_period, ".rds")),
+    # State-specific latest
+    file.path(data_dir, paste0(state_code, "_cfsr_indicators_latest.rds")),
+    # Generic latest (fallback for backward compatibility)
+    file.path(data_dir, "cfsr_indicators_latest.rds"),
+    # Legacy location
+    "D:/repo_childmetrix/cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds"
+  )
+
+  # Try each path
+  for (path in possible_paths) {
+    if (file.exists(path)) {
+      message("Loading CFSR data from: ", path)
+      return(readRDS(path))
+    }
+  }
+
+  # If nothing found, throw helpful error
+  stop("No CFSR data found for state=", state_code, " and profile=", profile_period,
+       "\n\nTried paths:\n", paste(possible_paths, collapse = "\n"),
+       "\n\nPlease run cfsr-profile.R and prepare_app_data.R first.")
 }
-app_data <- readRDS(rds_path)
+
+# Load initial data (will be replaced when user-specific parameters are available in server)
+# For now, use defaults that work for UI construction
+app_data <- load_cfsr_data("MD", "latest")
 
 # State code mapping
 state_codes <- c(
@@ -64,15 +96,12 @@ sidebar_indicators <- app_data %>%
 ui <- dashboardPage(
   skin = "blue",
 
-  # Header
-  dashboardHeader(
-    title = "CFSR Statewide Data Indicators",
-    titleWidth = 350
-  ),
+  # Header - disabled to remove top bar
+  dashboardHeader(disable = TRUE),
 
   # Sidebar
   dashboardSidebar(
-    width = 250,
+    width = 200,
     sidebarMenu(
       id = "sidebar_menu",
 
@@ -83,9 +112,7 @@ ui <- dashboardPage(
         ind <- sidebar_indicators[i, ]
         tab_name <- indicator_to_tab[[ind$indicator]]
         menuItem(ind$indicator_very_short, tabName = tab_name)
-      }),
-
-      menuItem("Data Dictionary", tabName = "dictionary", icon = icon("book"))
+      })
     )
   ),
 
@@ -108,6 +135,11 @@ ui <- dashboardPage(
         /* Reduce spacing between sidebar menu items */
         .sidebar-menu li { margin-bottom: 2px; }
         .sidebar-menu li a { padding-top: 8px; padding-bottom: 8px; }
+        /* Reduce top whitespace/padding */
+        .content-wrapper, .right-side { padding-top: 0 !important; }
+        .main-sidebar { padding-top: 0 !important; margin-top: 0 !important; }
+        .sidebar { padding-top: 5px !important; }
+        body, html { margin-top: 0 !important; padding-top: 0 !important; }
       "))
     ),
 
@@ -196,27 +228,8 @@ ui <- dashboardPage(
       tabItem(
         tabName = "recurrence",
         indicator_page_ui("recurrence")
-      ),
-
-      # Data Dictionary
-      tabItem(
-        tabName = "dictionary",
-        fluidRow(
-          column(12,
-            h2("CFSR Indicators Dictionary"),
-            p("Complete reference for all CFSR Round 4 indicators, including definitions, national standards, and calculation methods.")
-          )
-        ),
-        fluidRow(
-          column(12,
-            box(
-              width = 12,
-              title = "Indicator Definitions and Metadata",
-              DTOutput("dict_table")
-            )
-          )
-        )
       )
+
     )
   )
 )
@@ -227,20 +240,47 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
 
+  # Detect profile period from URL
+  selected_profile <- reactive({
+    query <- parseQueryString(session$clientData$url_search)
+    profile <- query$profile
+    if (is.null(profile) || profile == "") {
+      profile <- "latest"
+    }
+    profile
+  })
+
   # Detect state from URL
   selected_state <- reactive({
     get_state_from_url(session, state_codes)
   })
 
-  # Get profile version
-  profile_ver <- if (!is.null(app_data$profile_version[1])) {
-    app_data$profile_version[1]
-  } else {
-    NULL
-  }
+  # Reactive data loading based on URL parameters
+  current_data <- reactive({
+    state_code <- names(state_codes)[state_codes == selected_state()]
+    if (length(state_code) == 0) {
+      state_code <- "MD"  # Default fallback
+    }
+    profile_period <- selected_profile()
 
-  # Get all indicators in order
-  all_indicators <- get_all_indicators(app_data)
+    # Load the appropriate data file
+    load_cfsr_data(state_code, profile_period)
+  })
+
+  # Get profile version from current data
+  profile_ver <- reactive({
+    data <- current_data()
+    if (!is.null(data$profile_version[1])) {
+      data$profile_version[1]
+    } else {
+      NULL
+    }
+  })
+
+  # Get all indicators in order from current data
+  all_indicators <- reactive({
+    get_all_indicators(current_data())
+  })
 
   # ===== OVERVIEW PAGE =====
 
@@ -256,7 +296,7 @@ server <- function(input, output, session) {
 
   # Render state performance summary table
   output$state_performance_table <- DT::renderDataTable({
-    table_data <- build_state_performance_table(app_data, selected_state())
+    table_data <- build_state_performance_table(current_data(), selected_state())
 
     if (is.null(table_data)) {
       return(NULL)
@@ -286,7 +326,7 @@ server <- function(input, output, session) {
 
   # Render overview rankings table
   output$overview_rankings_table <- DT::renderDataTable({
-    table_data <- build_overview_rankings_table(app_data, selected_state())
+    table_data <- build_overview_rankings_table(current_data(), selected_state())
 
     DT::datatable(
       table_data,
@@ -325,7 +365,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "entry_rate",
     indicator_name = "Foster care entry rate (entries / 1,000 children)",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -334,7 +374,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "maltreatment",
     indicator_name = "Maltreatment in care (victimizations / 100,000 days in care)",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -343,7 +383,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "perm12_entries",
     indicator_name = "Permanency in 12 months for children entering care",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -352,7 +392,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "perm12_12_23",
     indicator_name = "Permanency in 12 months for children in care 12-23 months",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -361,7 +401,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "perm12_24",
     indicator_name = "Permanency in 12 months for children in care 24 months or more",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -370,7 +410,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "placement",
     indicator_name = "Placement stability (moves / 1,000 days in care)",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -379,7 +419,7 @@ server <- function(input, output, session) {
   indicator_page_server(
     "reentry",
     indicator_name = "Reentry to foster care within 12 months",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
@@ -388,52 +428,11 @@ server <- function(input, output, session) {
   indicator_page_server(
     "recurrence",
     indicator_name = "Maltreatment recurrence within 12 months",
-    app_data = app_data,
+    app_data = current_data,  # Pass reactive
     selected_state = selected_state,
     profile_version = profile_ver
   )
 
-  # ===== DATA DICTIONARY PAGE =====
-
-  output$dict_table <- renderDT({
-    # Load dictionary
-    dict_path <- "../code/cfsr_round4_indicators_dictionary.csv"
-    if (file.exists(dict_path)) {
-      dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-
-      # Select and rename columns for display
-      dict_display <- dict %>%
-        select(
-          Indicator = indicator,
-          `Short Name` = indicator_short,
-          Category = category,
-          Description = description,
-          `National Standard` = national_standard,
-          `Desired Direction` = direction_legend,
-          Denominator = denominator,
-          Numerator = numerator
-        )
-
-      datatable(
-        dict_display,
-        options = list(
-          pageLength = 10,
-          dom = 'Bfrtip',
-          buttons = c('copy', 'csv', 'excel'),
-          scrollX = TRUE,
-          columnDefs = list(
-            list(width = '200px', targets = 0),  # Indicator
-            list(width = '120px', targets = 1),  # Short Name
-            list(width = '100px', targets = 2),  # Category
-            list(width = '300px', targets = 3)   # Description
-          )
-        ),
-        extensions = 'Buttons',
-        rownames = FALSE,
-        filter = 'top'
-      )
-    }
-  })
 }
 
 #####################################

@@ -71,13 +71,24 @@ indicator_page_ui <- function(id) {
 indicator_page_server <- function(id, indicator_name, app_data, selected_state, profile_version) {
   moduleServer(id, function(input, output, session) {
 
+    # Check if app_data is a reactive - if so, call it to get the data
+    get_data <- function() {
+      if (is.reactive(app_data)) {
+        app_data()
+      } else {
+        app_data
+      }
+    }
+
     # Get indicator data
     ind_data <- reactive({
-      get_indicator_data(app_data, indicator_name, selected_state())
+      get_indicator_data(get_data(), indicator_name, selected_state())
     })
 
-    # Get navigation info
-    nav_info <- get_indicator_navigation(indicator_name, app_data)
+    # Get navigation info (reactive so it updates when data changes)
+    nav_info <- reactive({
+      get_indicator_navigation(indicator_name, get_data())
+    })
 
     # Title
     output$title <- renderText({
@@ -285,37 +296,38 @@ indicator_page_server <- function(id, indicator_name, app_data, selected_state, 
 
     # Navigation buttons
     output$nav_buttons <- renderUI({
+      nav <- nav_info()  # Get reactive value
       btn_style <- "margin: 5px; padding: 10px 20px; font-size: 14px;"
 
       buttons <- list()
 
       # Previous button
-      if (!is.null(nav_info$prev_tab)) {
+      if (!is.null(nav$prev_tab)) {
         buttons <- c(buttons, list(
           actionLink(
             session$ns("prev_btn"),
-            label = tagList(icon("arrow-left"), paste(" Previous:", nav_info$prev_label)),
+            label = tagList(icon("arrow-left"), paste(" Previous:", nav$prev_label)),
             style = btn_style,
-            onclick = sprintf("$('.sidebar-menu a[data-value=\"%s\"]').click();", nav_info$prev_tab)
+            onclick = sprintf("$('.sidebar-menu a[data-value=\"%s\"]').click();", nav$prev_tab)
           )
         ))
       }
 
       # Spacer if both buttons exist
-      if (!is.null(nav_info$prev_tab) && !is.null(nav_info$next_tab)) {
+      if (!is.null(nav$prev_tab) && !is.null(nav$next_tab)) {
         buttons <- c(buttons, list(
           span(style = "margin: 0 15px;", "")
         ))
       }
 
       # Next button
-      if (!is.null(nav_info$next_tab)) {
+      if (!is.null(nav$next_tab)) {
         buttons <- c(buttons, list(
           actionLink(
             session$ns("next_btn"),
-            label = tagList(paste("Next:", nav_info$next_label), " ", icon("arrow-right")),
+            label = tagList(paste("Next:", nav$next_label), " ", icon("arrow-right")),
             style = btn_style,
-            onclick = sprintf("$('.sidebar-menu a[data-value=\"%s\"]').click();", nav_info$next_tab)
+            onclick = sprintf("$('.sidebar-menu a[data-value=\"%s\"]').click();", nav$next_tab)
           )
         ))
       }

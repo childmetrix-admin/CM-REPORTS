@@ -31,32 +31,10 @@ source("modules/indicator_page.R")
 # LOAD DATA ----
 #####################################
 
-# DYNAMIC PROFILE LOADING
-# Get state and profile from URL parameters (passed from parent page)
-# Default to MD and latest if not provided
+# Check if pre-processed data exists
+rds_path <- "D:/repo_childmetrix/r_cfsr_profile/shiny_app/data/cfsr_indicators_latest.rds"
 
-# Note: getQueryString() doesn't work in global.R (runs before session starts)
-# So we'll try to load the latest file here, and the server.R will handle
-# dynamic switching based on URL parameters
-
-# Try multiple locations for data (new structure and legacy)
-rds_paths <- c(
-  # New structure: app_data/STATE/
-  "D:/repo_childmetrix/cfsr-profile/data/app_data/MD/cfsr_indicators_latest.rds",
-  # Legacy location
-  "D:/repo_childmetrix/cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds"
-)
-
-# Try each path
-rds_path <- NULL
-for (path in rds_paths) {
-  if (file.exists(path)) {
-    rds_path <- path
-    break
-  }
-}
-
-if (!is.null(rds_path)) {
+if (file.exists(rds_path)) {
   app_data <- readRDS(rds_path)
   message("Loaded pre-processed data from: ", rds_path)
 } else {
@@ -64,14 +42,14 @@ if (!is.null(rds_path)) {
   message("Pre-processed data not found. Loading raw data...")
 
   # Find the most recent processed file
-  data_dir <- "D:/repo_childmetrix/cfsr-profile/data"
+  data_dir <- "D:/repo_childmetrix/r_cfsr_profile/data"
   processed_dirs <- list.dirs(data_dir, recursive = FALSE)
 
   # Filter to YYYY_MM format only (exclude cumulative, CY, Q folders)
   period_dirs <- processed_dirs[grepl("^\\d{4}_\\d{2}$", basename(processed_dirs))]
 
   if (length(period_dirs) == 0) {
-    stop("No data found. Please run cfsr-profile.R first, then prepare_app_data.R")
+    stop("No data found. Please run r_cfsr_profile.R first, then prepare_app_data.R")
   }
 
   # Get most recent period (sorted alphabetically works for YYYY_MM format)
@@ -97,7 +75,7 @@ if (!is.null(rds_path)) {
   ind_data <- read.csv(csv_files[1], stringsAsFactors = FALSE)
 
   # Load dictionary
-  dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+  dict_path <- "D:/repo_childmetrix/r_cfsr_profile/code/cfsr_round4_indicators_dictionary.csv"
   if (!file.exists(dict_path)) {
     stop("Dictionary not found at: ", dict_path)
   }

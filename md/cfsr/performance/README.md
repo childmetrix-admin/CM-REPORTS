@@ -26,35 +26,35 @@ performance/
 
 ### 1. Data Processing Pipeline
 
-**Location:** `D:/repo_childmetrix/r_cfsr_profile/code/r_cfsr_profile.R`
+**Location:** `D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R`
 
 ```r
 # Set profile period
 profile_period <- "2025_02"  # Change this for different profiles
 
 # Run the script - it auto-chains to prepare_app_data.R
-source("D:/repo_childmetrix/r_cfsr_profile/code/r_cfsr_profile.R")
+source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
 ```
 
 **What happens:**
-1. Processes raw Excel file from `r_cfsr_profile/data/[profile]/raw/`
+1. Processes raw Excel file from `cfsr-profile/data/[profile]/raw/`
 2. Calculates direction-aware rankings for all periods
 3. Adds reporting_states column
-4. Saves CSV to `r_cfsr_profile/data/[profile]/processed/[date]/`
+4. Saves CSV to `cfsr-profile/data/[profile]/processed/[date]/`
 5. **Automatically runs** `prepare_app_data.R`
 6. Generates `.rds` file and saves to **BOTH**:
-   - Development: `r_cfsr_profile/shiny_app/data/cfsr_indicators_latest.rds`
-   - **Production: `r_cm_reports/md/cfsr/performance/app/data/cfsr_indicators_latest.rds`**
+   - Development: `cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds`
+   - **Production: `cm-reports/md/cfsr/performance/app/data/cfsr_indicators_latest.rds`**
 
 ### 2. Deployment Structure
 
 **Development Environment:**
-- Location: `D:/repo_childmetrix/r_cfsr_profile/shiny_app/`
+- Location: `D:/repo_childmetrix/cfsr-profile/shiny_app/`
 - Purpose: Testing and development
-- Run directly: `shiny::runApp("D:/repo_childmetrix/r_cfsr_profile/shiny_app")`
+- Run directly: `shiny::runApp("D:/repo_childmetrix/cfsr-profile/shiny_app")`
 
 **Production Environment:**
-- Location: `D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app/`
+- Location: `D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/`
 - Purpose: Deployed in ChildMetrix platform
 - Access: Via iframe wrapper at `cfsr/performance/index_static.html`
 
@@ -104,10 +104,10 @@ selected_state <- reactive({
 
 ```r
 # From R console
-shiny::runApp("D:/repo_childmetrix/r_cfsr_profile/shiny_app")
+shiny::runApp("D:/repo_childmetrix/cfsr-profile/shiny_app")
 
 # Or with specific port
-shiny::runApp("D:/repo_childmetrix/r_cfsr_profile/shiny_app", port = 3838)
+shiny::runApp("D:/repo_childmetrix/cfsr-profile/shiny_app", port = 3838)
 ```
 
 Then navigate to: `http://localhost:3838?state=MD`
@@ -124,7 +124,7 @@ server {
   listen 3838;
 
   location /cfsr {
-    site_dir D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app;
+    site_dir D:/repo_childmetrix/cm-reports/md/cfsr/performance/app;
     log_dir /var/log/shiny-server;
     directory_index on;
   }
@@ -133,7 +133,7 @@ server {
 
 **Access:**
 1. Start Shiny Server
-2. Open ChildMetrix platform: `file:///D:/repo_childmetrix/r_cm_reports/md/index.html`
+2. Open ChildMetrix platform: `file:///D:/repo_childmetrix/cm-reports/md/index.html`
 3. Click "CFSR Data Profile" in sidebar
 4. Dashboard loads in iframe via `cfsr/performance/index_static.html`
 
@@ -143,7 +143,7 @@ For quick testing without Shiny Server:
 
 1. Open two browser tabs:
    - Tab 1: Run Shiny standalone on port 3838
-   - Tab 2: Open `file:///D:/repo_childmetrix/r_cm_reports/md/index.html`
+   - Tab 2: Open `file:///D:/repo_childmetrix/cm-reports/md/index.html`
 
 2. Update `index_static.html` line ~130 temporarily:
    ```javascript
@@ -158,26 +158,26 @@ For quick testing without Shiny Server:
 
 1. **Place raw data file:**
    ```
-   D:/repo_childmetrix/r_cfsr_profile/data/2025_02/raw/
+   D:/repo_childmetrix/cfsr-profile/data/2025_02/raw/
    National - Supplemental Context Date - February 2025.xlsx
    ```
 
 2. **Update profile period in R script:**
    ```r
-   # In r_cfsr_profile.R line 51
+   # In cfsr_profile.R line 51
    profile_period <- "2025_02"
    ```
 
 3. **Run data processing:**
    ```r
-   source("D:/repo_childmetrix/r_cfsr_profile/code/r_cfsr_profile.R")
+   source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
    ```
 
 4. **Verify output:**
    ```
    ✓ CSV saved to: data/2025_02/processed/[date]/
-   ✓ RDS saved to DEV: r_cfsr_profile/shiny_app/data/
-   ✓ RDS saved to PROD: r_cm_reports/md/cfsr/performance/app/data/
+   ✓ RDS saved to DEV: cfsr-profile/shiny_app/data/
+   ✓ RDS saved to PROD: cm-reports/md/cfsr/performance/app/data/
    ```
 
 5. **Restart Shiny app** (if running) to load new data
@@ -186,11 +186,11 @@ For quick testing without Shiny Server:
 
 | What | Development | Production |
 |------|------------|-----------|
-| **Shiny App** | `r_cfsr_profile/shiny_app/` | `r_cm_reports/md/cfsr/performance/app/` |
-| **Data (.rds)** | `r_cfsr_profile/shiny_app/data/` | `r_cm_reports/md/cfsr/performance/app/data/` |
-| **Data Processing** | `r_cfsr_profile/code/r_cfsr_profile.R` | (same) |
-| **Raw Data** | `r_cfsr_profile/data/[profile]/raw/` | (same) |
-| **Wrapper HTML** | N/A | `r_cm_reports/md/cfsr/performance/index_static.html` |
+| **Shiny App** | `cfsr-profile/shiny_app/` | `cm-reports/md/cfsr/performance/app/` |
+| **Data (.rds)** | `cfsr-profile/shiny_app/data/` | `cm-reports/md/cfsr/performance/app/data/` |
+| **Data Processing** | `cfsr-profile/code/cfsr_profile.R` | (same) |
+| **Raw Data** | `cfsr-profile/data/[profile]/raw/` | (same) |
+| **Wrapper HTML** | N/A | `cm-reports/md/cfsr/performance/index_static.html` |
 
 ## Troubleshooting
 
@@ -198,14 +198,14 @@ For quick testing without Shiny Server:
 
 1. Check Shiny app is running:
    ```r
-   shiny::runApp("D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app", port = 3838)
+   shiny::runApp("D:/repo_childmetrix/cm-reports/md/cfsr/performance/app", port = 3838)
    ```
 
 2. Check browser console for errors (F12)
 
 3. Verify data file exists:
    ```
-   r_cm_reports/md/cfsr/performance/app/data/cfsr_indicators_latest.rds
+   cm-reports/md/cfsr/performance/app/data/cfsr_indicators_latest.rds
    ```
 
 ### Wrong state showing
@@ -216,7 +216,7 @@ For quick testing without Shiny Server:
 
 ### Wrong profile period
 
-1. Re-run `r_cfsr_profile.R` with correct `profile_period`
+1. Re-run `cfsr_profile.R` with correct `profile_period`
 2. Verify RDS file updated in PROD location
 3. Restart Shiny app
 

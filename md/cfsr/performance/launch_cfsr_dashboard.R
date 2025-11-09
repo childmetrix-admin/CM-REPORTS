@@ -7,7 +7,7 @@
 # 1. Open this file in R or RStudio
 # 2. Click "Source" or press Ctrl+Shift+S (RStudio) or Ctrl+Shift+Enter (R)
 # 3. Keep R running - don't close this window!
-# 4. Open your browser to: file:///D:/repo_childmetrix/r_cm_reports/md/index.html#/cfsr
+# 4. Open your browser to: file:///D:/repo_childmetrix/cm-reports/md/index.html#/cfsr
 #
 # To stop the dashboard: Press Ctrl+C or close R
 
@@ -18,7 +18,7 @@ if (!require("shiny")) {
 }
 
 # Path to the CFSR dashboard app
-app_path <- "D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app"
+app_path <- "D:/repo_childmetrix/cm-reports/md/cfsr/performance/app"
 
 # Check if app directory exists
 if (!dir.exists(app_path)) {
@@ -29,7 +29,7 @@ if (!dir.exists(app_path)) {
 data_file <- file.path(app_path, "data", "cfsr_indicators_latest.rds")
 if (!file.exists(data_file)) {
   warning("Data file not found: ", data_file,
-          "\n\nYou may need to run r_cfsr_profile.R first to generate data.")
+          "\n\nYou may need to run cfsr-profile.R first to generate data.")
 }
 
 # Launch the app
@@ -38,7 +38,7 @@ cat("  CFSR Dashboard Starting...\n")
 cat("===============================================\n\n")
 cat("Once you see 'Listening on http://127.0.0.1:3838',\n")
 cat("open your browser to:\n\n")
-cat("  file:///D:/repo_childmetrix/r_cm_reports/md/index.html#/cfsr\n\n")
+cat("  file:///D:/repo_childmetrix/cm-reports/md/index.html#/cfsr\n\n")
 cat("Or access directly at:\n\n")
 cat("  http://localhost:3838/?state=MD\n\n")
 cat("Keep this R session running!\n")

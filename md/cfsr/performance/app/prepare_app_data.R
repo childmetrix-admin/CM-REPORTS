@@ -1,14 +1,14 @@
 # prepare_app_data.R
-# Run this script to prepare data for the Shiny app after running r_cfsr_profile.R
+# Run this script to prepare data for the Shiny app after running cfsr-profile.R
 #
 # This script can be:
-# 1. Auto-run by r_cfsr_profile.R (uses profile_period from parent script)
+# 1. Auto-run by cfsr-profile.R (uses profile_period from parent script)
 # 2. Run manually (uses most recent YYYY_MM folder if profile_period not set)
 
 library(dplyr)
 
 # Set the data directory path
-data_dir <- "D:/repo_childmetrix/r_cfsr_profile/data"
+data_dir <- "D:/repo_childmetrix/cfsr-profile/data"
 
 cat("Looking for data in:", data_dir, "\n")
 
@@ -20,9 +20,9 @@ if (!dir.exists(data_dir)) {
 
 # Determine which profile period to use
 if (exists("profile_period")) {
-  # If called from r_cfsr_profile.R, use the specified profile_period
+  # If called from cfsr-profile.R, use the specified profile_period
   latest_period <- profile_period
-  message("Using profile period from r_cfsr_profile.R: ", latest_period)
+  message("Using profile period from cfsr-profile.R: ", latest_period)
 } else {
   # If run manually, find most recent YYYY_MM folder
   processed_dirs <- list.dirs(data_dir, recursive = FALSE)
@@ -34,7 +34,7 @@ if (exists("profile_period")) {
     cat("Available folders in", data_dir, ":\n")
     print(basename(processed_dirs))
     stop("No YYYY_MM data folders found in: ", data_dir,
-         "\nPlease run r_cfsr_profile.R first.")
+         "\nPlease run cfsr-profile.R first.")
   }
 
   # Get most recent period (sorted alphabetically works for YYYY_MM format)
@@ -68,7 +68,7 @@ ind_data <- read.csv(csv_files[1], stringsAsFactors = FALSE)
 message("Loaded ", nrow(ind_data), " rows")
 
 # Load dictionary
-dict_path <- "D:/repo_childmetrix/r_cfsr_profile/code/cfsr_round4_indicators_dictionary.csv"
+dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
 if (!file.exists(dict_path)) {
   stop("Dictionary not found at: ", dict_path)
 }
@@ -122,7 +122,7 @@ if (nrow(missing_joins) > 0) {
 }
 
 # Save for Shiny app
-output_dir <- "D:/repo_childmetrix/r_cfsr_profile/shiny_app/data"
+output_dir <- "D:/repo_childmetrix/cfsr-profile/shiny_app/data"
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }

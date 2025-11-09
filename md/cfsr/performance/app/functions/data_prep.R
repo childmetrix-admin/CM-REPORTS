@@ -4,7 +4,7 @@
 #'
 #' Filters to latest period per indicator and joins dictionary metadata
 #'
-#' @param ind_data Data frame from r_cfsr_profile.R output
+#' @param ind_data Data frame from cfsr-profile.R output
 #' @param dict Dictionary data frame
 #' @return Prepared data frame ready for app
 prepare_app_data <- function(ind_data, dict) {
