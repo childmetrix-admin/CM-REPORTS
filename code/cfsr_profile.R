@@ -29,10 +29,10 @@
 #####################################
 
 # Load packages and generic functions
-source("D:/repo_childmetrix/r_utilities/loader.R")
+source("D:/repo_childmetrix/utilities-core/loader.R")
 
-# Load functions specific to this project
-source(file.path(util_root, "project_specific", "functions_cfsr_profile.R"), chdir = FALSE)
+# Load MDCPS-specific functions
+source("D:/repo_childmetrix/utilities-cfsr/functions/functions_cfsr_profile.R")
 
 ########################################
 # FOLDER PATHS & DIRECTORY STRUCTURE ----
