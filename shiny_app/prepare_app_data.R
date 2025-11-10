@@ -25,7 +25,7 @@ if (!dir.exists(data_dir)) {
 # Determine which state and profile period to use
 if (exists("state_code") && exists("profile_period")) {
   # If called from cfsr-profile.R, use the specified values
-  use_state <- state_code
+  use_state <- tolower(state_code)  # Ensure lowercase
   use_period <- profile_period
   message("Using state/period from cfsr-profile.R: ", use_state, " - ", use_period)
 } else {
@@ -45,7 +45,7 @@ if (exists("state_code") && exists("profile_period")) {
          "\nPlease run cfsr-profile.R first.")
   }
 
-  # Use first state found
+  # Use first state found (already lowercase from folder structure)
   use_state <- state_dirs[1]
 
   # Get all periods for this state
@@ -168,29 +168,20 @@ output_file_latest <- file.path(output_dir_dev, "cfsr_indicators_latest.rds")
 saveRDS(app_data, output_file_latest)
 message("✓ Saved to DEV (latest): ", output_file_latest)
 
-# 3. DEV: Legacy location for backward compatibility (shiny_app/data)
-output_dir_legacy <- "D:/repo_childmetrix/cfsr-profile/shiny_app/data"
-if (!dir.exists(output_dir_legacy)) {
-  dir.create(output_dir_legacy, recursive = TRUE)
-}
-output_file_legacy <- file.path(output_dir_legacy, "cfsr_indicators_latest.rds")
-saveRDS(app_data, output_file_legacy)
-message("✓ Saved to DEV (legacy location): ", output_file_legacy)
-
-# 4. PROD: Period-specific file with state prefix
+# 3. PROD: Period-specific file with state prefix
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }
 
 output_file_prod_period <- file.path(output_dir_prod,
-                                     paste0(use_state, "_cfsr_indicators_", use_period, ".rds"))
+                                     paste0(tolower(use_state), "_cfsr_indicators_", use_period, ".rds"))
 saveRDS(app_data, output_file_prod_period)
 message("✓ Saved to PROD (period-specific): ", output_file_prod_period)
 
-# 5. PROD: Latest file with state prefix
+# 4. PROD: Latest file with state prefix
 output_file_prod_latest <- file.path(output_dir_prod,
-                                     paste0(use_state, "_cfsr_indicators_latest.rds"))
+                                     paste0(tolower(use_state), "_cfsr_indicators_latest.rds"))
 saveRDS(app_data, output_file_prod_latest)
 message("✓ Saved to PROD (latest): ", output_file_prod_latest)
 

@@ -7,19 +7,20 @@ This R project processes **National Supplemental Context Data** files from the C
 ## Quick Start
 
 ```r
-# 1. Place raw data file in uploads folder:
-#    D:/repo_childmetrix/cfsr-profile/data/uploads/{STATE}/{PERIOD}/
-#    Example: data/uploads/MD/2025_02/National - Supplemental Context Data - February 2025.xlsx
+# 1. Upload raw data file to ShareFile:
+#    S:/Shared Folders/{state}/cfsr/uploads/{PERIOD}/
+#    Example: S:/Shared Folders/md/cfsr/uploads/2025_02/National - Supplemental Context Data - February 2025.xlsx
 
 # 2. Set state and period in cfsr_profile.R:
-state_code <- "MD"
+state_code <- "md"          # Lowercase state code
 profile_period <- "2025_02"
 
 # 3. Run the processing script:
 source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
 
 # 4. Script automatically chains to prepare_app_data.R
-#    - Saves processed CSV to: data/processed/{STATE}/{PERIOD}/{date}/
+#    - Reads from ShareFile (S:\)
+#    - Saves processed CSV to: data/processed/{state}/{period}/{date}/
 #    - Generates RDS files for Shiny app (dev and prod locations)
 ```
 
@@ -33,12 +34,10 @@ cfsr-profile/
 │   └── process_cfsr_batch.R        # Batch processing
 │
 ├── data/
-│   ├── uploads/                    # Raw Excel files from Children's Bureau
-│   │   └── {STATE}/{PERIOD}/      # e.g., uploads/MD/2025_02/
 │   ├── processed/                  # Generated CSV outputs
-│   │   └── {STATE}/{PERIOD}/{date}/ # e.g., processed/MD/2025_02/2025-11-09/
+│   │   └── {state}/{period}/{date}/ # e.g., processed/md/2025_02/2025-11-09/
 │   └── app_data/                   # State-specific RDS files for Shiny app
-│       └── {STATE}/                # e.g., app_data/MD/
+│       └── {state}/                # e.g., app_data/md/
 │
 ├── shiny_app/                      # Interactive dashboard
 │   ├── app.R                       # Shiny application
@@ -106,13 +105,24 @@ Final dataset columns:
 - `profile_version` - Profile publication (e.g., "February 2025")
 - `source` - Full APA citation
 
+## Data Sources and Storage
+
+**Raw data uploads**: States upload files to ShareFile
+- Location: `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
+- Files are read directly from ShareFile (not copied locally)
+- Security: Only state users can upload to their specific folder
+
+**Local processed data**: Generated outputs stored locally
+- Processed CSVs: `data/processed/{state}/{period}/{date}/`
+- App data (RDS): `data/app_data/{state}/`
+
 ## Integration with ChildMetrix Platform
 
 Processed data feeds into the **cm-reports** platform:
 
 1. **Data Pipeline**:
-   - Dev: `cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds`
-   - Prod: `cm-reports/md/cfsr/performance/app/data/cfsr_indicators_latest.rds`
+   - Dev: `cfsr-profile/data/app_data/{state}/cfsr_indicators_latest.rds`
+   - Prod: `cm-reports/md/cfsr/performance/app/data/{state}_cfsr_indicators_latest.rds`
 
 2. **Shiny Dashboard**:
    - Interactive state-by-state comparisons
@@ -122,19 +132,27 @@ Processed data feeds into the **cm-reports** platform:
 
 See [cm-reports/md/cfsr/performance/README.md](../cm-reports/md/cfsr/performance/README.md) for deployment details.
 
+## Next Step: Interactive Dashboard
+
+After processing completes, the data is ready for the Shiny dashboard. See **[shiny_app/README.md](shiny_app/README.md)** for:
+- Running the interactive dashboard
+- Deploying to production
+- Customizing the app
+
 ## Documentation
 
+- **[shiny_app/README.md](shiny_app/README.md)** - Interactive dashboard setup and deployment
 - **[docs/WORKFLOW.md](docs/WORKFLOW.md)** - Detailed workflow and usage
 - **[docs/FUNCTIONS.md](docs/FUNCTIONS.md)** - Function reference guide
 - **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Project history and changes
-- **[shiny_app/README.md](shiny_app/README.md)** - Shiny app documentation
-- **[shiny_app/QUICK_START.md](shiny_app/QUICK_START.md)** - Quick start for dashboard
 
 ## Recent Changes
 
 **November 2025**
-- Renamed repository from `r_cfsr_profile` to `cfsr-profile` (kebab-case)
-- Updated all path references to new naming convention
+- **ShareFile integration**: Raw data now read directly from `S:/Shared Folders/{state}/cfsr/uploads/`
+- **Lowercase state codes**: All folder names use lowercase (md, ky, etc.) for consistency
+- **Simplified data structure**: Removed local `uploads/` folder, removed legacy `shiny_app/data/`
+- **Renamed repository** from `r_cfsr_profile` to `cfsr-profile` (kebab-case)
 - Reorganized documentation into `docs/` structure
 
 **October 2025**
@@ -161,3 +179,4 @@ Following ChildMetrix standards:
 - **Repository folders**: kebab-case (`cfsr-profile`)
 - **R scripts**: snake_case (`cfsr_profile.R`)
 - **Project files**: match folder name (`cfsr-profile.Rproj`)
+- **State codes**: lowercase in folder names (`md`, `ky`) for consistency with ShareFile
