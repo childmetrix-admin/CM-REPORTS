@@ -7,9 +7,9 @@ This R project processes **National Supplemental Context Data** files from the C
 ## Quick Start
 
 ```r
-# 1. Place raw data file in appropriate folder:
-#    D:/repo_childmetrix/cfsr-profile/data/{STATE}/{PERIOD}/raw/
-#    Example: data/MD/2025_02/raw/National - Supplemental Context Data - February 2025.xlsx
+# 1. Place raw data file in uploads folder:
+#    D:/repo_childmetrix/cfsr-profile/data/uploads/{STATE}/{PERIOD}/
+#    Example: data/uploads/MD/2025_02/National - Supplemental Context Data - February 2025.xlsx
 
 # 2. Set state and period in cfsr_profile.R:
 state_code <- "MD"
@@ -19,7 +19,7 @@ profile_period <- "2025_02"
 source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
 
 # 4. Script automatically chains to prepare_app_data.R
-#    - Saves processed CSV to: data/{STATE}/{PERIOD}/processed/{date}/
+#    - Saves processed CSV to: data/processed/{STATE}/{PERIOD}/{date}/
 #    - Generates RDS files for Shiny app (dev and prod locations)
 ```
 
@@ -33,11 +33,12 @@ cfsr-profile/
 │   └── process_cfsr_batch.R        # Batch processing
 │
 ├── data/
-│   └── {STATE}/                    # State-specific data (e.g., MD/, KY/)
-│       └── {PERIOD}/               # Period folders (e.g., 2025_02/)
-│           ├── raw/                # Raw Excel files from Children's Bureau
-│           └── processed/          # Generated CSV outputs
-│               └── {date}/         # Date-stamped run folders
+│   ├── uploads/                    # Raw Excel files from Children's Bureau
+│   │   └── {STATE}/{PERIOD}/      # e.g., uploads/MD/2025_02/
+│   ├── processed/                  # Generated CSV outputs
+│   │   └── {STATE}/{PERIOD}/{date}/ # e.g., processed/MD/2025_02/2025-11-09/
+│   └── app_data/                   # State-specific RDS files for Shiny app
+│       └── {STATE}/                # e.g., app_data/MD/
 │
 ├── shiny_app/                      # Interactive dashboard
 │   ├── app.R                       # Shiny application
