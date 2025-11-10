@@ -39,12 +39,12 @@ source("modules/indicator_page.R")
 # So we'll try to load the latest file here, and the server.R will handle
 # dynamic switching based on URL parameters
 
-# Try multiple locations for data (new structure and legacy)
+# Try multiple locations for data (lowercase state codes)
 rds_paths <- c(
-  # New structure: app_data/STATE/
-  "D:/repo_childmetrix/cfsr-profile/data/app_data/MD/cfsr_indicators_latest.rds",
-  # Legacy location
-  "D:/repo_childmetrix/cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds"
+  # Primary location: app_data/STATE/
+  "D:/repo_childmetrix/cfsr-profile/data/app_data/md/cfsr_indicators_latest.rds",
+  # Fallback for other states
+  "D:/repo_childmetrix/cfsr-profile/data/app_data/ky/cfsr_indicators_latest.rds"
 )
 
 # Try each path

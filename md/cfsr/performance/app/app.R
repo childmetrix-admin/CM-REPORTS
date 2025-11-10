@@ -25,16 +25,17 @@ load_cfsr_data <- function(state_code = "MD", profile_period = "latest") {
   # Base directory for production data
   data_dir <- "D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/data"
 
-  # Try different file naming patterns
+  # Try different file naming patterns (use lowercase state code)
+  state_code_lower <- tolower(state_code)
   possible_paths <- c(
     # State-specific period file (preferred)
-    file.path(data_dir, paste0(state_code, "_cfsr_indicators_", profile_period, ".rds")),
+    file.path(data_dir, paste0(state_code_lower, "_cfsr_indicators_", profile_period, ".rds")),
     # State-specific latest
-    file.path(data_dir, paste0(state_code, "_cfsr_indicators_latest.rds")),
+    file.path(data_dir, paste0(state_code_lower, "_cfsr_indicators_latest.rds")),
     # Generic latest (fallback for backward compatibility)
     file.path(data_dir, "cfsr_indicators_latest.rds"),
-    # Legacy location
-    "D:/repo_childmetrix/cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds"
+    # Fallback to app_data location
+    paste0("D:/repo_childmetrix/cfsr-profile/data/app_data/", state_code_lower, "/cfsr_indicators_latest.rds")
   )
 
   # Try each path
