@@ -54,7 +54,7 @@ CFSR Profile: [February 2025 ▼]
 ```
 
 **File to Edit:**
-- `D:/repo_childmetrix/r_cm_reports/md/index.html` (around line 203)
+- `D:/repo_childmetrix/cm-reports/states/md/index.html` (around line 203)
 
 **Acceptance Criteria:**
 - [ ] Label changed from "CFSR Profile Period:" to "CFSR Profile:"
@@ -132,7 +132,7 @@ Reduce whitespace at the top of the sidebar and main content area to maximize ve
 - Use CSS: `padding-top: 0 !important;` on relevant containers
 
 **File to Edit:**
-- `D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app/app.R` (CSS section)
+- `D:/repo_childmetrix/cm-reports/states/md/cfsr/performance/app/app.R` (CSS section)
 
 **Acceptance Criteria:**
 - [ ] Top padding reduced by at least 20px

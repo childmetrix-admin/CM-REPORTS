@@ -6,7 +6,7 @@
 
 # Precompute remote targets (quoted so PS doesn't misparse the colon)
 $TargetRoot = "root@${Server}:${RemotePath}/"
-$TargetMd   = "root@${Server}:${RemotePath}/md/"
+$TargetMd   = "root@${Server}:${RemotePath}/states/md/"
 
 # 1) Backup on the server (runs entirely on the remote)
 ssh "root@$Server" 'mkdir -p ~/deploy-backups && tar -czf ~/deploy-backups/html-$(date +%F-%H%M%S).tar.gz -C /var/www/stage.childmetrix.com html'
@@ -14,12 +14,12 @@ ssh "root@$Server" 'mkdir -p ~/deploy-backups && tar -czf ~/deploy-backups/html-
 # 2) Deploy
 if ($MdOnly) {
   Write-Host "Deploying MD only..." -ForegroundColor Cyan
-  scp -r .\md\* "$TargetMd"
+  scp -r .\states\md\* "$TargetMd"
 } else {
   Write-Host "Deploying full site..." -ForegroundColor Cyan
   scp -r .\_assets    "$TargetRoot"
-  scp -r .\ky         "$TargetRoot"
-  scp -r .\md         "$TargetRoot"
+  scp -r .\scripts    "$TargetRoot"
+  scp -r .\states     "$TargetRoot"
   scp    .\index.html "$TargetRoot"
   scp    .\style.css  "$TargetRoot"
 }

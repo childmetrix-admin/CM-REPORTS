@@ -127,8 +127,8 @@
 
   // Simple per-state routes (add more as you create them)
   const STATE_ROUTES = {
-    MD: 'md/index.html',    // Maryland staging hub
-    KY: 'ky/index.html',    // example: Kentucky hub if you have it
+    MD: 'states/md/index.html',    // Maryland staging hub
+    KY: 'states/ky/index.html',    // Kentucky hub
     // add others here as you bring them online
   };
 
@@ -142,8 +142,8 @@
       return;
     }
 
-    // Prefer explicit route if defined, else default to {state-lower}/index.html
-    const target = STATE_ROUTES[state] || `${state.toLowerCase()}/index.html`;
+    // Prefer explicit route if defined, else default to states/{state-lower}/index.html
+    const target = STATE_ROUTES[state] || `states/${state.toLowerCase()}/index.html`;
     window.location.href = target;
   });
 </script>
