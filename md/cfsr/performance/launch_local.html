@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CFSR Dashboard - Launch Instructions</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: #f9fafb;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #1f2937;
+      margin-top: 0;
+    }
+    .step {
+      background: #f3f4f6;
+      padding: 16px;
+      margin: 16px 0;
+      border-left: 4px solid #3b82f6;
+      border-radius: 4px;
+    }
+    .step h3 {
+      margin-top: 0;
+      color: #3b82f6;
+    }
+    code {
+      background: #1f2937;
+      color: #10b981;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    .code-block {
+      background: #1f2937;
+      color: #10b981;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .button {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 6px;
+      margin: 16px 0;
+      font-weight: 500;
+    }
+    .button:hover {
+      background: #2563eb;
+    }
+    .warning {
+      background: #fef3c7;
+      border-left-color: #f59e0b;
+      padding: 16px;
+      margin: 16px 0;
+      border-left: 4px solid #f59e0b;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 CFSR Performance Dashboard</h1>
+
+    <div class="warning">
+      <strong>⚠️ Shiny Server Required</strong><br>
+      To view the interactive dashboard, you need to run a local Shiny server. Follow the steps below.
+    </div>
+
+    <div class="step">
+      <h3>Step 1: Open R or RStudio</h3>
+      <p>Launch R or RStudio on your computer.</p>
+    </div>
+
+    <div class="step">
+      <h3>Step 2: Run the Shiny App</h3>
+      <p>Copy and paste this command into the R console:</p>
+      <div class="code-block">shiny::runApp("D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app", port = 3838)</div>
+      <p>You should see a message like:</p>
+      <div class="code-block">Listening on http://127.0.0.1:3838</div>
+    </div>
+
+    <div class="step">
+      <h3>Step 3: Access the Dashboard</h3>
+      <p>Choose one of these options:</p>
+
+      <p><strong>Option A: Direct Access</strong><br>
+      Click this link (after running the app in R):
+      <a href="http://localhost:3838/?state=MD" class="button" target="_blank">Open Dashboard</a>
+      </p>
+
+      <p><strong>Option B: Via ChildMetrix Platform</strong><br>
+      1. Keep the R session running<br>
+      2. Open the platform: <a href="file:///D:/repo_childmetrix/r_cm_reports/md/index.html#/cfsr" target="_blank">ChildMetrix Platform</a><br>
+      3. Click "Performance" in the secondary navigation
+      </p>
+    </div>
+
+    <div class="step">
+      <h3>Alternative: Update for File Protocol</h3>
+      <p>If you want the dashboard to work without running a server, you would need to:</p>
+      <ul>
+        <li>Convert the Shiny app to static HTML (loses interactivity)</li>
+        <li>Use a different framework (not Shiny)</li>
+        <li>Set up a proper web server (Shiny Server, Apache, nginx)</li>
+      </ul>
+    </div>
+
+    <hr style="margin: 32px 0;">
+
+    <h2>Quick Reference</h2>
+
+    <p><strong>App Location:</strong> <code>D:/repo_childmetrix/r_cm_reports/md/cfsr/performance/app</code></p>
+
+    <p><strong>Required R Packages:</strong></p>
+    <div class="code-block">install.packages(c("shiny", "shinydashboard", "plotly", "DT", "dplyr", "tidyr", "ggplot2"))</div>
+
+    <p><strong>Stop the App:</strong> Press <code>Ctrl+C</code> in the R console or close RStudio</p>
+
+    <p><strong>Documentation:</strong> See <a href="README.md">README.md</a> and <a href="DEPLOYMENT.md">DEPLOYMENT.md</a> in this directory</p>
+  </div>
+
+  <script>
+    // Auto-check if localhost:3838 is available
+    fetch('http://localhost:3838')
+      .then(() => {
+        const warning = document.querySelector('.warning');
+        warning.style.background = '#d1fae5';
+        warning.style.borderLeftColor = '#10b981';
+        warning.innerHTML = '<strong>✅ Shiny Server Detected!</strong><br>A Shiny app is running on localhost:3838. Click the button in Step 3 to access it.';
+      })
+      .catch(() => {
+        // Server not running (expected)
+      });
+  </script>
+</body>
+</html>

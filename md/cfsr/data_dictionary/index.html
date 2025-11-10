@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CFSR Data Dictionary</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .pdf-header {
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pdf-title {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4472C4;
+      margin: 0;
+    }
+    .download-link {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.85rem;
+      color: #4472C4;
+      text-decoration: none;
+      padding: 0.25rem 0.75rem;
+      border: 1px solid #4472C4;
+      border-radius: 4px;
+    }
+    .download-link:hover {
+      background: #4472C4;
+      color: white;
+    }
+    .pdf-container {
+      width: 100%;
+      height: calc(100% - 3rem);
+    }
+    embed, object {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="pdf-header">
+    <h1 class="pdf-title">CFSR Data Dictionary - Round 4 Statewide Data Indicators</h1>
+    <a href="../../../_assets/cfsr/CFSR_R4_SWDI_DataDictionary-4.pdf" class="download-link" target="_blank">Download PDF</a>
+  </div>
+  <div class="pdf-container">
+    <embed src="../../../_assets/cfsr/CFSR_R4_SWDI_DataDictionary-4.pdf" type="application/pdf" />
+  </div>
+</body>
+</html>

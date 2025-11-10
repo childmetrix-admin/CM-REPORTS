@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CFSR Statewide Data Indicators - Performance Dashboard</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* Shiny iframe container */
+    .iframe-container {
+      height: 100vh;
+      width: 100%;
+      position: relative;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Loading indicator */
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Shiny app iframe -->
+  <div class="iframe-container">
+    <div class="loading" id="loadingIndicator">
+      <div class="spinner"></div>
+      <div>Loading CFSR Dashboard...</div>
+    </div>
+    <iframe
+      id="shinyFrame"
+      src=""
+      title="CFSR Statewide Data Indicators Dashboard"
+      allow="fullscreen"
+    ></iframe>
+  </div>
+
+  <script>
+    // Get state from URL query parameter (passed from parent)
+    function getStateFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('state') || 'MD'; // Default to Maryland
+    }
+
+    // Get profile period from URL or use default
+    function getProfileFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('profile') || '2025_02';
+    }
+
+    // Load the Shiny app with state parameter
+    function loadShinyApp(state, profile) {
+      const iframe = document.getElementById('shinyFrame');
+      const loading = document.getElementById('loadingIndicator');
+
+      // For static deployment, point to the app directory
+      // The actual URL will depend on your Shiny Server configuration
+      // This assumes you're running Shiny Server with the app at /cfsr/performance/app/
+      const appPath = `app/?state=${state}`;
+
+      iframe.src = appPath;
+
+      // Hide loading indicator when iframe loads
+      iframe.onload = function() {
+        loading.style.display = 'none';
+      };
+
+      // Fallback timeout
+      setTimeout(function() {
+        loading.style.display = 'none';
+      }, 5000);
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      const state = getStateFromURL();
+      const profile = getProfileFromURL();
+
+      // Load Shiny app
+      loadShinyApp(state, profile);
+    });
+
+    // Listen for messages from parent window (state changes from main navigation)
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'stateChange') {
+        const newState = event.data.state;
+        const profile = getProfileFromURL();
+        loadShinyApp(newState, profile);
+      }
+    });
+  </script>
+</body>
+</html>
