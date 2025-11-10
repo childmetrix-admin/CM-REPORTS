@@ -2,332 +2,161 @@
 
 ## Overview
 
-This R project processes **National Supplemental Context Data** files from the Children's Bureau that track state-by-state performance on **Child and Family Services Review (CFSR)** statewide data indicators. The data files are provided to states approximately every 6 months (typically February and August) and include:
+This R project processes **National Supplemental Context Data** files from the Children's Bureau that track state-by-state performance on **Child and Family Services Review (CFSR)** statewide data indicators. The data files are provided to states approximately every 6 months (typically February and August).
 
-- State-by-state performance and trends on CFSR statewide data indicators
-- Foster care entry rates
-- National performance by age, race/ethnicity
+## Quick Start
+
+```r
+# 1. Place raw data file in appropriate folder:
+#    D:/repo_childmetrix/cfsr-profile/data/{STATE}/{PERIOD}/raw/
+#    Example: data/MD/2025_02/raw/National - Supplemental Context Data - February 2025.xlsx
+
+# 2. Set state and period in cfsr_profile.R:
+state_code <- "MD"
+profile_period <- "2025_02"
+
+# 3. Run the processing script:
+source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
+
+# 4. Script automatically chains to prepare_app_data.R
+#    - Saves processed CSV to: data/{STATE}/{PERIOD}/processed/{date}/
+#    - Generates RDS files for Shiny app (dev and prod locations)
+```
 
 ## Project Structure
 
 ```
-D:\repo_childmetrix\r_cfsr_profile\
-│
+cfsr-profile/
 ├── code/
-│   └── r_cfsr_profile.R          # Main processing script
+│   ├── cfsr_profile.R              # Main processing script
+│   ├── organize_cfsr_uploads.R     # File organization utilities
+│   └── process_cfsr_batch.R        # Batch processing
 │
 ├── data/
-│   └── YYYY_MM/                  # Period-specific data folders (e.g., 2025_02/)
-│       ├── raw/                  # Raw input files
-│       │   └── National - Supplemental Context Data - [Month YYYY].xlsx
-│       └── processed/            # Processed output files
-│           └── YYYY-MM-DD/       # Run-specific outputs (timestamped)
+│   └── {STATE}/                    # State-specific data (e.g., MD/, KY/)
+│       └── {PERIOD}/               # Period folders (e.g., 2025_02/)
+│           ├── raw/                # Raw Excel files from Children's Bureau
+│           └── processed/          # Generated CSV outputs
+│               └── {date}/         # Date-stamped run folders
 │
-└── r_cfsr_profile.Rproj          # RStudio project file
+├── shiny_app/                      # Interactive dashboard
+│   ├── app.R                       # Shiny application
+│   ├── global.R                    # Global data loading
+│   ├── prepare_app_data.R          # Data preparation for app
+│   ├── modules/                    # Reusable UI modules
+│   └── functions/                  # Helper functions
+│
+├── docs/                           # Documentation
+│   ├── WORKFLOW.md                 # Detailed workflow guide
+│   ├── FUNCTIONS.md                # Function reference
+│   ├── CHANGELOG.md                # Project history
+│   └── archive/                    # Historical dev notes
+│
+└── cfsr-profile.Rproj              # RStudio project file
 ```
 
 ## Dependencies
 
 ### External Utilities
 
-This project depends on centralized R utilities located at:
-**`D:\repo_childmetrix\r_utilities\`**
+This project depends on centralized R utilities:
 
-#### Core Dependencies:
-- **[loader.R](D:/repo_childmetrix/r_utilities/loader.R)** - Centralized loader that sources all utility scripts
-- **[core/r_load_packages.R](D:/repo_childmetrix/r_utilities/core/r_load_packages.R)** - Package management (40+ tidyverse and data science packages)
-- **[core/generic_functions.R](D:/repo_childmetrix/r_utilities/core/generic_functions.R)** - Reusable helper functions:
-  - `setup_folders()` - Creates project directory structure
-  - `find_file()` - Smart file finder for raw/processed folders
-  - `save_to_folder_run()` - Standardized file output with naming conventions
-  - `to_date_safe()` - Robust date parsing from multiple formats
-  - `get_period_dates()` - Quarter/month/year period calculations
+- **utilities-core** - Core R utilities (packages, generic functions)
+  - Location: `D:/repo_childmetrix/utilities-core/`
+  - Loaded via: `source("D:/repo_childmetrix/utilities-core/loader.R")`
 
-#### Project-Specific Functions:
-- **[project_specific/functions_cfsr_profile.R](D:/repo_childmetrix/r_utilities/project_specific/functions_cfsr_profile.R)** - CFSR-specific utilities:
-  - `cfsr_profile_version()` - Extracts profile month/year from filename
-  - `cfsr_profile_extract_asof_date()` - Parses AFCARS/NCANDS submission date
-  - `extract_relevant_rows()` - Filters data to state performance rows
-  - `make_period_meaningful()` - Converts period codes (e.g., "19A19B") to readable labels
-  - `rank_states_by_performance()` - Ranks states by most recent performance
+- **utilities-cfsr** - CFSR-specific functions
+  - Location: `D:/repo_childmetrix/utilities-cfsr/`
+  - Key functions: `process_standard_indicator()`, `process_entry_rate_indicator()`, `setup_cfsr_folders()`
 
 ### R Packages
 
-The project uses 40+ packages managed via `pacman`, including:
-- **tidyverse** (dplyr, tidyr, ggplot2, stringr, purrr, readr)
-- **openxlsx** / **readxl** - Excel file I/O
-- **lubridate** - Date/time manipulation
-- **janitor** - Data cleaning
-- **flextable** / **gt** - Table formatting
-- And many more (see [r_load_packages.R](D:/repo_childmetrix/r_utilities/core/r_load_packages.R:1))
+Automatically loaded via utilities-core (40+ tidyverse and data science packages)
 
-## Data Processing Workflow
+## Data Processing
 
-### 1. Setup and Initialization
+### Indicators Processed
 
-```r
-# Load all utilities and packages
-source("D:/repo_childmetrix/r_utilities/loader.R")
-source(file.path(util_root, "project_specific", "functions_cfsr_profile.R"))
+The script processes 8 CFSR statewide data indicators:
 
-# Configure project
-commitment <- "cfsr profile"
-commitment_description <- "national"
+**Safety (2)**
+- Foster care entry rate (per 1,000 children)
+- Maltreatment in foster care (per 100,000 days)
 
-# Set up folder structure for reporting period (e.g., 2025_02)
-my_setup <- setup_folders("2025_02")
-```
+**Permanency (4)**
+- Permanency in 12 months (entries)
+- Permanency in 12 months (12-23 months in care)
+- Permanency in 12 months (24+ months in care)
+- Re-entry into foster care
 
-This creates:
-- `data/2025_02/raw/`
-- `data/2025_02/processed/`
-- `output/2025_02/`
-- `data/2025_cumulative/`
+**Well-Being (2)**
+- Placement stability (moves per 1,000 days)
+- Recurrence of maltreatment
 
-### 2. Processed Indicators
+### Output Data Structure
 
-The script processes 6 key CFSR indicators from separate Excel worksheets:
+Final dataset columns:
+- `state` - State name (52 total: 50 states + D.C. + Puerto Rico)
+- `indicator` - Full indicator name
+- `period` / `period_meaningful` - Period code and human-readable label
+- `denominator` / `numerator` / `performance` - Metric components
+- `state_rank` - State ranking (1-52, most recent period only)
+- `as_of_date` - AFCARS/NCANDS data submission date
+- `profile_version` - Profile publication (e.g., "February 2025")
+- `source` - Full APA citation
 
-| Indicator | Worksheet Name | Output Dataset |
-|-----------|---------------|----------------|
-| Foster care entry rate per 1,000 children | Entry rates | `ind_entrate_df` |
-| Re-entry into foster care after exiting to reunification/guardianship | Reentry to FC | `ind_reentry_df` |
-| Permanency in 12 months (entries) | Perm in 12 (entries) | `ind_perm12_df` |
-| Permanency in 12 months (12-23 months in care) | Perm in 12 (12-23 mos) | `ind_perm1223_df` |
-| Permanency in 12 months (24+ months in care) | Perm in 12 (24+ mos) | `ind_perm24_df` |
-| Placement stability (moves/1,000 days in care) | Placement stability | `ind_ps_df` |
+## Integration with ChildMetrix Platform
 
-### 3. Data Processing Steps (Per Indicator)
+Processed data feeds into the **cm-reports** platform:
 
-Each indicator follows this pipeline:
+1. **Data Pipeline**:
+   - Dev: `cfsr-profile/shiny_app/data/cfsr_indicators_latest.rds`
+   - Prod: `cm-reports/md/cfsr/performance/app/data/cfsr_indicators_latest.rds`
 
-#### a. Load Data
-```r
-data_df <- find_file(
-  keyword = "National",
-  directory_type = "raw",
-  file_type = "excel",
-  sheet_name = "Entry rates"  # or other worksheet
-)
-```
+2. **Shiny Dashboard**:
+   - Interactive state-by-state comparisons
+   - Small multiples overview
+   - Detailed indicator pages
+   - Integrated into ChildMetrix reporting platform
 
-#### b. Extract Metadata
-```r
-# Profile version
-ver <- cfsr_profile_version()
-ver$profile_version  # "August 2024"
-ver$source          # Full APA citation
+See [cm-reports/md/cfsr/performance/README.md](../cm-reports/md/cfsr/performance/README.md) for deployment details.
 
-# AFCARS/NCANDS submission date
-asof <- cfsr_profile_extract_asof_date(data_df)
-asof$as_of_date     # Date object
-```
+## Documentation
 
-#### c. Clean and Reshape
-```r
-# Filter to relevant columns and state rows
-data_df <- extract_relevant_rows(data_df)
+- **[docs/WORKFLOW.md](docs/WORKFLOW.md)** - Detailed workflow and usage
+- **[docs/FUNCTIONS.md](docs/FUNCTIONS.md)** - Function reference guide
+- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Project history and changes
+- **[shiny_app/README.md](shiny_app/README.md)** - Shiny app documentation
+- **[shiny_app/QUICK_START.md](shiny_app/QUICK_START.md)** - Quick start for dashboard
 
-# Extract period metadata (years/periods from first row)
-metadata <- data_df[1, ]
-periods <- metadata[7:11] %>% as.character()
+## Recent Changes
 
-# Rename columns dynamically
-colnames(data_clean) <- c("state", den_cols, num_cols, per_cols)
+**November 2025**
+- Renamed repository from `r_cfsr_profile` to `cfsr-profile` (kebab-case)
+- Updated all path references to new naming convention
+- Reorganized documentation into `docs/` structure
 
-# Reshape wide to long
-final_df <- data_clean %>%
-  pivot_longer(...) %>%
-  left_join(period_to_year, by = "period")
-```
-
-#### d. Enrich and Rank
-```r
-final_df <- final_df %>%
-  mutate(
-    state = ifelse(state == "District of Columbia", "D.C.", state),
-    indicator = "Foster care entry rate per 1,000",
-    period_meaningful = make_period_meaningful(period),  # "Oct '18 - Sep '19"
-    as_of_date = as_of_date,
-    source = ver$source,
-    profile_version = ver$profile_version
-  ) %>%
-  rank_states_by_performance()  # Ranks by most recent period only
-```
-
-#### e. Select Final Columns
-```r
-ind_entrate_df <- final_df %>%
-  select(state, indicator, period, period_meaningful,
-         denominator, numerator, performance, state_rank,
-         census_year, as_of_date, profile_version, source)
-```
-
-### 4. Combine and Save
-
-```r
-# Combine all indicators
-ind_data <- bind_rows(
-  ind_entrate_df, ind_reentry_df, ind_perm12_df,
-  ind_perm1223_df, ind_perm24_df, ind_ps_df
-)
-
-# Save to data/2025_02/processed/YYYY-MM-DD/
-# Filename: 2025_02 - cfsr profile - national - YYYY-MM-DD.csv
-save_to_folder_run(ind_data, "csv")
-```
-
-## Output Data Structure
-
-The final dataset contains these columns:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `state` | chr | State name (52 total: 50 states + D.C. + Puerto Rico) |
-| `indicator` | chr | Full indicator name |
-| `period` | chr | Raw period code (e.g., "19A19B") |
-| `period_meaningful` | chr | Human-readable period (e.g., "Oct '18 - Sep '19") |
-| `denominator` | num | Population denominator |
-| `numerator` | num | Event numerator |
-| `performance` | num | Performance metric (rate, percentage, or ratio) |
-| `state_rank` | int | State ranking (1-52, only for most recent period) |
-| `census_year` | int | Reference year (for entry rate only) |
-| `as_of_date` | Date | AFCARS/NCANDS data submission date |
-| `profile_version` | chr | Profile publication (e.g., "February 2025") |
-| `source` | chr | Full APA citation |
-
-## Key Functions Reference
-
-### From `generic_functions.R`
-
-#### `setup_folders(folder_date)`
-Creates standardized directory structure and sets global path variables.
-- **Input**: `"2025_02"` or `"2024_Q3"` or `"2024_CY"`
-- **Globals set**: `folder_raw`, `folder_processed`, `folder_output`, `folder_cumulative`, `reporting_period_start`, `reporting_period_end`
-
-#### `find_file(keyword, directory_type, file_type, sheet_name)`
-Locates and reads files from raw/processed folders.
-- **Example**: `find_file("National", "raw", "excel", "Entry rates")`
-- Returns data frame directly
-
-#### `save_to_folder_run(df, ext)`
-Saves output with standardized naming convention.
-- **Naming**: `[folder_date] - [commitment] - [commitment_description] - [run_date].[ext]`
-- Creates run-specific timestamped subfolder
-
-### From `functions_cfsr_profile.R`
-
-#### `cfsr_profile_version()`
-Extracts profile month/year from filename pattern:
-`"National - Supplemental Context Data - February 2025.xlsx"`
-- **Returns**: List with `profile_version`, `month`, `year`, `source` (APA citation)
-
-#### `cfsr_profile_extract_asof_date(data_df)`
-Parses AFCARS/NCANDS submission date from header row like:
-`"AFCARS and NCANDS submissions as of 08-15-2024"`
-- **Returns**: List with `as_of_date` (Date), `date_string`, `header_text`
-- **Side effect**: Sets global `as_of_date`
-
-#### `extract_relevant_rows(data_df)`
-Filters Excel data to:
-- Period metadata row (first row matching year/period pattern)
-- State rows (Alabama through Wyoming, 52 total)
-
-#### `make_period_meaningful(period)`
-Converts period codes to readable labels:
-- `"19A19B"` → `"Oct '18 - Sep '19"`
-- `"19B20A"` → `"Apr '19 - Mar '20"`
-
-#### `rank_states_by_performance(df)`
-Ranks states 1-52 based on performance in the most recent period only.
-- Handles missing values (`NA`) appropriately
-- Earlier periods receive `NA` for `state_rank`
-
-## Usage Instructions
-
-### Prerequisites
-
-1. Ensure `D:\repo_childmetrix\r_utilities\` is accessible
-2. Install required packages (automatically handled by `loader.R` via `pacman`)
-3. Obtain National Supplemental Context Data file from Children's Bureau
-
-### Running the Script
-
-1. **Copy raw data file** to `data/YYYY_MM/raw/` folder:
-   ```
-   National - Supplemental Context Data - February 2025.xlsx
-   ```
-
-2. **Update period in script** ([r_cfsr_profile.R:50](code/r_cfsr_profile.R#L50)):
-   ```r
-   my_setup <- setup_folders("2025_02")  # Change to current period
-   ```
-
-3. **Run the script**:
-   ```r
-   source("D:/repo_childmetrix/r_cfsr_profile/code/r_cfsr_profile.R")
-   ```
-
-4. **Output location**:
-   ```
-   data/2025_02/processed/YYYY-MM-DD/2025_02 - cfsr profile - national - YYYY-MM-DD.csv
-   ```
+**October 2025**
+- Added multi-state support (state_code parameter)
+- Refactored main script from 604→139 lines (77% reduction)
+- Added all 8 CFSR indicators (was 6)
+- Created interactive Shiny dashboard with overview page
+- Integrated with ChildMetrix platform
 
 ## Data Source
 
 **Children's Bureau, Administration for Children and Families**
 U.S. Department of Health & Human Services
-Administration on Children, Youth and Families
 
-Files provided biannually (February & August) containing:
-- AFCARS (Adoption and Foster Care Analysis and Reporting System) data
-- NCANDS (National Child Abuse and Neglect Data System) data
+Files provided biannually (February & August) containing AFCARS and NCANDS data.
 
-## Notes
+## Repository
 
-- **Data file format**: Each indicator occupies a separate worksheet with consistent structure:
-  - Row 1: Period labels (year or period codes like "19A19B")
-  - Subsequent rows: State data (52 rows: Alabama → Wyoming)
-  - Columns grouped as: denominator(s), numerator(s), performance metric(s)
+**GitHub**: [kurtheisler/cfsr-profile](https://github.com/kurtheisler/cfsr-profile)
 
-- **Period codes**:
-  - `YYAYYB` format: 12-month fiscal year Oct-Sep (e.g., "19A19B" = Oct 2018 - Sep 2019)
-  - `YYBZZA` format: 12-month fiscal year Apr-Mar (e.g., "19B20A" = Apr 2019 - Mar 2020)
+## Naming Conventions
 
-- **State ranking**: Only calculated for the most recent period to support current comparisons
-
-- **Naming convention**: D.C. (not "District of Columbia") for consistency with other outputs
-
-## Recent Refactoring (2025-10-09)
-
-The main processing script was recently refactored to eliminate code duplication:
-- **Before**: 604 lines with repeated code
-- **After**: 139 lines using reusable functions
-- **Reduction**: 77% fewer lines, 100% elimination of redundant code
-
-### New Functions Added
-- `process_standard_indicator()` - Handles 5 of 6 indicators
-- `process_entry_rate_indicator()` - Handles Entry Rate (special case)
-
-### Documentation
-- **[REFACTORING_ANALYSIS.md](REFACTORING_ANALYSIS.md)** - Detailed analysis of refactoring opportunities
-- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - What was changed and why
-- **[FUNCTION_USAGE_GUIDE.md](FUNCTION_USAGE_GUIDE.md)** - Quick reference for using new functions
-
-### Benefits
-- ✅ Easier to add new indicators (6 lines instead of 80)
-- ✅ Single source of truth for processing logic
-- ✅ Fixed potential metadata inconsistency bug
-- ✅ Metadata now extracted once instead of 6 times
-
-## Author
-
-Joy (Purpose noted in script header: [r_cfsr_profile.R:4](code/r_cfsr_profile.R#L4))
-
-## Related Projects
-
-This project shares utilities with other Child Metrics projects:
-- MDCPS project (Maryland child welfare data)
-- Other state/national child welfare analyses
-
-All share the centralized `r_utilities` folder for consistency and maintainability.
+Following ChildMetrix standards:
+- **Repository folders**: kebab-case (`cfsr-profile`)
+- **R scripts**: snake_case (`cfsr_profile.R`)
+- **Project files**: match folder name (`cfsr-profile.Rproj`)
