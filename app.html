@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ChildMetrix — Maryland (Staging)</title>
+  <title id="pageTitle">ChildMetrix</title>
 
   <!-- Tailwind (use your deployed Tailwind or swap CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -72,10 +72,10 @@
 
         <!-- Branding -->
         <div class="flex items-center gap-3">
-          <img src="../_assets/logo.png" alt="ChildMetrix" class="h-8 w-auto" />
+          <img id="stateLogo" src="_assets/logo.png" alt="ChildMetrix" class="h-8 w-auto" />
           <div class="flex items-center gap-2">
-            <span class="text-sm font-medium px-2 py-0.5 bg-cm.gray">Maryland</span>
-            <span class="text-xs font-medium px-2 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-200">Staging</span>
+            <span id="stateName" class="text-sm font-medium px-2 py-0.5 bg-cm.gray">Loading...</span>
+            <span id="stateEnvironment" class="text-xs font-medium px-2 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-200">Staging</span>
           </div>
         </div>
       </div>
@@ -157,13 +157,13 @@
                 </a>
               </li>
               <li>
-                <a href="#/cfsr" data-target="cfsr/performance/index_auto.html" class="px-2 py-2 hover:bg-white navlink">
+                <a href="#/cfsr" data-target="cfsr/performance/state_vs_national.html" class="px-2 py-2 hover:bg-white navlink">
                   <!-- checklist -->
                   <svg class="navicon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M9 7h9"></path><path d="M9 12h9"></path><path d="M9 17h9"></path>
                     <path d="M5 7h.01"></path><path d="M5 12h.01"></path><path d="M5 17h.01"></path>
                   </svg>
-                  <span class="label">CFSR Data Profile</span>
+                  <span class="label">CFSR Profile</span>
                 </a>
               </li>
             </ul>
@@ -182,10 +182,19 @@
             <a href="#" id="secondaryNotes" class="px-3 py-1.5 text-sm hover:bg-slate-50 rounded">Notes</a>
           </div>
 
-          <!-- Period selector (shown only for Performance) -->
-          <div id="periodSelector" style="display: none;">
+        </nav>
+
+        <!-- CFSR Tertiary navigation (shown only when CFSR Performance is active) -->
+        <nav id="cfsrTertiaryNav" class="flex items-center justify-between px-4 py-2 border-b bg-slate-50" style="display: none;">
+          <div class="flex items-center gap-1">
+            <a href="#" id="tertiaryStateVsNational" class="px-3 py-1.5 text-sm hover:bg-white rounded bg-white font-semibold" title="Based on your state's CFSR 4 Data Profile PDF file from the Children's Bureau.">State Performance vs. National Standards</a>
+            <a href="#" id="tertiaryStateByState" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on the National - Supplemental Context Data Excel file from the Children's Bureau.">State-by-State Performance</a>
+            <a href="#" id="tertiaryCountyByCounty" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on your state's Supplemental Context Data Excel file from the Children's Bureau.">County-by-County Performance</a>
+          </div>
+          <!-- Period selector on the right -->
+          <div>
             <label class="text-sm inline-flex items-center gap-2">
-              <span>CFSR Profile Period:</span>
+              <span>CFSR Profile:</span>
               <select id="cfsrPeriodSelect" class="border px-2 py-1 text-sm rounded">
                 <option value="2025_02" selected>February 2025</option>
                 <option value="2024_08">August 2024</option>
@@ -195,27 +204,76 @@
           </div>
         </nav>
 
-        <!-- CFSR Tertiary navigation (shown only when CFSR Performance is active) -->
-        <nav id="cfsrTertiaryNav" class="flex items-center px-4 py-2 border-b bg-slate-50" style="display: none;">
-          <div class="flex items-center gap-1">
-            <a href="#" id="tertiaryStateVsNational" class="px-3 py-1.5 text-sm hover:bg-white rounded">State Performance vs. National Standards</a>
-            <a href="#" id="tertiaryStateByState" class="px-3 py-1.5 text-sm hover:bg-white rounded bg-white font-semibold">State-by-State Performance</a>
-            <a href="#" id="tertiaryCountyByCounty" class="px-3 py-1.5 text-sm hover:bg-white rounded">County-by-County Performance</a>
-          </div>
-        </nav>
-
         <div class="flex-1 overflow-hidden">
           <iframe id="reportFrame"
                   title="Report"
-                  src="home/index.html"
+                  src=""
                   class="w-full h-full border-0"></iframe>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- Behavior -->
+  <!-- Configuration and Behavior -->
   <script>
+    // --- Load state configuration ---
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stateParam = urlParams.get('state') || 'md'; // Default to MD
+      const stateCode = stateParam.toLowerCase();
+      console.log('[CM] State parameter:', stateParam, '→ stateCode:', stateCode);
+
+      // State configurations (embedded to avoid CORS issues with file:// protocol)
+      const STATE_CONFIGS = {
+        'md': {
+          name: 'Maryland',
+          code: 'MD',
+          environment: 'Staging',
+          logo: '_assets/logo.png',
+          primaryColor: '#1C7ED6',
+          defaultRoute: 'home'
+        },
+        'ky': {
+          name: 'Kentucky',
+          code: 'KY',
+          environment: 'Staging',
+          logo: '_assets/logo.png',
+          primaryColor: '#1C7ED6',
+          defaultRoute: 'home'
+        }
+      };
+
+      const config = STATE_CONFIGS[stateCode];
+      if (config) {
+          // Apply configuration to page
+          document.getElementById('pageTitle').textContent = `ChildMetrix — ${config.name} (${config.environment})`;
+          document.getElementById('stateName').textContent = config.name;
+          document.getElementById('stateEnvironment').textContent = config.environment;
+          document.getElementById('stateLogo').src = config.logo;
+
+          // Store state code globally for navigation
+          window.CM_STATE = stateCode;
+          console.log('[CM] Config loaded for:', stateCode, config);
+          window.CM_CONFIG = config;
+
+          // Set initial iframe src to default route
+          const frame = document.getElementById('reportFrame');
+          frame.src = `states/${stateCode}/${config.defaultRoute}/index.html`;
+      } else {
+        console.error('State not found:', stateCode);
+        // Fallback to MD if state not configured
+        const fallbackConfig = STATE_CONFIGS['md'];
+        document.getElementById('pageTitle').textContent = `ChildMetrix — ${fallbackConfig.name} (${fallbackConfig.environment})`;
+        document.getElementById('stateName').textContent = fallbackConfig.name;
+        document.getElementById('stateEnvironment').textContent = fallbackConfig.environment;
+        document.getElementById('stateLogo').src = fallbackConfig.logo;
+        window.CM_STATE = 'md';
+        window.CM_CONFIG = fallbackConfig;
+        const frame = document.getElementById('reportFrame');
+        frame.src = `states/md/${fallbackConfig.defaultRoute}/index.html`;
+      }
+    })();
+
     // --- Sidebar expand/collapse with chevron + tooltips ---
     (function() {
       const sidebar = document.getElementById('sidebar');
@@ -306,7 +364,6 @@
     (function() {
       const navList = document.getElementById('navList');
       const frame   = document.getElementById('reportFrame');
-      const periodSelector = document.getElementById('periodSelector');
       const periodSelect = document.getElementById('cfsrPeriodSelect');
       const secondaryPerformance = document.getElementById('secondaryPerformance');
       const secondaryPresentations = document.getElementById('secondaryPresentations');
@@ -319,7 +376,7 @@
 
       let currentCategory = null; // Track current report category (cfsr, cps, etc.)
       let currentSubsection = 'performance'; // Track subsection within CFSR
-      let currentTertiary = 'state_by_state'; // Track tertiary selection within CFSR Performance
+      let currentTertiary = 'state_vs_national'; // Track tertiary selection within CFSR Performance
 
       function setActive(hash) {
         navList.querySelectorAll('a').forEach(a => {
@@ -362,16 +419,15 @@
 
         // Show/hide period selector and tertiary nav based on category and subsection
         if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
-          periodSelector.style.display = 'block';
           cfsrTertiaryNav.style.display = 'flex';
           setTertiaryActive(currentTertiary);
         } else {
-          periodSelector.style.display = 'none';
           cfsrTertiaryNav.style.display = 'none';
         }
 
-        const base = a.dataset.target || 'in_home/current/index.html';
-        frame.src = base;
+        const base = a.dataset.target || 'home/index.html';
+        const stateCode = window.CM_STATE || 'md';
+        frame.src = `states/${stateCode}/${base}`;
 
         // Update secondary menu active state
         if (currentCategory === 'cfsr') {
@@ -386,8 +442,8 @@
           currentSubsection = 'performance';
           currentTertiary = 'state_by_state';
           const period = periodSelect.value;
-          frame.src = `cfsr/performance/index_auto.html?profile=${period}`;
-          periodSelector.style.display = 'block';
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/performance/index_auto.html?profile=${period}`;
           cfsrTertiaryNav.style.display = 'flex';
           setSecondaryActive('performance');
           setTertiaryActive(currentTertiary);
@@ -398,8 +454,8 @@
         e.preventDefault();
         if (currentCategory === 'cfsr') {
           currentSubsection = 'presentations';
-          frame.src = 'cfsr/presentations/index.html';
-          periodSelector.style.display = 'none';
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/presentations/index.html`;
 		  cfsrTertiaryNav.style.display = 'none';
           setSecondaryActive('presentations');
         }
@@ -409,8 +465,8 @@
         e.preventDefault();
         if (currentCategory === 'cfsr') {
           currentSubsection = 'data_dictionary';
-          frame.src = 'cfsr/data_dictionary/index.html';
-          periodSelector.style.display = 'none';
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/data_dictionary/index.html`;
 		  cfsrTertiaryNav.style.display = 'none';
           setSecondaryActive('data_dictionary');
         }
@@ -420,8 +476,8 @@
         e.preventDefault();
         if (currentCategory === 'cfsr') {
           currentSubsection = 'notes';
-          frame.src = 'cfsr/notes/index.html';
-          periodSelector.style.display = 'none';
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/notes/index.html`;
 		  cfsrTertiaryNav.style.display = 'none';
           setSecondaryActive('notes');
         }
@@ -430,17 +486,19 @@
       // Period selector change
       periodSelect.addEventListener('change', () => {
         const period = periodSelect.value;
+        const stateCode = window.CM_STATE || 'md';
         // Update the Shiny dashboard with new profile parameter
-        frame.src = `cfsr/performance/index_auto.html?profile=${period}`;
+        frame.src = `states/${stateCode}/cfsr/performance/index_auto.html?profile=${period}`;
       });
-	  
+
 	  // Tertiary navigation click handlers
       tertiaryStateVsNational.addEventListener('click', (e) => {
         e.preventDefault();
         if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
           currentTertiary = 'state_vs_national';
           setTertiaryActive(currentTertiary);
-          frame.src = 'cfsr/performance/state_vs_national.html';
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html`;
         }
       });
 
@@ -450,7 +508,8 @@
           currentTertiary = 'state_by_state';
           setTertiaryActive(currentTertiary);
           const period = periodSelect.value;
-          frame.src = `cfsr/performance/index_auto.html?profile=${period}`;
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/performance/index_auto.html?profile=${period}`;
         }
       });
 
@@ -459,12 +518,20 @@
         if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
           currentTertiary = 'county_by_county';
           setTertiaryActive(currentTertiary);
-          frame.src = 'cfsr/performance/county_by_county.html';
+          const stateCode = window.CM_STATE || 'md';
+          frame.src = `states/${stateCode}/cfsr/performance/county_by_county.html`;
         }
-      });	  
+      });
 
       window.addEventListener('hashchange', navigate);
-      navigate();
+
+      // Wait for config to load before navigating
+      const checkConfigLoaded = setInterval(() => {
+        if (window.CM_STATE) {
+          clearInterval(checkConfigLoaded);
+          navigate();
+        }
+      }, 50);
     })();
 
     // --- Auto-resize iframe to embedded report height (same-origin) ---

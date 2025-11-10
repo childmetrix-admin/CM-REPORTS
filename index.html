@@ -125,13 +125,6 @@
   // Year stamp
   document.getElementById('y').textContent = new Date().getFullYear();
 
-  // Simple per-state routes (add more as you create them)
-  const STATE_ROUTES = {
-    MD: 'states/md/index.html',    // Maryland staging hub
-    KY: 'states/ky/index.html',    // Kentucky hub
-    // add others here as you bring them online
-  };
-
   // Handle the form without validating username/password
   document.getElementById('cmx-form').addEventListener('submit', function (e) {
     e.preventDefault(); // always prevent real form submit
@@ -142,8 +135,8 @@
       return;
     }
 
-    // Prefer explicit route if defined, else default to states/{state-lower}/index.html
-    const target = STATE_ROUTES[state] || `states/${state.toLowerCase()}/index.html`;
+    // Route to shared app.html with state parameter
+    const target = `app.html?state=${state.toLowerCase()}`;
     window.location.href = target;
   });
 </script>

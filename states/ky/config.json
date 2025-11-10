@@ -1,0 +1,8 @@
+{
+  "name": "Kentucky",
+  "code": "KY",
+  "environment": "Staging",
+  "logo": "../_assets/logo.png",
+  "primaryColor": "#1C7ED6",
+  "defaultRoute": "home"
+}

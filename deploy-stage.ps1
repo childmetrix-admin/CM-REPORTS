@@ -20,6 +20,7 @@ if ($MdOnly) {
   scp -r .\_assets    "$TargetRoot"
   scp -r .\scripts    "$TargetRoot"
   scp -r .\states     "$TargetRoot"
+  scp    .\app.html   "$TargetRoot"
   scp    .\index.html "$TargetRoot"
   scp    .\style.css  "$TargetRoot"
 }
