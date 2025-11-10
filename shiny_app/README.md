@@ -31,7 +31,7 @@ source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
 # This automatically runs prepare_app_data.R which creates:
 # - data/app_data/md/cfsr_indicators_2024_08.rds
 # - data/app_data/md/cfsr_indicators_latest.rds
-# - cm-reports/md/cfsr/performance/app/data/md_cfsr_indicators_latest.rds (PROD)
+# - cm-reports/states/md/cfsr/performance/app/data/md_cfsr_indicators_latest.rds (PROD)
 ```
 
 ### Running the Dashboard
@@ -99,7 +99,7 @@ shiny_app/
 
 4. Dashboard Data Sources
    DEV:  data/app_data/md/cfsr_indicators_latest.rds
-   PROD: D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/data/md_cfsr_indicators_latest.rds
+   PROD: D:/repo_childmetrix/cm-reports/states/md/cfsr/performance/app/data/md_cfsr_indicators_latest.rds
 
 5. Shiny App (app.R)
    Loads RDS → Renders dashboard
@@ -142,21 +142,21 @@ shiny_app/
 
 The dashboard integrates into the **cm-reports** platform at:
 ```
-D:/repo_childmetrix/cm-reports/md/cfsr/performance/
+D:/repo_childmetrix/cm-reports/states/md/cfsr/performance/
 ```
 
 **Automatic Deployment:**
 
 When you run `cfsr_profile.R` → `prepare_app_data.R`, it automatically saves to both locations:
 - **DEV:** `cfsr-profile/data/app_data/md/cfsr_indicators_latest.rds`
-- **PROD:** `cm-reports/md/cfsr/performance/app/data/md_cfsr_indicators_latest.rds`
+- **PROD:** `cm-reports/states/md/cfsr/performance/app/data/md_cfsr_indicators_latest.rds`
 
 **Integration:**
 - Shiny app runs on port 3838
-- Wrapper HTML (`cm-reports/md/cfsr/performance/index_static.html`) embeds app in iframe
+- Wrapper HTML (`cm-reports/states/md/cfsr/performance/index_static.html`) embeds app in iframe
 - Platform navigation passes state parameter to dashboard
 
-See [../../cm-reports/md/cfsr/performance/README.md](../../cm-reports/md/cfsr/performance/README.md) for platform integration details.
+See [../../cm-reports/states/md/cfsr/performance/README.md](../../cm-reports/states/md/cfsr/performance/README.md) for platform integration details.
 
 ---
 
@@ -303,7 +303,7 @@ All packages are automatically loaded via `global.R`.
 - **[../docs/WORKFLOW.md](../docs/WORKFLOW.md)** - Detailed processing workflow
 - **[../docs/FUNCTIONS.md](../docs/FUNCTIONS.md)** - Function reference guide
 - **[../docs/CHANGELOG.md](../docs/CHANGELOG.md)** - Project history and changes
-- **[../../cm-reports/md/cfsr/performance/README.md](../../cm-reports/md/cfsr/performance/README.md)** - ChildMetrix platform integration
+- **[../../cm-reports/states/md/cfsr/performance/README.md](../../cm-reports/states/md/cfsr/performance/README.md)** - ChildMetrix platform integration
 
 ---
 

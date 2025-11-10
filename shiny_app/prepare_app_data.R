@@ -169,7 +169,7 @@ saveRDS(app_data, output_file_latest)
 message("✓ Saved to DEV (latest): ", output_file_latest)
 
 # 3. PROD: Period-specific file with state prefix
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/data"
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/states/md/cfsr/performance/app/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }

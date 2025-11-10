@@ -122,7 +122,7 @@ Processed data feeds into the **cm-reports** platform:
 
 1. **Data Pipeline**:
    - Dev: `cfsr-profile/data/app_data/{state}/cfsr_indicators_latest.rds`
-   - Prod: `cm-reports/md/cfsr/performance/app/data/{state}_cfsr_indicators_latest.rds`
+   - Prod: `cm-reports/states/md/cfsr/performance/app/data/{state}_cfsr_indicators_latest.rds`
 
 2. **Shiny Dashboard**:
    - Interactive state-by-state comparisons
@@ -130,7 +130,7 @@ Processed data feeds into the **cm-reports** platform:
    - Detailed indicator pages
    - Integrated into ChildMetrix reporting platform
 
-See [cm-reports/md/cfsr/performance/README.md](../cm-reports/md/cfsr/performance/README.md) for deployment details.
+See [cm-reports/states/md/cfsr/performance/README.md](../cm-reports/states/md/cfsr/performance/README.md) for deployment details.
 
 ## Next Step: Interactive Dashboard
 
