@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kentucky Upload Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .drop-zone {
+      border: 2px dashed #cbd5e1;
+      transition: all 0.3s ease;
+    }
+    .drop-zone.dragover {
+      border-color: #4472C4;
+      background-color: #eff6ff;
+    }
+    .file-item {
+      transition: all 0.2s ease;
+    }
+    .file-item:hover {
+      background-color: #f8fafc;
+    }
+  </style>
+</head>
+<body class="bg-white pl-6 pr-8 py-8">
+  <div class="max-w-4xl mr-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2 text-center">Upload Files</h1>
+    <p class="text-sm text-gray-600 mb-6 text-center">Upload data files, reports, and other assets for processing</p>
+
+    <!-- Upload Area -->
+    <div id="dropZone" class="drop-zone rounded-lg p-12 text-center mb-6 cursor-pointer">
+      <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <p class="text-base text-gray-700 mb-2">
+        <span class="font-semibold text-gray-900">Click to upload</span> or drag and drop
+      </p>
+      <p class="text-sm text-gray-500">Excel, CSV, PDF, or other data files</p>
+      <input type="file" id="fileInput" class="hidden" multiple>
+    </div>
+
+    <!-- File List -->
+    <div id="fileList" class="hidden mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Selected Files</h2>
+      <div id="fileItems" class="space-y-2"></div>
+    </div>
+
+    <!-- Upload Button -->
+    <div id="uploadSection" class="hidden">
+      <button id="uploadBtn" class="w-full bg-[#4472C4] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#365a9c] transition-colors">
+        Upload Files
+      </button>
+      <button id="clearBtn" class="w-full mt-2 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+        Clear All
+      </button>
+    </div>
+
+    <!-- Upload Progress -->
+    <div id="progressSection" class="hidden mt-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-semibold text-blue-900 mb-2">Uploading...</h3>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div id="progressBar" class="bg-[#4472C4] h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="progressText" class="text-sm text-blue-800 mt-2">0% complete</p>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successSection" class="hidden mt-6">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 class="font-semibold text-green-900 mb-1">Upload Complete!</h3>
+        <p class="text-sm text-green-800">Your files have been uploaded successfully.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const fileItems = document.getElementById('fileItems');
+    const uploadSection = document.getElementById('uploadSection');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const progressSection = document.getElementById('progressSection');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const successSection = document.getElementById('successSection');
+
+    let selectedFiles = [];
+
+    // Click to upload
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+      selectedFiles = Array.from(files);
+      displayFiles();
+    }
+
+    function displayFiles() {
+      if (selectedFiles.length === 0) {
+        fileList.classList.add('hidden');
+        uploadSection.classList.add('hidden');
+        return;
+      }
+
+      fileList.classList.remove('hidden');
+      uploadSection.classList.remove('hidden');
+      successSection.classList.add('hidden');
+
+      fileItems.innerHTML = selectedFiles.map((file, index) => `
+        <div class="file-item flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-gray-900">${file.name}</p>
+              <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+            </div>
+          </div>
+          <button onclick="removeFile(${index})" class="text-gray-400 hover:text-red-500 transition-colors">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    window.removeFile = function(index) {
+      selectedFiles.splice(index, 1);
+      displayFiles();
+    }
+
+    clearBtn.addEventListener('click', () => {
+      selectedFiles = [];
+      fileInput.value = '';
+      displayFiles();
+    });
+
+    uploadBtn.addEventListener('click', () => {
+      // Simulate upload
+      uploadSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        progressText.textContent = progress + '% complete';
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            progressSection.classList.add('hidden');
+            successSection.classList.remove('hidden');
+            fileList.classList.add('hidden');
+            selectedFiles = [];
+            fileInput.value = '';
+
+            // Reset after 3 seconds
+            setTimeout(() => {
+              successSection.classList.add('hidden');
+              progressBar.style.width = '0%';
+              progressText.textContent = '0% complete';
+            }, 3000);
+          }, 500);
+        }
+      }, 200);
+    });
+  </script>
+</body>
+</html>
