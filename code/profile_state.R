@@ -17,6 +17,9 @@
 # INPUT: State-specific Excel files with county/regional breakdowns
 # OUTPUT: Processed CSV with state-level data by indicator, period, and geography
 
+# IMPORTANT: This script expects state_code and profile_period to be set
+# by the orchestrator (run_profile.R) or manually before sourcing.
+
 #####################################
 # TO DO ----
 #####################################
@@ -31,6 +34,11 @@
 #####################################
 
 # Load packages and generic functions
+if (!exists("state_code") || !exists("profile_period")) {
+  message("WARNING: state_code and profile_period not set.")
+  message("Either run via run_profile.R or set manually before sourcing.")
+}
+
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
 # Load CFSR profile functions (state-level data)
@@ -39,16 +47,6 @@ source("D:/repo_childmetrix/utilities-core/loader.R")
 
 ########################################
 # CONFIGURATION ----
-########################################
-
-# IMPORTANT: Set the state and profile period here
-# state_code: lowercase 2-letter state code (e.g., "md", "ky")
-# profile_period: format "YYYY_MM" (e.g., "2025_02", "2025_08")
-state_code <- "md"
-profile_period <- "2025_02"
-
-########################################
-# FOLDER PATHS & DIRECTORY STRUCTURE ----
 ########################################
 
 # Establish current period and set up folders and global variables

@@ -12,43 +12,43 @@ The data files are provided to states approximately every 6 months (typically Fe
 
 ## Quick Start
 
-### Processing National Data
+### Recommended: Using the Orchestrator (Easiest)
 
 ```r
-# 1. Upload National Excel file to ShareFile:
-#    S:/Shared Folders/{state}/cfsr/uploads/{PERIOD}/
-#    Example: S:/Shared Folders/md/cfsr/uploads/2025_02/National - Supplemental Context Data - February 2025.xlsx
+# Load the orchestrator
+source("D:/repo_childmetrix/cfsr-profile/code/run_profile.R")
 
-# 2. Set state and period in profile_national.R:
-state_code <- "md"          # Lowercase state code
-profile_period <- "2025_02"
+# Workflow 1: Specific state + period (all sources)
+run_profile(state = "md", period = "2025_02")
 
-# 3. Run the processing script:
-source("D:/repo_childmetrix/cfsr-profile/code/profile_national.R")
+# Workflow 2: All periods for a state
+run_profile(state = "md")
 
-# Output: data/processed/{state}/{period}/{date}/national/
+# Workflow 3: All states for a period
+run_profile(period = "2025_02")
+
+# Workflow 4: Specific source only
+run_profile(state = "md", period = "2025_02", source = "national")
+
+# See what's available
+print_available_data()
 ```
 
-### Processing RSP Data
+### Advanced: Running Individual Scripts
+
+If you need to run a single source script directly:
 
 ```r
-# 1. Export state PDF to text using Adobe Acrobat (File > Export To > Text)
-#    Save as: S:/Shared Folders/{state}/cfsr/uploads/{PERIOD}/adobe_to_accessible_text.txt
-
-# 2. Set state and period in profile_rsp.R:
+# Set configuration manually
 state_code <- "md"
 profile_period <- "2025_02"
 
-# 3. Run the processing script:
-source("D:/repo_childmetrix/cfsr-profile/code/profile_rsp.R")
+# Run specific script
+source("D:/repo_childmetrix/cfsr-profile/code/profile_national.R")  # National
+source("D:/repo_childmetrix/cfsr-profile/code/profile_rsp.R")       # RSP
+source("D:/repo_childmetrix/cfsr-profile/code/profile_state.R")     # State-level
 
-# Output: data/processed/{state}/{period}/{date}/rsp/
-```
-
-### Processing State-Level Data
-
-```r
-# (Under development - template available in profile_state.R)
+# Output: data/processed/{state}/{period}/{date}/{source}/
 ```
 
 ## Project Structure
@@ -56,6 +56,8 @@ source("D:/repo_childmetrix/cfsr-profile/code/profile_rsp.R")
 ```
 cfsr-profile/
 ├── code/
+│   ├── config.R                       # Configuration and discovery
+│   ├── run_profile.R                  # Main orchestrator (entry point)
 │   ├── functions/                  # CFSR-specific processing functions
 │   │   ├── functions_cfsr_profile_nat.R  # National data functions
 │   │   ├── functions_cfsr_profile_rsp.R  # RSP data functions

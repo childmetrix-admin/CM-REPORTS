@@ -1,64 +1,45 @@
-# Title:          Process data from
-                  # National - Supplemental Context Date - [Month YYYY] .xlsx
+# Title:          CFSR Profile - National Data Processing
+#                 Process National Supplemental Context Data
 
-# Purpose:        Joy
+# Purpose:        Extract and process national-level CFSR data showing
+#                 state-by-state performance on all indicators
 
 #####################################
 # NOTES ----
 #####################################
 
-# This file is provided to every state about every 6 months (usually February
-# & August). It show state-by-state performance and trends on the CFSR
-# statewide data indicators and entry rates. Also shows national performance by
-# age, race/ethnicity.
+# This script processes the National Supplemental Context Data file provided
+# to states every 6 months (February & August). It shows state-by-state
+# performance and trends on the CFSR statewide data indicators and entry rates.
+# Also shows national performance by age, race/ethnicity.
 
-#####################################
-# TODO ----
-#####################################
-
-
-#####################################
-# OTHER DEPENDENCIES (e.g., files)
-#####################################
-
-# 1. Manually copy to raw folder:
-# - National - Supplemental Context Date - [Month YYYY] .xlsx
+# IMPORTANT: This script expects state_code and profile_period to be set
+# by the orchestrator (run_profile.R) or manually before sourcing.
 
 #####################################
 # LIBRARIES & UTILITIES ----
 #####################################
 
 # Load packages and generic functions
+if (!exists("state_code") || !exists("profile_period")) {
+  message("WARNING: state_code and profile_period not set.")
+  message("Either run via run_profile.R or set manually before sourcing.")
+}
+
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
 # Load CFSR profile functions (national data)
 source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_nat.R")
 
 ########################################
-# FOLDER PATHS & DIRECTORY STRUCTURE ----
+# CONFIGURATION ----
 ########################################
 
-# Base data folder
-base_data_dir <- "D:/repo_childmetrix/cfsr-profile/data"
-
-# File name elements (e.g., MD_2024_01 - [commitment] - [commitment_description] - 2024-02-15.csv")
-# e.g., save_to_folder_run(claiming_df)
-# Will be set after state_code and profile_period are defined
-# commitment <- "cfsr profile"
-# commitment_description <- "national"
-
-# IMPORTANT: Set the state and profile period here
-# state_code: 2-letter state code (e.g., "MD", "KY")
-# profile_period: format "YYYY_MM" (e.g., "2025_02", "2025_08")
-state_code <- "MD"
-profile_period <- "2024_08"
-
 # Establish current period and set up folders and global variables
-# Uses new CFSR-specific setup for multi-state support
+# Uses CFSR-specific setup for multi-state support
 my_setup <- setup_cfsr_folders(profile_period, state_code)
 
 # Set file name elements for save_to_folder_run()
-# Include state code in filename for multi-state support
 folder_date <- paste0(state_code, "_", profile_period)
 commitment <- "cfsr profile"
 commitment_description <- "national"
