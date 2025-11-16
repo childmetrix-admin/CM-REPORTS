@@ -2,26 +2,53 @@
 
 ## Overview
 
-This R project processes **National Supplemental Context Data** files from the Children's Bureau that track state-by-state performance on **Child and Family Services Review (CFSR)** statewide data indicators. The data files are provided to states approximately every 6 months (typically February and August).
+This R project processes **CFSR (Child and Family Services Review)** data from three complementary sources:
+
+1. **National Data** - National Supplemental Context Data showing state-by-state performance on all CFSR statewide data indicators
+2. **Risk-Standardized Performance (RSP)** - State-specific PDFs showing risk-adjusted performance metrics
+3. **State-Level Data** - Geographic breakdowns (county/regional) within the state
+
+The data files are provided to states approximately every 6 months (typically February and August) by the Children's Bureau, Administration for Children and Families.
 
 ## Quick Start
 
+### Processing National Data
+
 ```r
-# 1. Upload raw data file to ShareFile:
+# 1. Upload National Excel file to ShareFile:
 #    S:/Shared Folders/{state}/cfsr/uploads/{PERIOD}/
 #    Example: S:/Shared Folders/md/cfsr/uploads/2025_02/National - Supplemental Context Data - February 2025.xlsx
 
-# 2. Set state and period in cfsr_profile.R:
+# 2. Set state and period in profile_national.R:
 state_code <- "md"          # Lowercase state code
 profile_period <- "2025_02"
 
 # 3. Run the processing script:
-source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
+source("D:/repo_childmetrix/cfsr-profile/code/profile_national.R")
 
-# 4. Script automatically chains to prepare_app_data.R
-#    - Reads from ShareFile (S:\)
-#    - Saves processed CSV to: data/processed/{state}/{period}/{date}/
-#    - Generates RDS files for Shiny app (dev and prod locations)
+# Output: data/processed/{state}/{period}/{date}/national/
+```
+
+### Processing RSP Data
+
+```r
+# 1. Export state PDF to text using Adobe Acrobat (File > Export To > Text)
+#    Save as: S:/Shared Folders/{state}/cfsr/uploads/{PERIOD}/adobe_to_accessible_text.txt
+
+# 2. Set state and period in profile_rsp.R:
+state_code <- "md"
+profile_period <- "2025_02"
+
+# 3. Run the processing script:
+source("D:/repo_childmetrix/cfsr-profile/code/profile_rsp.R")
+
+# Output: data/processed/{state}/{period}/{date}/rsp/
+```
+
+### Processing State-Level Data
+
+```r
+# (Under development - template available in profile_state.R)
 ```
 
 ## Project Structure
@@ -29,22 +56,34 @@ source("D:/repo_childmetrix/cfsr-profile/code/cfsr_profile.R")
 ```
 cfsr-profile/
 ├── code/
-│   ├── cfsr_profile.R              # Main processing script
+│   ├── profile_national.R          # National Excel data processing
+│   ├── profile_rsp.R               # Risk-Standardized Performance (PDF) processing
+│   ├── profile_state.R             # State-level (county/regional) processing (planned)
 │   ├── organize_cfsr_uploads.R     # File organization utilities
 │   └── process_cfsr_batch.R        # Batch processing
 │
 ├── data/
 │   ├── processed/                  # Generated CSV outputs
-│   │   └── {state}/{period}/{date}/ # e.g., processed/md/2025_02/2025-11-09/
-│   └── app_data/                   # State-specific RDS files for Shiny app
+│   │   └── {state}/{period}/{date}/
+│   │       ├── national/           # National data CSVs
+│   │       ├── rsp/                # RSP data CSVs
+│   │       └── state/              # State-level data CSVs (planned)
+│   └── app_data/                   # State-specific RDS files for Shiny apps
 │       └── {state}/                # e.g., app_data/md/
 │
-├── shiny_app/                      # Interactive dashboard
-│   ├── app.R                       # Shiny application
-│   ├── global.R                    # Global data loading
-│   ├── prepare_app_data.R          # Data preparation for app
-│   ├── modules/                    # Reusable UI modules
-│   └── functions/                  # Helper functions
+├── shiny_app/                      # Interactive dashboards
+│   ├── national/                   # National data dashboard (current)
+│   │   ├── app.R                   # Shiny application
+│   │   ├── global.R                # Global data loading
+│   │   ├── prepare_app_data.R      # Data preparation
+│   │   ├── modules/                # Reusable UI modules
+│   │   └── functions/              # Helper functions
+│   ├── rsp/                        # RSP dashboard (planned)
+│   │   ├── app/                    # Future Shiny app
+│   │   └── README.md               # RSP dashboard documentation
+│   └── state/                      # State-level dashboard (planned)
+│       ├── app/                    # Future Shiny app
+│       └── README.md               # State dashboard documentation
 │
 ├── docs/                           # Documentation
 │   ├── WORKFLOW.md                 # Detailed workflow guide
@@ -72,6 +111,29 @@ This project depends on centralized R utilities:
 ### R Packages
 
 Automatically loaded via utilities-core (40+ tidyverse and data science packages)
+
+
+## Data Sources
+
+This project processes three complementary CFSR data sources:
+
+### 1. National Data (profile_national.R)
+- **Source**: National Supplemental Context Data Excel file
+- **Content**: State-by-state performance on all 8 CFSR indicators
+- **Format**: Multi-sheet Excel workbook with state rankings
+- **Status**: Fully implemented with Shiny dashboard
+
+### 2. Risk-Standardized Performance - RSP (profile_rsp.R)
+- **Source**: State-specific CFSR Data Profile PDFs (Adobe text export)
+- **Content**: Risk-adjusted performance metrics accounting for state-specific factors
+- **Format**: PDF exported to accessible text file
+- **Status**: Data extraction implemented, dashboard planned
+
+### 3. State-Level Data (profile_state.R)
+- **Source**: State-provided Excel files with geographic breakdowns
+- **Content**: County/regional performance within the state
+- **Format**: Excel files with sub-state geographic data
+- **Status**: Template created, implementation planned
 
 ## Data Processing
 
@@ -148,7 +210,16 @@ After processing completes, the data is ready for the Shiny dashboard. See **[sh
 
 ## Recent Changes
 
-**November 2025**
+**November 2025 (Mid-month reorganization)**
+- **Three-source architecture**: Reorganized to handle National, RSP, and State-level data
+  - Renamed `cfsr_profile.R` → `profile_national.R`
+  - Migrated `cfsr-profile-pdf` code → `profile_rsp.R`
+  - Created `profile_state.R` template for future state-level processing
+- **Data folder structure**: Added source-specific subdirectories (national/, rsp/, state/)
+- **Shiny app structure**: Created separate dashboard folders for each data source
+- **Documentation**: Updated README to reflect multi-source architecture
+
+**November 2025 (Early month)**
 - **ShareFile integration**: Raw data now read directly from `S:/Shared Folders/{state}/cfsr/uploads/`
 - **Lowercase state codes**: All folder names use lowercase (md, ky, etc.) for consistency
 - **Simplified data structure**: Removed local `uploads/` folder, removed legacy `shiny_app/data/`

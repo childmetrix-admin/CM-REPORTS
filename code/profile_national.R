@@ -165,9 +165,9 @@ ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
                       ind_perm1223_df, ind_perm24_df, ind_ps_df,
                       ind_maltreatment_df, ind_recurrence_df)
 
-# Create run folder in new processed structure: data/processed/STATE/PERIOD/YYYY-MM-DD/
+# Create run folder in new processed structure: data/processed/STATE/PERIOD/YYYY-MM-DD/national/
 run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"))
+folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "national")
 if (!dir.exists(folder_run)) {
   dir.create(folder_run, recursive = TRUE)
   message("Created run folder: ", folder_run)

@@ -168,8 +168,8 @@ output_file_latest <- file.path(output_dir_dev, "cfsr_indicators_latest.rds")
 saveRDS(app_data, output_file_latest)
 message("✓ Saved to DEV (latest): ", output_file_latest)
 
-# 3. PROD: Period-specific file with state prefix
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/states/md/cfsr/performance/app/data"
+# 3. PROD: Period-specific file with state prefix (shared app location)
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }
@@ -179,7 +179,7 @@ output_file_prod_period <- file.path(output_dir_prod,
 saveRDS(app_data, output_file_prod_period)
 message("✓ Saved to PROD (period-specific): ", output_file_prod_period)
 
-# 4. PROD: Latest file with state prefix
+# 4. PROD: Latest file with state prefix (shared app location)
 output_file_prod_latest <- file.path(output_dir_prod,
                                      paste0(tolower(use_state), "_cfsr_indicators_latest.rds"))
 saveRDS(app_data, output_file_prod_latest)
