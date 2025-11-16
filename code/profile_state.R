@@ -22,7 +22,7 @@
 #####################################
 
 # [ ] Define input file structure and naming conventions
-# [ ] Create extraction functions in utilities-cfsr
+# [ ] Create extraction functions in code/functions/
 # [ ] Determine output data structure
 # [ ] Create Shiny app visualization strategy
 
@@ -33,9 +33,9 @@
 # Load packages and generic functions
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
-# Load CFSR-specific functions
-# TODO: Create functions_cfsr_profile_state.R in utilities-cfsr
-# source("D:/repo_childmetrix/utilities-cfsr/functions/functions_cfsr_profile_state.R")
+# Load CFSR profile functions (state-level data)
+# TODO: Create functions_cfsr_profile_state.R in code/functions/
+# source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_state.R")
 
 ########################################
 # CONFIGURATION ----

@@ -56,6 +56,10 @@ source("D:/repo_childmetrix/cfsr-profile/code/profile_rsp.R")
 ```
 cfsr-profile/
 ├── code/
+│   ├── functions/                  # CFSR-specific processing functions
+│   │   ├── functions_cfsr_profile_nat.R  # National data functions
+│   │   ├── functions_cfsr_profile_rsp.R  # RSP data functions
+│   │   └── functions_cfsr_profile_state.R # State-level functions (planned)
 │   ├── profile_national.R          # National Excel data processing
 │   ├── profile_rsp.R               # Risk-Standardized Performance (PDF) processing
 │   ├── profile_state.R             # State-level (county/regional) processing (planned)
@@ -104,9 +108,15 @@ This project depends on centralized R utilities:
   - Location: `D:/repo_childmetrix/utilities-core/`
   - Loaded via: `source("D:/repo_childmetrix/utilities-core/loader.R")`
 
-- **utilities-cfsr** - CFSR-specific functions
-  - Location: `D:/repo_childmetrix/utilities-cfsr/`
+### CFSR-Specific Functions
+
+CFSR profile processing functions are located in `code/functions/`:
+
+- **functions_cfsr_profile_nat.R** - National data processing functions
   - Key functions: `process_standard_indicator()`, `process_entry_rate_indicator()`, `setup_cfsr_folders()`
+- **functions_cfsr_profile_rsp.R** - RSP data extraction functions
+  - Key function: `extract_cfsr_profile_txt()`
+- **functions_cfsr_profile_state.R** - State-level functions (planned)
 
 ### R Packages
 

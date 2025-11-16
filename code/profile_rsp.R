@@ -29,8 +29,8 @@
 # Load packages and generic functions
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
-# Load CFSR-specific functions
-source("D:/repo_childmetrix/utilities-cfsr/functions/functions_cfsr_profile_pdf.R")
+# Load CFSR profile functions (RSP data)
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
 
 ########################################
 # CONFIGURATION ----
@@ -70,7 +70,7 @@ if (file.exists(txt_file)) {
   message("\n=== Extracting RSP data from text file ===")
   message("Source: ", txt_file)
 
-  # Extract RSP data using utilities-cfsr function
+  # Extract RSP data using CFSR profile function
   rsp_data <- extract_cfsr_profile_txt(txt_file)
 
   # View results

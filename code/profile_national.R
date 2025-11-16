@@ -31,8 +31,8 @@
 # Load packages and generic functions
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
-# Load MDCPS-specific functions
-source("D:/repo_childmetrix/utilities-cfsr/functions/functions_cfsr_profile.R")
+# Load CFSR profile functions (national data)
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_nat.R")
 
 ########################################
 # FOLDER PATHS & DIRECTORY STRUCTURE ----
