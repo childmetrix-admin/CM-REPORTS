@@ -17,43 +17,14 @@ source("functions/chart_builder.R")
 source("modules/indicator_page.R")
 
 #####################################
-# DATA LOADING FUNCTION ----
+# DATA LOADING ----
 #####################################
 
-# Function to load data based on state and profile period
-load_cfsr_data <- function(state_code = "MD", profile_period = "latest") {
-  # Base directory for production data
-  data_dir <- "D:/repo_childmetrix/cm-reports/md/cfsr/performance/app/data"
+# Note: load_cfsr_data() function is defined in functions/utils.R
+# It reads from shared/cfsr/performance/app/data/ directory
 
-  # Try different file naming patterns (use lowercase state code)
-  state_code_lower <- tolower(state_code)
-  possible_paths <- c(
-    # State-specific period file (preferred)
-    file.path(data_dir, paste0(state_code_lower, "_cfsr_indicators_", profile_period, ".rds")),
-    # State-specific latest
-    file.path(data_dir, paste0(state_code_lower, "_cfsr_indicators_latest.rds")),
-    # Generic latest (fallback for backward compatibility)
-    file.path(data_dir, "cfsr_indicators_latest.rds"),
-    # Fallback to app_data location
-    paste0("D:/repo_childmetrix/cfsr-profile/data/app_data/", state_code_lower, "/cfsr_indicators_latest.rds")
-  )
-
-  # Try each path
-  for (path in possible_paths) {
-    if (file.exists(path)) {
-      message("Loading CFSR data from: ", path)
-      return(readRDS(path))
-    }
-  }
-
-  # If nothing found, throw helpful error
-  stop("No CFSR data found for state=", state_code, " and profile=", profile_period,
-       "\n\nTried paths:\n", paste(possible_paths, collapse = "\n"),
-       "\n\nPlease run cfsr-profile.R and prepare_app_data.R first.")
-}
-
-# Load initial data (will be replaced when user-specific parameters are available in server)
-# For now, use defaults that work for UI construction
+# Load initial data for UI construction
+# Will be overridden in server based on URL parameters
 app_data <- load_cfsr_data("MD", "latest")
 
 # State code mapping
