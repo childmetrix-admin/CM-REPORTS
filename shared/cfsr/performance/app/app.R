@@ -58,7 +58,7 @@ indicator_to_tab <- c(
 
 # Get ordered indicator list for sidebar
 sidebar_indicators <- app_data %>%
-  distinct(indicator, indicator_very_short, indicator_sort) %>%
+  distinct(indicator, indicator_very_short, indicator_sort, category) %>%
   arrange(indicator_sort)
 
 #####################################
@@ -77,14 +77,33 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "sidebar_menu",
 
-      menuItem("Overview", tabName = "overview", icon = icon("chart-bar")),
+      # Overview and Entry rate (outside categories)
+      menuItem("Overview", tabName = "overview", icon = NULL),
+      tags$li(tags$a(href = "#shiny-tab-entry_rate", `data-toggle` = "tab", `data-value` = "entry_rate",
+                     title = "Foster care entry rate (entries / 1,000 children)", "Entry rate")),
 
-      # Dynamically generate indicator menu items
-      lapply(1:nrow(sidebar_indicators), function(i) {
-        ind <- sidebar_indicators[i, ]
-        tab_name <- indicator_to_tab[[ind$indicator]]
-        menuItem(ind$indicator_very_short, tabName = tab_name)
-      })
+      # Safety section
+      tags$li(class = "header", "SAFETY"),
+      tags$li(tags$a(href = "#shiny-tab-maltreatment", `data-toggle` = "tab", `data-value` = "maltreatment",
+                     title = "Maltreatment in care (victimizations / 100,000 days in care)", "Maltreatment in care")),
+      tags$li(tags$a(href = "#shiny-tab-recurrence", `data-toggle` = "tab", `data-value` = "recurrence",
+                     title = "Maltreatment recurrence within 12 months", "Recurrence")),
+
+      # Permanency section
+      tags$li(class = "header", "PERMANENCY"),
+      tags$li(tags$a(href = "#shiny-tab-perm12_entries", `data-toggle` = "tab", `data-value` = "perm12_entries",
+                     title = "Permanency in 12 months for children entering care", "Perm 12mo - Entries")),
+      tags$li(tags$a(href = "#shiny-tab-perm12_12_23", `data-toggle` = "tab", `data-value` = "perm12_12_23",
+                     title = "Permanency in 12 months for children in care 12-23 months", "Perm 12mo - 12-23mo")),
+      tags$li(tags$a(href = "#shiny-tab-perm12_24", `data-toggle` = "tab", `data-value` = "perm12_24",
+                     title = "Permanency in 12 months for children in care 24 months or more", "Perm 12mo - 24+mo")),
+      tags$li(tags$a(href = "#shiny-tab-reentry", `data-toggle` = "tab", `data-value` = "reentry",
+                     title = "Reentry to foster care within 12 months", "Reentry")),
+
+      # Well-Being section
+      tags$li(class = "header", "WELL-BEING"),
+      tags$li(tags$a(href = "#shiny-tab-placement", `data-toggle` = "tab", `data-value` = "placement",
+                     title = "Placement stability (moves / 1,000 days in care)", "Placement stability"))
     )
   ),
 
@@ -93,6 +112,7 @@ ui <- dashboardPage(
     # Custom CSS
     tags$head(
       tags$style(HTML("
+        /* Content area styling */
         .content-wrapper { background-color: #f4f4f4; }
         .box { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .chart-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
@@ -104,13 +124,82 @@ ui <- dashboardPage(
                        border-radius: 4px; font-weight: bold; }
         .profile-badge { background-color: #f0f0f0; padding: 5px 10px;
                          border-radius: 4px; font-size: 13px; }
-        /* Reduce spacing between sidebar menu items */
-        .sidebar-menu li { margin-bottom: 2px; }
-        .sidebar-menu li a { padding-top: 8px; padding-bottom: 8px; }
+
+        /* Sidebar styling - dark background */
+        .main-sidebar { background-color: #2c3e50 !important; }
+        .sidebar { background-color: #2c3e50 !important; }
+        .skin-blue .main-sidebar { background-color: #2c3e50 !important; }
+
+        /* Section headers - prominent with shaded bar */
+        .sidebar-menu li.header {
+          font-size: 13px !important;
+          text-transform: uppercase;
+          color: #ecf0f1 !important;
+          font-weight: 700;
+          padding: 12px 15px !important;
+          letter-spacing: 1px;
+          background-color: rgba(52, 73, 94, 0.6) !important;
+          margin: 8px 0 4px 0 !important;
+          cursor: default !important;
+          pointer-events: none !important;
+          user-select: none !important;
+        }
+
+        /* Override shinydashboard default header styles */
+        .skin-blue .sidebar-menu li.header {
+          color: #ecf0f1 !important;
+          background-color: rgba(52, 73, 94, 0.6) !important;
+        }
+
+        /* Ensure headers never respond to any interaction */
+        .sidebar-menu li.header:hover,
+        .sidebar-menu li.header:active,
+        .sidebar-menu li.header:focus {
+          background-color: rgba(52, 73, 94, 0.6) !important;
+          color: #ecf0f1 !important;
+          cursor: default !important;
+        }
+
+        /* Style menu items - white links on dark background */
+        .sidebar-menu > li > a {
+          color: #bdc3c7 !important;
+          background-color: transparent !important;
+          padding: 7px 15px 7px 20px !important;
+          text-decoration: none;
+          border-left: 3px solid transparent;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+
+        /* Hover state - lighter text and subtle highlight */
+        .sidebar-menu > li > a:hover {
+          color: #ffffff !important;
+          background-color: rgba(52, 73, 94, 0.4) !important;
+          text-decoration: none !important;
+        }
+
+        /* Active/selected state - bright with accent border */
+        .sidebar-menu > li.active > a {
+          color: #ffffff !important;
+          background-color: rgba(52, 152, 219, 0.3) !important;
+          font-weight: 500;
+          border-left: 3px solid #3498db;
+          text-decoration: none;
+        }
+
+        /* Hide icons for cleaner look */
+        .sidebar-menu > li > a > .fa,
+        .sidebar-menu > li > a > .glyphicon {
+          display: none;
+        }
+
+        /* Spacing */
+        .sidebar-menu li { margin-bottom: 1px; }
+
         /* Reduce top whitespace/padding */
         .content-wrapper, .right-side { padding-top: 0 !important; }
-        .main-sidebar { padding-top: 0 !important; margin-top: 0 !important; }
-        .sidebar { padding-top: 5px !important; }
+        .main-sidebar { padding-top: 0 !important; margin-top: 0 !important; border-right: 1px solid #e0e0e0; }
+        .sidebar { padding-top: 10px !important; }
         body, html { margin-top: 0 !important; padding-top: 0 !important; }
       "))
     ),
@@ -119,6 +208,23 @@ ui <- dashboardPage(
       # Overview tab
       tabItem(
         tabName = "overview",
+
+        # Data context notice
+        fluidRow(
+          column(12,
+            div(style = "margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-left: 3px solid #4472C4;",
+              tags$p(style = "margin: 0; font-size: 13px; color: #333;",
+                "The data on this page show states' ",
+                tags$em("observed"),
+                " performance (i.e., without risk-adjustment).",
+                tags$br(),
+                "This data is from ",
+                textOutput("overview_data_source_text", inline = TRUE),
+                " (specifically, the National supplemental context data Excel file)."
+              )
+            )
+          )
+        ),
 
         # State performance summary
         fluidRow(
@@ -257,6 +363,15 @@ server <- function(input, output, session) {
   # ===== OVERVIEW PAGE =====
 
   # State performance title
+  output$overview_data_source_text <- renderText({
+    pv <- profile_ver()
+    if (!is.null(pv) && pv != "") {
+      paste0("the ", pv, " Data Profile")
+    } else {
+      paste(selected_state(), "Recent Data Profile")
+    }
+  })
+
   output$state_performance_title <- renderText({
     state <- selected_state()
     if (!is.null(state)) {

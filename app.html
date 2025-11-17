@@ -227,9 +227,9 @@
 
         <!-- CFSR Tertiary navigation (shown only when CFSR Performance/Measures is active) -->
         <nav id="cfsrTertiaryNav" class="flex items-center gap-1 px-4 py-2 border-b bg-slate-50" style="display: none;">
-          <a href="#" id="tertiaryStateVsNational" class="px-3 py-1.5 text-sm hover:bg-white rounded bg-white font-semibold" title="Based on your state's CFSR 4 Data Profile PDF file from the Children's Bureau.">State Performance vs. National Standards</a>
-          <a href="#" id="tertiaryStateByState" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on the National - Supplemental Context Data Excel file from the Children's Bureau.">State-by-State Performance</a>
-          <a href="#" id="tertiaryCountyByCounty" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on your state's Supplemental Context Data Excel file from the Children's Bureau.">County-by-County Performance</a>
+          <a href="#" id="tertiaryStateVsNational" class="px-3 py-1.5 text-sm hover:bg-white rounded bg-white font-semibold" title="Based on your state's CFSR 4 Data Profile PDF file from the Children's Bureau.">Risk Standardized Performance</a>
+          <a href="#" id="tertiaryStateByState" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on the National - Supplemental Context Data Excel file from the Children's Bureau.">Observed performance (by state)</a>
+          <a href="#" id="tertiaryCountyByCounty" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on your state's Supplemental Context Data Excel file from the Children's Bureau.">Observed performance (by county)</a>
         </nav>
 
         <div class="flex-1 overflow-hidden">
@@ -610,7 +610,14 @@
         } else if (currentSubsection === 'performance') {
           if (currentCategory === 'cfsr') {
             const period = periodSelect.value;
-            frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
+            // Load the current tertiary page based on currentTertiary state
+            if (currentTertiary === 'state_vs_national') {
+              frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html?profile=${period}`;
+            } else if (currentTertiary === 'state_by_state') {
+              frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
+            } else if (currentTertiary === 'county_by_county') {
+              frame.src = `states/${stateCode}/cfsr/performance/county_by_county.html?profile=${period}`;
+            }
             cfsrTertiaryNav.style.display = 'flex';
             setTertiaryActive(currentTertiary);
           } else if (currentCategory === 'in-home') {
@@ -689,9 +696,9 @@
         const stateCode = window.CM_STATE || 'md';
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
-          currentTertiary = 'state_by_state';
+          currentTertiary = 'state_vs_national';
           const period = periodSelect.value;
-          frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
+          frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html?profile=${period}`;
           cfsrTertiaryNav.style.display = 'flex';
           setSecondaryActive('performance');
           setTertiaryActive(currentTertiary);
@@ -835,7 +842,7 @@
           setTertiaryActive(currentTertiary);
           const period = periodSelect.value;
           const stateCode = window.CM_STATE || 'md';
-          frame.src = `states/${stateCode}/cfsr/performance/index_auto.html?profile=${period}`;
+          frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
         }
       });
 
