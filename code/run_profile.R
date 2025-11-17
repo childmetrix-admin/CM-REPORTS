@@ -8,7 +8,7 @@
 #####################################
 
 # Workflow 1: Specific state + period + all sources
-# run_profile(state = "md", period = "2025_02", source = "all")
+# run_profile(state = "md", period = "2025_02", source = "national")
 
 # Workflow 2: All periods for a state
 # run_profile(state = "md", source = "all")
@@ -35,18 +35,16 @@ source("D:/repo_childmetrix/cfsr-profile/code/config.R")
 
 #' Run CFSR profile processing
 #'
-#' @param state Lowercase 2-letter state code (optional if period specified)
-#' @param period Period in YYYY_MM format (optional if state specified)
+#' @param state Lowercase 2-letter state code (NULL = all states)
+#' @param period Period in YYYY_MM format (NULL = all periods)
 #' @param source Data source: "national", "rsp", "state", or "all" (default: "all")
 #' @param verbose Print detailed progress messages (default: TRUE)
 #' @return Invisibly returns list of processing results
 #' @export
 run_profile <- function(state = NULL, period = NULL, source = "all", verbose = TRUE) {
 
-  # Validate at least one parameter provided
-  if (is.null(state) && is.null(period)) {
-    stop("Must provide at least 'state' or 'period' parameter")
-  }
+  # If both NULL, process everything
+  # Otherwise, at least one must be specified
 
   # Validate source
   validate_source(source)
@@ -153,6 +151,32 @@ get_processing_combinations <- function(state, period) {
       period = period,
       stringsAsFactors = FALSE
     ))
+  }
+
+  # Case 4: Both NULL - get all states and all periods
+  if (is.null(state) && is.null(period)) {
+    states <- discover_states()
+
+    if (length(states) == 0) {
+      return(data.frame(state = character(0), period = character(0), stringsAsFactors = FALSE))
+    }
+
+    # Build all state-period combinations
+    all_combos <- data.frame(state = character(0), period = character(0), stringsAsFactors = FALSE)
+
+    for (s in states) {
+      periods <- discover_periods(s)
+      if (length(periods) > 0) {
+        state_combos <- data.frame(
+          state = s,
+          period = periods,
+          stringsAsFactors = FALSE
+        )
+        all_combos <- rbind(all_combos, state_combos)
+      }
+    }
+
+    return(all_combos)
   }
 }
 

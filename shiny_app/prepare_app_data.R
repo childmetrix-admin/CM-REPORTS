@@ -62,7 +62,7 @@ if (exists("state_code") && exists("profile_period")) {
   message("Using most recent state/period found: ", use_state, " - ", use_period)
 }
 
-# Find CSV in processed folder
+# Find CSV in processed folder (national subdirectory)
 processed_path <- file.path(data_dir, "processed", use_state, use_period)
 cat("Looking in processed folder:", processed_path, "\n")
 
@@ -79,11 +79,17 @@ if (length(run_dirs) == 0) {
 latest_run <- sort(basename(run_dirs), decreasing = TRUE)[1]
 message("Using run date: ", latest_run)
 
-csv_files <- list.files(file.path(processed_path, latest_run),
-                        pattern = "\\.csv$", full.names = TRUE)
+# Look for CSV in national/ subdirectory
+national_path <- file.path(processed_path, latest_run, "national")
+if (!dir.exists(national_path)) {
+  stop("National data folder not found: ", national_path,
+       "\nExpected structure: data/processed/{state}/{period}/{date}/national/")
+}
+
+csv_files <- list.files(national_path, pattern = "\\.csv$", full.names = TRUE)
 
 if (length(csv_files) == 0) {
-  stop("No CSV files found in ", file.path(processed_path, latest_run))
+  stop("No CSV files found in ", national_path)
 }
 
 # Load the data

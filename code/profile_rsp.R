@@ -49,7 +49,7 @@ source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_r
 my_setup <- setup_cfsr_folders(profile_period, state_code)
 
 # Base data folder (from ShareFile)
-base_data_dir <- file.path("S:/Shared Folders", state_code, "cfsr/uploads", profile_period)
+# base_data_dir <- file.path("S:/Shared Folders", state_code, "cfsr/uploads", profile_period)
 
 # Set file name elements for save_to_folder_run()
 # Include state code in filename for multi-state support
@@ -58,43 +58,108 @@ commitment <- "cfsr profile"
 commitment_description <- "rsp"
 
 ########################################
+# EXTRACT SHARED METADATA (ONCE) ----
+########################################
+
+# Extract metadata common to all sources (profile version and as_of_date)
+metadata <- extract_shared_metadata()
+
+########################################
 # EXTRACT RSP DATA FROM TEXT FILE ----
 ########################################
 
 # Look for Adobe-exported text file
-txt_file <- file.path(base_data_dir, "adobe_to_accessible_text.txt")
+txt_file <- file.path(folder_uploads, "adobe_to_accessible_text.txt")
 
-if (file.exists(txt_file)) {
-  message("\n=== Extracting RSP data from text file ===")
-  message("Source: ", txt_file)
+if (!file.exists(txt_file)) {
+  message("Accessible text file not found: ", txt_file)
+  message("\nAttempting automatic PDF conversion...")
 
-  # Extract RSP data using CFSR profile function
-  rsp_data <- extract_cfsr_profile_txt(txt_file)
+  # Try to find and convert PDF automatically
+  txt_file <- find_and_convert_cfsr_pdf(state_code, profile_period)
 
-  # View results
-  message("Extracted ", nrow(rsp_data), " indicator-period combinations")
-  print(head(rsp_data, 10))
-
-  # Save to processed data folder
-  # Structure: data/processed/{state}/{period}/{date}/rsp/
-  output_dir <- file.path(folder_processed, "rsp")
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
+  if (is.null(txt_file) || !file.exists(txt_file)) {
+    warning("Automatic PDF conversion failed")
+    message("\nManual conversion options:")
+    message("1. RECOMMENDED: Export PDF to text using Adobe Acrobat")
+    message("   - File > Export To > Text (Accessible Text)")
+    message("   - Save as 'adobe_to_accessible_text.txt' in: ", folder_uploads)
+    message("\n2. ALTERNATIVE: Install Python dependencies and retry:")
+    message("   - pip install pdfplumber")
+    message("   - Or: pip install pymupdf")
+    message("\n3. FALLBACK: Install R pdftools package:")
+    message("   - install.packages('pdftools')")
+    stop("Cannot proceed without accessible text file")
+  } else {
+    message("✓ PDF successfully converted to accessible text")
   }
-
-  output_file <- file.path(output_dir,
-                           paste0(folder_date, " - ", commitment, " - ", commitment_description, ".csv"))
-  write.csv(rsp_data, output_file, row.names = FALSE)
-  message("\n✓ Saved to: ", output_file)
-
-} else {
-  warning("Text file not found: ", txt_file)
-  message("\nTo process RSP data:")
-  message("1. Export PDF to text using Adobe Acrobat")
-  message("2. File > Export To > Text (Accessible Text)")
-  message("3. Save as 'adobe_to_accessible_text.txt' in:")
-  message("   ", base_data_dir)
 }
+
+message("\n=== Extracting RSP data from text file ===")
+message("Source: ", txt_file)
+
+# Extract raw RSP data using CFSR profile function
+rsp_raw <- extract_cfsr_profile_txt(txt_file)
+
+# View results
+message("Extracted ", nrow(rsp_raw), " indicator-period combinations")
+print(head(rsp_raw, 10))
+
+########################################
+# PROCESS RSP DATA ----
+########################################
+
+# Add metadata columns to match national data structure
+rsp_data <- rsp_raw %>%
+  mutate(
+    state = toupper(state_code),
+    profile_ver = metadata$profile_version,
+    profile_month = metadata$profile_month,
+    profile_year = metadata$profile_year,
+    as_of_date = metadata$as_of_date,
+    source = metadata$source,
+    data_type = "rsp"  # Distinguish from observed (national) data
+  )
+
+# Reorder columns for consistency
+rsp_data <- rsp_data %>%
+  select(
+    state,
+    indicator,
+    period,
+    rsp_value,
+    rsp_numeric,
+    rsp_interval,
+    interval_lower,
+    interval_upper,
+    national_performance,
+    np_numeric,
+    data_quality_issue,
+    profile_ver,
+    profile_month,
+    profile_year,
+    as_of_date,
+    source,
+    data_type
+  )
+
+########################################
+# SAVE PROCESSED DATA ----
+########################################
+
+# Create run folder matching national structure: data/processed/STATE/PERIOD/YYYY-MM-DD/rsp/
+run_date <- Sys.Date()
+folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "rsp")
+if (!dir.exists(folder_run)) {
+  dir.create(folder_run, recursive = TRUE)
+  message("Created run folder: ", folder_run)
+}
+assign("folder_run", folder_run, envir = .GlobalEnv)
+assign("run_date", run_date, envir = .GlobalEnv)
+
+save_to_folder_run(rsp_data, "csv")
+
+message("\n✓ RSP data processing complete")
 
 ########################################
 # AUTO-RUN PREPARE_APP_DATA (FUTURE) ----

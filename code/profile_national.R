@@ -48,15 +48,8 @@ commitment_description <- "national"
 # EXTRACT SHARED METADATA (ONCE) ----
 ########################################
 
-# Profile version and citation (same for all indicators)
-ver <- cfsr_profile_version()
-
-# AFCARS/NCANDS submission date (same for all indicators)
-# Load any sheet to extract the as_of_date from header
-data_df_temp <- find_cfsr_file(keyword = "National",
-                               file_type = "excel",
-                               sheet_name = "Entry rates")
-asof <- cfsr_profile_extract_asof_date(data_df_temp)
+# Extract metadata common to all indicators (profile version and as_of_date)
+metadata <- extract_shared_metadata()
 
 ########################################
 # PROCESS INDICATORS ----
@@ -66,7 +59,13 @@ asof <- cfsr_profile_extract_asof_date(data_df_temp)
 # Entry Rate (special case - has years/census_year)
 # --------------------------------------
 
-ind_entrate_df <- process_entry_rate_indicator(ver, asof$as_of_date)
+ind_entrate_df <- process_entry_rate_indicator(
+  list(profile_version = metadata$profile_version,
+       month = metadata$profile_month,
+       year = metadata$profile_year,
+       source = metadata$source),
+  metadata$as_of_date
+)
 
 # --------------------------------------
 # Re-Entry
@@ -74,8 +73,11 @@ ind_entrate_df <- process_entry_rate_indicator(ver, asof$as_of_date)
 
 ind_reentry_df <- process_standard_indicator(
   sheet_name = "Reentry to FC",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------
@@ -84,8 +86,11 @@ ind_reentry_df <- process_standard_indicator(
 
 ind_perm12_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (entries)",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------
@@ -94,8 +99,11 @@ ind_perm12_df <- process_standard_indicator(
 
 ind_perm1223_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (12-23 mos)",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------
@@ -104,8 +112,11 @@ ind_perm1223_df <- process_standard_indicator(
 
 ind_perm24_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (24+ mos)",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------
@@ -114,8 +125,11 @@ ind_perm24_df <- process_standard_indicator(
 
 ind_ps_df <- process_standard_indicator(
   sheet_name = "Placement stability",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------
@@ -124,8 +138,11 @@ ind_ps_df <- process_standard_indicator(
 
 ind_maltreatment_df <- process_standard_indicator(
   sheet_name = "Maltreatment in care",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------
@@ -134,8 +151,11 @@ ind_maltreatment_df <- process_standard_indicator(
 
 ind_recurrence_df <- process_standard_indicator(
   sheet_name = "Recurrence of maltreatment",
-  ver = ver,
-  as_of_date = asof$as_of_date
+  ver = list(profile_version = metadata$profile_version,
+             month = metadata$profile_month,
+             year = metadata$profile_year,
+             source = metadata$source),
+  as_of_date = metadata$as_of_date
 )
 
 # --------------------------------------

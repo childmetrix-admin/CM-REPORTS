@@ -103,7 +103,9 @@ discover_sources <- function(state, period) {
   # Check for each source type
   sources <- c(
     national = any(grepl("National.*\\.xlsx?$", files, ignore.case = TRUE)),
-    rsp = any(grepl("adobe_to_accessible_text\\.txt$", files, ignore.case = TRUE)),
+    # RSP: Check for accessible text file OR PDF (PDF will be auto-converted)
+    rsp = any(grepl("adobe_to_accessible_text\\.txt$", files, ignore.case = TRUE)) ||
+          any(grepl("\\.pdf$", files, ignore.case = TRUE)),
     state = any(grepl("State.*\\.xlsx?$", files, ignore.case = TRUE))
   )
 
@@ -207,6 +209,128 @@ setup_profile_env <- function(state, period) {
   message("Output: ", config$processed_base)
 
   return(config)
+}
+
+#' Set up CFSR folder structure (legacy, use setup_profile_env instead)
+#'
+#' This function maintains backward compatibility with existing scripts
+#'
+#' @param profile_period Period in YYYY_MM format
+#' @param state_code Lowercase 2-letter state code
+#' @param assign_globals Assign folder paths to global environment (default: TRUE)
+#' @param base_data_dir Base data directory (default: CFSR_DATA_DIR)
+#' @return List with folder paths
+#' @export
+setup_cfsr_folders <- function(profile_period,
+                               state_code,
+                               assign_globals = TRUE,
+                               base_data_dir = NULL) {
+
+  # Use default base_data_dir if not provided
+  if (is.null(base_data_dir)) {
+    base_data_dir <- CFSR_DATA_DIR
+  }
+
+  # Validate inputs
+  if (missing(profile_period) || is.null(profile_period)) {
+    stop("profile_period is required (e.g., '2025_02')")
+  }
+  if (missing(state_code) || is.null(state_code)) {
+    stop("state_code is required (e.g., 'md')")
+  }
+
+  # Normalize
+  profile_period <- toupper(profile_period)
+  state_code <- tolower(state_code)
+
+  # Build folder paths
+  folder_uploads <- file.path(CFSR_SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
+  folder_processed <- file.path(base_data_dir, "processed", state_code, profile_period)
+  folder_app_data <- file.path(base_data_dir, "app_data", state_code)
+  folder_raw <- folder_uploads  # Alias for backward compatibility
+
+  # Check if uploads folder exists
+  if (!dir.exists(folder_uploads)) {
+    stop("Uploads folder does not exist: ", folder_uploads,
+         "\n\nPlease upload files to ShareFile at:",
+         "\n  S:/Shared Folders/", state_code, "/cfsr/uploads/", profile_period, "/",
+         "\n\nOr check your state_code and profile_period values.",
+         call. = FALSE)
+  }
+
+  # Create processed folders if they don't exist
+  if (!dir.exists(folder_processed)) {
+    dir.create(folder_processed, recursive = TRUE)
+    message("Created processed folder: ", folder_processed)
+  }
+
+  if (!dir.exists(folder_app_data)) {
+    dir.create(folder_app_data, recursive = TRUE)
+    message("Created app_data folder: ", folder_app_data)
+  }
+
+  # Return configuration list
+  config <- list(
+    folder_uploads = folder_uploads,
+    folder_raw = folder_raw,
+    folder_processed = folder_processed,
+    folder_app_data = folder_app_data,
+    state_code = state_code,
+    profile_period = profile_period
+  )
+
+  # Optionally assign to global environment
+  if (assign_globals) {
+    assign("folder_uploads", folder_uploads, envir = .GlobalEnv)
+    assign("folder_raw", folder_raw, envir = .GlobalEnv)
+    assign("folder_processed", folder_processed, envir = .GlobalEnv)
+    assign("folder_app_data", folder_app_data, envir = .GlobalEnv)
+    assign("state_code", state_code, envir = .GlobalEnv)
+    assign("profile_period", profile_period, envir = .GlobalEnv)
+  }
+
+  return(invisible(config))
+}
+
+#####################################
+# METADATA EXTRACTION ----
+#####################################
+
+#' Extract shared metadata for CFSR profile processing
+#'
+#' This function extracts metadata that is common to both national and RSP processing:
+#' - Profile version (Month YYYY)
+#' - AFCARS/NCANDS as-of date
+#' - Source citation
+#'
+#' @return List with profile version info and as_of_date
+#' @export
+extract_shared_metadata <- function() {
+  # Load CFSR profile functions if not already loaded
+  nat_functions <- file.path(CFSR_FUNCTIONS_DIR, "functions_cfsr_profile_nat.R")
+  if (!exists("cfsr_profile_version")) {
+    source(nat_functions)
+  }
+
+  # Profile version from National Excel file
+  ver <- cfsr_profile_version()
+
+  # AFCARS/NCANDS submission date - extract from National file
+  data_df_temp <- find_cfsr_file(keyword = "National",
+                                 file_type = "excel",
+                                 sheet_name = "Entry rates")
+  asof <- cfsr_profile_extract_asof_date(data_df_temp)
+
+  # Combine into single metadata object
+  metadata <- list(
+    profile_version = ver$profile_version,
+    profile_month = ver$month,
+    profile_year = ver$year,
+    as_of_date = asof$as_of_date,
+    source = ver$source
+  )
+
+  return(metadata)
 }
 
 #####################################

@@ -1,4 +1,172 @@
 # ============================================================================
+# PDF TO ACCESSIBLE TEXT CONVERSION
+# ============================================================================
+
+#' Convert CFSR PDF to accessible text format
+#'
+#' Attempts to convert a PDF to accessible text using multiple methods:
+#' 1. Python script with pdfplumber/PyMuPDF/pypdf (page 2 only)
+#' 2. R pdftools package (fallback, page 2 only)
+#'
+#' @param pdf_path Path to input PDF file
+#' @param output_path Path for output text file (default: adobe_to_accessible_text.txt)
+#' @param page_num Page number to extract (default: 2 for RSP data)
+#' @param method Conversion method: "auto", "python", or "r" (default: "auto")
+#' @return TRUE if successful, FALSE otherwise
+#' @export
+convert_pdf_to_accessible_text <- function(pdf_path,
+                                            output_path = NULL,
+                                            page_num = 2,
+                                            method = "auto") {
+
+  # Validate inputs
+  if (!file.exists(pdf_path)) {
+    stop("PDF file not found: ", pdf_path)
+  }
+
+  # Default output path
+  if (is.null(output_path)) {
+    output_path <- file.path(dirname(pdf_path), "adobe_to_accessible_text.txt")
+  }
+
+  # Get Python script path
+  script_dir <- dirname(sys.frame(1)$ofile)  # Directory of this R file
+  python_script <- file.path(script_dir, "convert_pdf_to_accessible_text.py")
+
+  success <- FALSE
+
+  # Try Python method first (best results)
+  if (method %in% c("auto", "python")) {
+    message("Attempting PDF conversion with Python (page ", page_num, ")...")
+
+    if (file.exists(python_script)) {
+      # Try to find Python
+      python_cmd <- Sys.which("python")
+      if (python_cmd == "") python_cmd <- Sys.which("python3")
+
+      if (python_cmd != "") {
+        result <- system2(
+          python_cmd,
+          args = c(shQuote(python_script), shQuote(pdf_path), shQuote(output_path), page_num),
+          stdout = TRUE,
+          stderr = TRUE
+        )
+
+        if (file.exists(output_path)) {
+          message("✓ Successfully converted page ", page_num, " with Python")
+          return(TRUE)
+        } else {
+          message("Python conversion failed: ", paste(result, collapse = "\n"))
+        }
+      } else {
+        message("Python not found in PATH")
+      }
+    } else {
+      message("Python script not found: ", python_script)
+    }
+  }
+
+  # Fallback to R pdftools
+  if (method %in% c("auto", "r") && !success) {
+    message("Attempting PDF conversion with R pdftools (page ", page_num, ")...")
+
+    if (!requireNamespace("pdftools", quietly = TRUE)) {
+      message("pdftools package not installed. Install with: install.packages('pdftools')")
+      return(FALSE)
+    }
+
+    tryCatch({
+      library(pdftools)
+
+      # Extract text from specified page only
+      text <- pdf_text(pdf_path)
+
+      if (page_num > length(text)) {
+        stop("PDF only has ", length(text), " pages, cannot extract page ", page_num)
+      }
+
+      # Get only the requested page
+      page_text <- text[page_num]
+
+      # Write to file
+      output_text <- c(
+        paste0("--- Page ", page_num, " ---"),
+        page_text
+      )
+      writeLines(output_text, output_path)
+
+      if (file.exists(output_path)) {
+        message("✓ Successfully converted page ", page_num, " with R pdftools")
+        return(TRUE)
+      }
+
+    }, error = function(e) {
+      message("R pdftools conversion failed: ", e$message)
+      return(FALSE)
+    })
+  }
+
+  message("✗ All conversion methods failed")
+  return(FALSE)
+}
+
+#' Find and convert CFSR PDF to accessible text
+#'
+#' Searches for CFSR Data Profile PDF in uploads folder and converts it
+#'
+#' @param state_code Two-letter state code (uses global if not provided)
+#' @param profile_period Profile period (uses global if not provided)
+#' @param force Force reconversion even if text file exists (default: FALSE)
+#' @return Path to accessible text file, or NULL if failed
+#' @export
+find_and_convert_cfsr_pdf <- function(state_code = NULL,
+                                       profile_period = NULL,
+                                       force = FALSE) {
+
+  # Use global variables if not provided
+  if (is.null(state_code)) state_code <- get("state_code", envir = .GlobalEnv)
+  if (is.null(profile_period)) profile_period <- get("profile_period", envir = .GlobalEnv)
+
+  # Build paths
+  uploads_dir <- file.path("S:/Shared Folders", state_code, "cfsr/uploads", profile_period)
+
+  if (!dir.exists(uploads_dir)) {
+    stop("Uploads folder not found: ", uploads_dir)
+  }
+
+  # Look for PDF file
+  pdf_files <- list.files(uploads_dir, pattern = "\\.pdf$", full.names = TRUE, ignore.case = TRUE)
+
+  if (length(pdf_files) == 0) {
+    message("No PDF files found in: ", uploads_dir)
+    return(NULL)
+  }
+
+  # Use first PDF found
+  pdf_path <- pdf_files[1]
+  message("Found PDF: ", basename(pdf_path))
+
+  # Check for existing accessible text file
+  txt_path <- file.path(uploads_dir, "adobe_to_accessible_text.txt")
+
+  if (file.exists(txt_path) && !force) {
+    message("Accessible text file already exists: ", basename(txt_path))
+    message("Use force = TRUE to reconvert")
+    return(txt_path)
+  }
+
+  # Convert PDF
+  message("Converting PDF to accessible text...")
+  success <- convert_pdf_to_accessible_text(pdf_path, txt_path)
+
+  if (success && file.exists(txt_path)) {
+    return(txt_path)
+  } else {
+    return(NULL)
+  }
+}
+
+# ============================================================================
 # CFSR-SPECIFIC FOLDER SETUP AND FILE FINDING
 # ============================================================================
 #
