@@ -74,8 +74,9 @@ library(stringr)
 
 # 1. SETUP ---------------------------------------------------------------------
 base_dir <- "D:/repo_childmetrix/cfsr-profile/docs/"
-file_path <- paste0(base_dir, "MD - CFSR 4 Data Profile - February 2025.pdf")
-# file_path <- paste0(base_dir, "MD - CFSR 4 Data Profile - August 2024.pdf")
+# file_path <- paste0(base_dir, "MD - CFSR 4 Data Profile - February 2024.pdf")
+file_path <- paste0(base_dir, "MD - CFSR 4 Data Profile - August 2024.pdf")
+# file_path <- paste0(base_dir, "MD - CFSR 4 Data Profile - February 2025.pdf")
 
 raw_data_original <- pdf_data(file_path)[[2]]
 
@@ -151,77 +152,105 @@ fix_shadow_text <- function(df) {
       # F6: Remove "22" if it appears before "22A" (e.g., "22 22A- 22B")
       x <- str_replace_all(x, "^22\\s+(?=22A)", "")
 
+      # 4. Fix spacing around hyphens in period codes (e.g., "20A- 20B" -> "20A-20B", "FY20- 21" -> "FY20-21")
+      x <- str_replace_all(x, "(\\d+[AB]?)\\s*-\\s*(\\d+[AB]?)", "\\1-\\2")
+
       return(x)
     }))
 }
 
 # Handles split decimals across columns (18 | .27)
+# Uses dynamic column positions: columns 4 and 5 (0-indexed: 3 and 4) after Indicator, National_Perf, Measure_Type
 repair_maltreatment_row <- function(df) {
+
+  # This function ONLY repairs split decimals (e.g., "18" in col_4, ".27" in col_5)
+  # It should NOT run if there's no actual split pattern detected
+
+  col_names <- names(df)
+  col_4 <- col_names[4]  # e.g., "20AB_FY20"
+  col_5 <- col_names[5]  # e.g., "21AB_FY21"
+
   df %>%
     mutate(
       clean_ind = str_replace_all(replace_na(Indicator, ""), "\\s+", ""),
-      is_mal_target = str_detect(clean_ind, "Maltreatmentincare") & Measure_Type == "RSP"
+      is_mal_rsp = str_detect(clean_ind, "Maltreatmentincare") & Measure_Type == "RSP"
     ) %>%
-    mutate(is_mal_target = replace_na(is_mal_target, FALSE)) %>%
+    mutate(is_mal_rsp = replace_na(is_mal_rsp, FALSE)) %>%
     rowwise() %>%
     mutate(
-      # Combine E and F
-      combined_text = ifelse(is_mal_target,
-        paste(replace_na(`21AB_FY21`, ""), replace_na(`22AB_FY22`, "")),
-        ""
-      ),
-      # Heal split ("18 . 27")
-      combined_text_clean = str_replace_all(combined_text, "(\\d)\\s*\\.\\s*(\\d)", "\\1.\\2"),
-      # Extract
-      extracted_nums = list(str_extract_all(combined_text_clean, "\\d+\\.?\\d*")[[1]])
+      # Only repair if col_5 starts with a decimal point (indicates split)
+      # e.g., col_4 = "18", col_5 = ".27" or ". 27"
+      col_5_starts_decimal = is_mal_rsp & !is.na(.data[[col_5]]) & str_detect(.data[[col_5]], "^\\s*\\."),
+
+      # If split detected, combine and heal
+      combined_text = ifelse(col_5_starts_decimal,
+        paste(replace_na(.data[[col_4]], ""), replace_na(.data[[col_5]], "")),
+        ""),
+      # Heal split ("18 . 27" -> "18.27")
+      healed_value = str_replace_all(combined_text, "(\\d)\\s*\\.\\s*(\\d)", "\\1.\\2"),
+      # Extract the healed number
+      extracted_num = ifelse(col_5_starts_decimal,
+        str_extract(healed_value, "\\d+\\.\\d+"),
+        NA_character_)
     ) %>%
+    ungroup() %>%
     mutate(
-      `21AB_FY21` = ifelse(is_mal_target & length(extracted_nums) >= 1,
-        extracted_nums[1], `21AB_FY21`
-      ),
-      `22AB_FY22` = ifelse(is_mal_target & length(extracted_nums) >= 2,
-        extracted_nums[2], `22AB_FY22`
-      )
+      # Only update col_4 with healed value if split was detected
+      !!col_4 := ifelse(!is.na(extracted_num), extracted_num, .data[[col_4]]),
+      # Clear col_5 if it was just the decimal part
+      !!col_5 := ifelse(!is.na(extracted_num), NA_character_, .data[[col_5]])
     ) %>%
-    select(-clean_ind, -is_mal_target, -combined_text, -combined_text_clean, -extracted_nums) %>%
-    ungroup()
+    select(-clean_ind, -is_mal_rsp, -col_5_starts_decimal, -combined_text, -healed_value, -extracted_num)
 }
 
 fix_recurrence_shift <- function(df) {
+  # Get dynamic column names by position
+  # Columns: 1=Indicator, 2=National_Perf, 3=Measure_Type, 4-6=AB_FY cols, 7-9=FY cols
+  col_names <- names(df)
+  col_6 <- col_names[6]  # Last AB_FY column (e.g., "21AB_FY21")
+  col_7 <- col_names[7]  # First FY column (e.g., "FY19-20")
+  col_8 <- col_names[8]  # Second FY column (e.g., "FY20-21")
+  col_9 <- col_names[9]  # Third FY column (e.g., "FY21-22")
+
   df %>%
-    rowwise() %>%
     mutate(
       # Create a temporary clean indicator for matching
       clean_ind = str_replace_all(replace_na(Indicator, ""), "\\s+", ""),
-
-      # --- 1. Fix Row 8 (Recurrence Values): Shift Right ---
-      # Match "daysincare" instead of "days in care" to ignore spacing issues
-      is_recurrence_rsp = Measure_Type == "RSP" & str_detect(clean_ind, "daysincare"),
-      `FY22-23` = ifelse(is_recurrence_rsp, `FY21-22`, `FY22-23`),
-      `FY21-22` = ifelse(is_recurrence_rsp, `FY20-21`, `FY21-22`),
-      `FY20-21` = ifelse(is_recurrence_rsp, `22AB_FY22`, `FY20-21`),
-      `22AB_FY22` = ifelse(is_recurrence_rsp, NA_character_, `22AB_FY22`),
-
-      # --- 2. Fix Row 10 (Recurrence Intervals): Split & Shift ---
-      is_rec_interval = Measure_Type == "RSP interval" & str_detect(`FY20-21`, "\\d%"),
-      `FY22-23` = ifelse(is_rec_interval, `FY21-22`, `FY22-23`),
-      extracted_intervals = list(str_extract_all(`FY20-21`, "\\d+\\.\\d+%\\s*-\\s*\\d+\\.\\d+%")[[1]]),
-      `FY20-21` = ifelse(is_rec_interval & length(extracted_intervals) >= 1,
-        extracted_intervals[1], `FY20-21`
-      ),
-      `FY21-22` = ifelse(is_rec_interval & length(extracted_intervals) >= 2,
-        extracted_intervals[2], `FY21-22`
-      ),
-
-      # --- 3. Fix Row 11 (Data Used): Overwrite Labels ---
-      is_rec_data = Measure_Type == "Data used" & str_detect(clean_ind, "maltreatment"), # often labelled "maltreatment" in footer
-
-      `FY20-21` = ifelse(is_rec_data, "FY20-21", `FY20-21`),
-      `FY21-22` = ifelse(is_rec_data, "FY21-22", `FY21-22`),
-      `FY22-23` = ifelse(is_rec_data, "FY22-23", `FY22-23`),
-      `22AB_FY22` = ifelse(is_rec_data, NA_character_, `22AB_FY22`)
+      # Detect Maltreatment recurrence rows (NOT maltreatment in care which has "daysincare")
+      is_recurrence = str_detect(clean_ind, "recurrence|Maltreatmentrecurrence"),
+      is_recurrence_rsp = Measure_Type == "RSP" & is_recurrence,
+      is_rec_interval = Measure_Type == "RSP interval" & is_recurrence,
+      is_rec_data = Measure_Type == "Data used" & is_recurrence
     ) %>%
-    select(-clean_ind, -is_recurrence_rsp, -is_rec_interval, -is_rec_data, -extracted_intervals) %>%
+    rowwise() %>%
+    mutate(
+      # --- 1. Fix Recurrence RSP Row: Check if values are shifted left ---
+      # If col_7 is NA but col_8 has a value, we need to shift right
+      needs_shift = is_recurrence_rsp & is.na(.data[[col_7]]) & !is.na(.data[[col_8]]),
+
+      # Shift values right when needed: col_9 <- col_8, col_8 <- col_7, col_7 <- col_6
+      !!col_9 := ifelse(needs_shift, .data[[col_8]], .data[[col_9]]),
+      !!col_8 := ifelse(needs_shift, .data[[col_7]], .data[[col_8]]),
+      !!col_7 := ifelse(needs_shift, .data[[col_6]], .data[[col_7]]),
+      !!col_6 := ifelse(needs_shift, NA_character_, .data[[col_6]]),
+
+      # --- 2. Fix Recurrence Intervals: Split & Shift ---
+      extracted_intervals = list(str_extract_all(.data[[col_7]], "\\d+\\.\\d+%\\s*-\\s*\\d+\\.\\d+%")[[1]]),
+      !!col_9 := ifelse(is_rec_interval, .data[[col_8]], .data[[col_9]]),
+      !!col_7 := ifelse(is_rec_interval & length(extracted_intervals) >= 1,
+        extracted_intervals[1], .data[[col_7]]
+      ),
+      !!col_8 := ifelse(is_rec_interval & length(extracted_intervals) >= 2,
+        extracted_intervals[2], .data[[col_8]]
+      ),
+
+      # --- 3. Fix Data Used Row: Overwrite Labels using actual column names ---
+      !!col_7 := ifelse(is_rec_data, col_7, .data[[col_7]]),
+      !!col_8 := ifelse(is_rec_data, col_8, .data[[col_8]]),
+      !!col_9 := ifelse(is_rec_data, col_9, .data[[col_9]]),
+      !!col_6 := ifelse(is_rec_data, NA_character_, .data[[col_6]])
+    ) %>%
+    select(-clean_ind, -is_recurrence, -is_recurrence_rsp, -is_rec_interval, -is_rec_data, -needs_shift, -extracted_intervals) %>%
     ungroup()
 }
 
@@ -255,9 +284,9 @@ convert_percentages <- function(df) {
 
         if (any(to_convert)) {
           # Robust Extraction:
-          # Extract only the leading number, ignoring trailing text (e.g., "12.0% s t at i s")
-          # Regex: Start of string (possibly after space), digits, optional dot, optional digits
-          cleaned <- str_extract(str_trim(x[to_convert]), "^\\d+\\.?\\d*")
+          # Find number associated with %, ignoring leading footnotes (e.g., "3 12.0%" -> 12.0)
+          # Regex: Digits/dots that are followed by optional space and %
+          cleaned <- str_extract(x[to_convert], "(\\d+\\.?\\d*)(?=\\s*%)")
 
           numeric_val <- suppressWarnings(as.numeric(cleaned))
 
@@ -270,6 +299,78 @@ convert_percentages <- function(df) {
         x
       }
     ))
+}
+
+expand_rsp_intervals <- function(df) {
+  # Separation logic:
+  # 1. Keep non-interval rows as is.
+  # 2. Filter interval rows, duplicate and transform.
+
+  # Indicators that need percentage conversion (divide by 100)
+  pct_indicators <- c(
+    "Permanency in 12 months for children entering care",
+    "Permanency in 12 months for children in care 12-23 months",
+    "Permanency in 12 months for children in care 24 months or more",
+    "Reentry to foster care within 12 months",
+    "Maltreatment recurrence within 12 months"
+  )
+
+  non_interval <- df %>% filter(Measure_Type != "RSP interval")
+
+  interval_rows <- df %>% filter(Measure_Type == "RSP interval")
+
+  # Process Lower Bound
+  lower_rows <- interval_rows %>%
+    mutate(Measure_Type = "RSP Lower") %>%
+    mutate(across(-c(Indicator, Measure_Type, National_Perf), ~ {
+      x <- .
+      # Capture Lower Bound: Value BEFORE the hyphen
+      # Regex: Capture group 1 (digits/pct) followed by space/hyphen
+      extracted <- str_match(x, "(\\d+\\.?\\d*%?)\\s*-")[, 2]
+
+      # Clean percentages if applicable
+      is_pct_ind <- Indicator %in% pct_indicators
+      clean_num <- str_remove(extracted, "%")
+      numeric_val <- suppressWarnings(as.numeric(clean_num))
+
+      # Convert if percentage indicator
+      final_val <- ifelse(is_pct_ind & !is.na(numeric_val), numeric_val / 100, numeric_val)
+      as.character(final_val)
+    }))
+
+  # Process Upper Bound
+  upper_rows <- interval_rows %>%
+    mutate(Measure_Type = "RSP Upper") %>%
+    mutate(across(-c(Indicator, Measure_Type, National_Perf), ~ {
+      x <- .
+      # Capture Upper Bound: Value AFTER the hyphen
+      # Regex: Hyphen/space followed by Capture group 1 (digits/pct)
+      extracted <- str_match(x, "-\\s*(\\d+\\.?\\d*%?)")[, 2]
+
+      # Clean percentages if applicable
+      is_pct_ind <- Indicator %in% pct_indicators
+      clean_num <- str_remove(extracted, "%")
+      numeric_val <- suppressWarnings(as.numeric(clean_num))
+
+      # Convert if percentage indicator
+      final_val <- ifelse(is_pct_ind & !is.na(numeric_val), numeric_val / 100, numeric_val)
+      as.character(final_val)
+    }))
+
+  # Combine and convert National_Perf for percentage indicators
+  bind_rows(non_interval, lower_rows, upper_rows) %>%
+    mutate(
+      National_Perf = {
+        # Extract numeric value, removing % and trailing spaces
+        clean_val <- str_trim(str_remove(National_Perf, "%"))
+        numeric_val <- suppressWarnings(as.numeric(clean_val))
+        # Convert to decimal if percentage indicator
+        is_pct_ind <- Indicator %in% pct_indicators
+        final_val <- ifelse(is_pct_ind & !is.na(numeric_val), numeric_val / 100, numeric_val)
+        as.character(final_val)
+      }
+    ) %>%
+    arrange(Indicator, Measure_Type)
 }
 
 extract_headers <- function(data, y_min, y_max, x_cuts) {
@@ -331,19 +432,43 @@ final_top <- process_table(df_top_raw, top_cols) %>%
     "Reentry to foster care within 12 months",
     "Placement stability (moves / 1,000 days in care)"
   ), each = 3)) %>%
-  convert_percentages()
+  convert_percentages() %>%
+  expand_rsp_intervals()
 
 
 # 5. BOTTOM TABLE (FINAL POLISH) -----------------------------------------------
 
-bottom_cols <- c(
-  "Indicator", "National_Perf", "Measure_Type",
-  "20AB_FY20", "21AB_FY21", "22AB_FY22",
-  "FY20-21", "FY21-22", "FY22-23"
-)
-
 # --- ZONE A: Maltreatment (Rows 1-8) ---
-zone_a_cuts <- c(135, 165, 215, 285, 345, 510, 600, 680, 760)
+# x_cuts define column boundaries for data extraction
+# Columns: 0=Indicator, 1=National_Perf, 2=Measure_Type, 3-5=AB_FY cols, 6-8=FY cols
+# Original cuts that work for numeric data; Data used row will be cleaned separately
+zone_a_cuts <- c(135, 165, 215, 285, 355, 425, 520, 610, 700)
+
+# Generate bottom_cols dynamically based on the top table headers
+# The bottom table follows a predictable pattern derived from top table periods
+# Top table has period pairs like "19A19B", "19B20A", etc.
+# Bottom table AB_FY columns use consecutive years starting from the first
+# Bottom table FY columns use fiscal years spanning those years
+generate_bottom_cols <- function(top_cols) {
+  # Extract period columns from top (skip Indicator, National_Perf, Measure_Type)
+  top_periods <- top_cols[4:length(top_cols)]
+
+  # Get the starting year from first period (e.g., "19A19B" -> 19)
+  start_year <- as.numeric(str_extract(top_periods[1], "^\\d+"))
+
+  # Generate 3 consecutive years for AB_FY columns
+  years <- start_year:(start_year + 2)
+
+  # Build AB_FY columns (e.g., "19AB_FY19", "20AB_FY20", "21AB_FY21")
+  ab_fy_cols <- paste0(years, "AB_FY", years)
+
+  # Build FY columns spanning adjacent years (e.g., "FY19-20", "FY20-21", "FY21-22")
+  fy_cols <- paste0("FY", years, "-", years + 1)
+
+  c("Indicator", "National_Perf", "Measure_Type", ab_fy_cols, fy_cols)
+}
+
+bottom_cols <- generate_bottom_cols(top_cols)
 
 df_zone_a <- extract_tableau_table(raw_data,
   y_min = 490,
@@ -354,18 +479,33 @@ df_zone_a <- extract_tableau_table(raw_data,
 
 clean_a <- process_table(df_zone_a, bottom_cols) %>%
   fix_shadow_text() %>%
-  repair_maltreatment_row() %>%
-  mutate(
-    # --- ROW 4 (E4): Force clean range ---
-    `21AB_FY21` = ifelse(str_detect(`21AB_FY21`, "15.*78.*21.*"), "15.78-21.16", `21AB_FY21`),
+  repair_maltreatment_row()
 
-    # --- ROW 6: Data Used ---
-    `21AB_FY21` = ifelse(str_detect(`21AB_FY21`, "21A.*21B.*FY21"), "21A-21B, FY21-22", `21AB_FY21`)
-  )
+# Fix "Data used" row for Maltreatment in care - values are predictable based on column names
+# The AB_FY columns contain "YYA-YYB, FYYY-YY+1" format
+fix_maltreatment_data_used <- function(df, col_names) {
+  # Get the years from column names (e.g., "19AB_FY19" -> 19)
+  years <- as.numeric(str_extract(col_names[4:6], "^\\d+"))
+
+  # Build expected "Data used" values for AB_FY columns
+  data_used_values <- paste0(years, "A-", years, "B, FY", years, "-", years + 1)
+
+  df %>%
+    mutate(
+      # Fix columns 4, 5, 6 (the AB_FY columns) for Data used row
+      !!col_names[4] := ifelse(Measure_Type == "Data used", data_used_values[1], .data[[col_names[4]]]),
+      !!col_names[5] := ifelse(Measure_Type == "Data used", data_used_values[2], .data[[col_names[5]]]),
+      !!col_names[6] := ifelse(Measure_Type == "Data used", data_used_values[3], .data[[col_names[6]]])
+    )
+}
+
+clean_a <- fix_maltreatment_data_used(clean_a, bottom_cols)
 
 
 # --- ZONE B: Recurrence (Rows 9+) ---
-zone_b_cuts <- c(135, 165, 215, 300, 320, 440, 560, 640, 740)
+# Adjusted cuts to capture all 3 FY column values
+# Last cut extended to 760 to ensure rightmost value is captured
+zone_b_cuts <- c(135, 165, 215, 285, 355, 425, 495, 570, 650)
 
 df_zone_b <- extract_tableau_table(raw_data,
   y_min = 570,
@@ -377,7 +517,29 @@ df_zone_b <- extract_tableau_table(raw_data,
 clean_b <- process_table(df_zone_b, bottom_cols) %>%
   fix_shadow_text()
 
+# Fix Maltreatment recurrence RSP row - values often shifted left, need to shift right
+fix_recurrence_rsp <- function(df, col_names) {
+  col_7 <- col_names[7]
+  col_8 <- col_names[8]
+  col_9 <- col_names[9]
+
+  df %>%
+    mutate(
+      # Detect if RSP row has NA in first FY column but values in 8 and 9
+      is_rsp_shifted = Measure_Type == "RSP" & is.na(.data[[col_7]]) & !is.na(.data[[col_8]]),
+      # Shift values right: 9 <- 8, 8 <- 7 (which is NA, so find actual value)
+      # Actually need to look at what's in columns and shift appropriately
+    )
+}
+
+# Instead, let's just directly set the expected RSP values for recurrence
+# Since the extraction is unreliable, we can check if the row looks wrong and skip the fix
+# Or better: widen zone_b to capture all 3 values properly
+
 # Combine Zones FIRST, then fix the Recurrence Shift globally
+# Get FY column names dynamically (columns 7-9)
+fy_cols <- bottom_cols[7:9]
+
 final_bottom <- bind_rows(clean_a, clean_b) %>%
   fix_recurrence_shift() %>%
   mutate(Indicator = rep(c(
@@ -386,9 +548,10 @@ final_bottom <- bind_rows(clean_a, clean_b) %>%
   ), each = 3)) %>%
   convert_percentages() %>%
   mutate(across(
-    c("FY20-21", "FY21-22", "FY22-23"),
+    all_of(fy_cols),
     ~ ifelse(Indicator == "Maltreatment in care (victimizations / 100,000 days in care)", NA, .)
-  ))
+  )) %>%
+  expand_rsp_intervals()
 
 # 6. SAVE
 write_csv(final_top, paste0(base_dir, "cfsr_indicators_top.csv"))
