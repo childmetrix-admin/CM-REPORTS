@@ -1,26 +1,38 @@
 # utils.R - Utility functions for the Shiny app
 
-#' Get available profiles for a state
+#' Get available profiles for a state and profile type
 #'
-#' @param state Two-letter state code (e.g., "MD", "KY")
+#' @param state Two-letter state code (e.g., "MD", "KY") - ignored for national type
+#' @param type Profile type: "national", "rsp", or "state"
 #' @return Character vector of available profile periods (e.g., c("2025_02", "2024_08"))
-get_available_profiles <- function(state) {
+get_available_profiles <- function(state, type = "national") {
   # Convert state to uppercase
   state <- toupper(state)
+
+  # Validate type
+  valid_types <- c("national", "rsp", "state")
+  if (!type %in% valid_types) {
+    warning("Invalid profile type '", type, "'. Using 'national'.")
+    type <- "national"
+  }
 
   # Build file path in shared location
   data_dir <- "data"  # Relative to app directory
 
-  # List all files matching pattern: {STATE}_cfsr_indicators_{PERIOD}.rds
-  pattern <- paste0("^", state, "_cfsr_indicators_([0-9]{4}_[0-9]{2})\\.rds$")
-  all_files <- list.files(data_dir, pattern = pattern)
-
-  # Extract periods from filenames
-  if (length(all_files) == 0) {
-    return(character(0))
+  # Naming conventions:
+  # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
+  # - rsp/state: {STATE}_cfsr_profile_{type}_{PERIOD}.rds (state-specific)
+  if (type == "national") {
+    pattern <- paste0("^cfsr_profile_national_([0-9]{4}_[0-9]{2})\\.rds$")
+    all_files <- list.files(data_dir, pattern = pattern)
+    if (length(all_files) == 0) return(character(0))
+    periods <- gsub("cfsr_profile_national_(.*)\\.rds", "\\1", all_files)
+  } else {
+    pattern <- paste0("^", state, "_cfsr_profile_", type, "_([0-9]{4}_[0-9]{2})\\.rds$")
+    all_files <- list.files(data_dir, pattern = pattern)
+    if (length(all_files) == 0) return(character(0))
+    periods <- gsub(paste0(state, "_cfsr_profile_", type, "_(.*)\\.rds"), "\\1", all_files)
   }
-
-  periods <- gsub(paste0(state, "_cfsr_indicators_(.*)\\.rds"), "\\1", all_files)
 
   # Sort in descending order (most recent first)
   periods <- sort(periods, decreasing = TRUE)
@@ -28,36 +40,51 @@ get_available_profiles <- function(state) {
   return(periods)
 }
 
-#' Load CFSR data based on state and profile parameters
+#' Load CFSR data based on state, profile type, and period
 #'
-#' @param state Two-letter state code (e.g., "MD", "KY")
+#' @param state Two-letter state code (e.g., "MD", "KY") - ignored for national type
 #' @param profile Profile period (e.g., "2025_02", "2024_08", or "latest")
-#' @return Data frame with CFSR indicators
-load_cfsr_data <- function(state, profile = "latest") {
+#' @param type Profile type: "national", "rsp", or "state"
+#' @return Data frame with CFSR data
+load_cfsr_data <- function(state, profile = "latest", type = "national") {
   # Convert state to uppercase
   state <- toupper(state)
+
+  # Validate type
+  valid_types <- c("national", "rsp", "state")
+  if (!type %in% valid_types) {
+    warning("Invalid profile type '", type, "'. Using 'national'.")
+    type <- "national"
+  }
 
   # Build file path in shared location
   data_dir <- "data"  # Relative to app directory
 
+  # If "latest" requested, dynamically find most recent profile
   if (profile == "latest") {
-    filename <- paste0(state, "_cfsr_indicators_latest.rds")
+    available <- get_available_profiles(state, type)
+    if (length(available) == 0) {
+      stop("No profiles available for ", type,
+           if (type != "national") paste0(" (", state, ")"))
+    }
+    profile <- available[1]  # First is most recent (sorted descending)
+    message("Using most recent profile: ", profile)
+  }
+
+  # Naming conventions:
+  # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
+  # - rsp/state: {STATE}_cfsr_profile_{type}_{PERIOD}.rds (state-specific)
+  if (type == "national") {
+    filename <- paste0("cfsr_profile_national_", profile, ".rds")
   } else {
-    filename <- paste0(state, "_cfsr_indicators_", profile, ".rds")
+    filename <- paste0(state, "_cfsr_profile_", type, "_", profile, ".rds")
   }
 
   file_path <- file.path(data_dir, filename)
 
   # Check if file exists
   if (!file.exists(file_path)) {
-    # Try fallback to latest
-    fallback_path <- file.path(data_dir, paste0(state, "_cfsr_indicators_latest.rds"))
-    if (file.exists(fallback_path)) {
-      message("Profile '", profile, "' not found for ", state, ". Using latest.")
-      file_path <- fallback_path
-    } else {
-      stop("Data file not found: ", file_path, "\nAlso checked: ", fallback_path)
-    }
+    stop("Data file not found: ", file_path)
   }
 
   # Load and return data

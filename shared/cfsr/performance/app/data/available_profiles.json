@@ -1,11 +1,22 @@
 {
-  "KY": [
-    {"value": "2025_08", "label": "August 2025"},
-    {"value": "2025_02", "label": "February 2025"}
-  ],
-  "MD": [
+  "national": [
     {"value": "2025_02", "label": "February 2025"},
     {"value": "2024_08", "label": "August 2024"},
     {"value": "2024_02", "label": "February 2024"}
-  ]
+  ],
+  "rsp": {
+    "KY": [
+      {"value": "2025_08", "label": "August 2025"},
+      {"value": "2025_02", "label": "February 2025"}
+    ],
+    "MD": [
+      {"value": "2025_02", "label": "February 2025"},
+      {"value": "2024_08", "label": "August 2024"},
+      {"value": "2024_02", "label": "February 2024"}
+    ]
+  },
+  "state": {
+    "KY": [],
+    "MD": []
+  }
 }

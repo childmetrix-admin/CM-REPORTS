@@ -36,9 +36,10 @@ source("modules/indicator_page.R")
 # So we load the default (MD, latest) here, and app.R will handle dynamic
 # reloading based on URL parameters
 
-# Load default data (Maryland, latest profile)
+# Load default data (Maryland, latest national profile)
 # Data files are in shared/cfsr/performance/app/data/
-app_data <- load_cfsr_data(state = "MD", profile = "latest")
+# Naming convention: {STATE}_cfsr_profile_{type}_{PERIOD}.rds
+app_data <- load_cfsr_data(state = "MD", profile = "latest", type = "national")
 
 #####################################
 # GLOBAL VARIABLES ----
