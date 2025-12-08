@@ -157,39 +157,21 @@ cat("\nSaving RDS Files\n")
 cat("-"=rep("-", 70), sep="")
 cat("\n\n")
 
-# Save for Shiny app - Multiple locations and filenames
+# Save for Shiny app
+# National data is identical across states, so save WITHOUT state prefix
+# This avoids duplicate files (MD_...national = KY_...national = etc.)
 
-# 1. DEV: Period-specific file in app_data
-output_dir_dev <- file.path(data_dir, "app_data", use_state)
-if (!dir.exists(output_dir_dev)) {
-  dir.create(output_dir_dev, recursive = TRUE)
-}
-
-output_file_period <- file.path(output_dir_dev, paste0("cfsr_indicators_", use_period, ".rds"))
-saveRDS(app_data, output_file_period)
-message("✓ Saved to DEV (period-specific): ", output_file_period)
-
-# 2. DEV: Latest file in app_data
-output_file_latest <- file.path(output_dir_dev, "cfsr_indicators_latest.rds")
-saveRDS(app_data, output_file_latest)
-message("✓ Saved to DEV (latest): ", output_file_latest)
-
-# 3. PROD: Period-specific file with state prefix (shared app location)
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }
 
+# PROD: Period-specific file (no state prefix - shared across all states)
+# Note: No _latest.rds file needed - app dynamically finds most recent profile
 output_file_prod_period <- file.path(output_dir_prod,
-                                     paste0(tolower(use_state), "_cfsr_indicators_", use_period, ".rds"))
+  paste0("cfsr_profile_national_", use_period, ".rds"))
 saveRDS(app_data, output_file_prod_period)
-message("✓ Saved to PROD (period-specific): ", output_file_prod_period)
-
-# 4. PROD: Latest file with state prefix (shared app location)
-output_file_prod_latest <- file.path(output_dir_prod,
-                                     paste0(tolower(use_state), "_cfsr_indicators_latest.rds"))
-saveRDS(app_data, output_file_prod_latest)
-message("✓ Saved to PROD (latest): ", output_file_prod_latest)
+message("Saved to PROD: ", output_file_prod_period)
 
 # Print summary
 cat("\n")

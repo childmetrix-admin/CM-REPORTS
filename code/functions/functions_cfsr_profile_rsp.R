@@ -188,7 +188,7 @@ find_and_convert_cfsr_pdf <- function(state_code = NULL,
 setup_cfsr_folders <- function(profile_period,
                                 state_code,
                                 assign_globals = TRUE,
-                                base_data_dir = "D:/repo_childmetrix/cfsr-profile-pdf/data") {
+                                base_data_dir = "D:/repo_childmetrix/cfsr-profile/data") {
 
   # Validate inputs
   if (missing(profile_period) || is.null(profile_period)) {
@@ -511,53 +511,132 @@ cfsr_profile_extract_asof_date <- function(data_df) {
   )
 }
 
-# Convert a period string (e.g., 19A19B) to a meaningful period label
+# Convert RSP period strings to meaningful labels
 # -------------------------------
+# RSP data uses different period formats than the National data:
+# - Top table: 19B20A, 20A20B, 20B21A (standard AB periods)
+# - Bottom table: 19AB_FY19, 20AB_FY20 (AFCARS AB + NCANDS FY combined)
+# - Bottom table: FY19-20, FY20-21 (fiscal year spans for recurrence)
 
-make_period_meaningful <- function(period) {
+make_period_meaningful_rsp <- function(period) {
+  if (is.na(period) || period == "" || period == "NA") {
+    return(NA_character_)
+  }
+
+  # Case 1: Format "YYAYYB" (e.g., "20A20B") => Oct 'prev_year - Sep 'year
   if (grepl("^[0-9]{2}A[0-9]{2}B$", period)) {
-    # Case 1: Format "YYAYYB" (e.g., "19A19B") => Oct 'prev_year - Sep 'year
     year1 <- as.numeric(substr(period, 1, 2))
     year2 <- as.numeric(substr(period, 4, 5))
     start_year <- (year1 - 1) + 2000
     start_label <- paste0("Oct '", substr(as.character(start_year), 3, 4))
     end_label <- paste0("Sep '", substr(as.character(year2 + 2000), 3, 4))
     return(paste(start_label, "-", end_label))
-  } else if (grepl("^[0-9]{2}B[0-9]{2}A$", period)) {
-    # Case 2: Format "YYBYYA" (e.g., "19B20A") => Apr 'year - Mar 'next_year
+  }
+
+  # Case 2: Format "YYBYYA" (e.g., "19B20A") => Apr 'year - Mar 'next_year
+  if (grepl("^[0-9]{2}B[0-9]{2}A$", period)) {
     year1 <- as.numeric(substr(period, 1, 2))
     year2 <- as.numeric(substr(period, 4, 5))
     start_label <- paste0("Apr '", substr(as.character(year1 + 2000), 3, 4))
     end_label <- paste0("Mar '", substr(as.character(year2 + 2000), 3, 4))
     return(paste(start_label, "-", end_label))
-  } else if (grepl("^[0-9]{2}AB,FY[0-9]{2}$", period)) {
-    # Case 3: Format "YYAB,FYYY" (e.g., "20AB,FY20") => Oct 'prev_year - Sep 'year, FY year
-    # AFCARS AB (two 6-month submissions) + NCANDS FY
-    # String positions: "20AB,FY20"
-    #                    12345678 9
+  }
+
+  # Case 3: Format "YYAB_FYYY" (e.g., "20AB_FY20") => Oct 'prev_year - Sep 'year, FY20
+  # RSP bottom table uses underscore separator (different from national which uses comma)
+  # String positions: "20AB_FY20"
+  #                    123456789
+  if (grepl("^[0-9]{2}AB_FY[0-9]{2}$", period)) {
     year <- as.numeric(substr(period, 1, 2))
-    fy_year <- as.numeric(substr(period, 8, 9))  # Fixed: was 7,8 should be 8,9
+    fy_year <- substr(period, 8, 9)  # Keep as 2-digit string
     start_year <- (year - 1) + 2000
     end_year <- year + 2000
-    fy_full <- fy_year + 2000
     return(paste0("Oct '", substr(as.character(start_year), 3, 4),
                   " - Sep '", substr(as.character(end_year), 3, 4),
-                  ", FY ", fy_full))
-  } else if (grepl("^FY[0-9]{2}-[0-9]{2}$", period)) {
-    # Case 4: Format "FYYY-YY" (e.g., "FY20-21") => FY year1 - year2
-    # Two NCANDS FY submissions
-    year1 <- as.numeric(substr(period, 3, 4))
-    year2 <- as.numeric(substr(period, 6, 7))
-    fy1_full <- year1 + 2000
-    fy2_full <- year2 + 2000
-    return(paste0("FY ", fy1_full, " - ", fy2_full))
-  } else {
-    return(NA_character_)
+                  ", FY", fy_year))
   }
+
+  # Case 4: Format "FYYY-YY" (e.g., "FY20-21") => FY20-21 (keep as-is)
+  if (grepl("^FY[0-9]{2}-[0-9]{2}$", period)) {
+    return(period)
+  }
+
+  # Case 5: Format with hyphen ranges like "19B-21B" or "20A-22A" (cohort periods)
+  # These appear in the "Data used" row and represent multi-year cohorts
+  if (grepl("^[0-9]{2}[AB]-[0-9]{2}[AB]$", period)) {
+    # Extract start and end
+    start_part <- substr(period, 1, 3)  # e.g., "19B"
+    end_part <- substr(period, 5, 7)    # e.g., "21B"
+
+    start_year <- as.numeric(substr(start_part, 1, 2)) + 2000
+    start_half <- substr(start_part, 3, 3)
+    end_year <- as.numeric(substr(end_part, 1, 2)) + 2000
+    end_half <- substr(end_part, 3, 3)
+
+    # A = Oct-Mar, B = Apr-Sep
+    start_month <- if (start_half == "A") "Oct" else "Apr"
+    end_month <- if (end_half == "A") "Mar" else "Sep"
+
+    # Adjust start year for A period (Oct of previous year)
+    if (start_half == "A") start_year <- start_year - 1
+
+    return(paste0(start_month, " '", substr(as.character(start_year), 3, 4),
+                  " - ", end_month, " '", substr(as.character(end_year), 3, 4)))
+  }
+
+  # Fallback: return as-is if no pattern matches
+  return(NA_character_)
 }
 
-# Vectorize the function so that it can be applied over a vector of period values
-make_period_meaningful <- Vectorize(make_period_meaningful)
+# Vectorize the function
+make_period_meaningful_rsp <- Vectorize(make_period_meaningful_rsp)
+
+
+# Extract metadata from PDF filename
+# -------------------------------
+# Parses state code and profile version from PDF filename
+# Example: "MD - CFSR 4 Data Profile - August 2024.pdf"
+
+extract_pdf_metadata <- function(pdf_path) {
+  fname <- basename(pdf_path)
+
+  # Extract state code (first 2 characters before " - ")
+  state <- toupper(substr(fname, 1, 2))
+
+  # Extract Month YYYY from filename
+  month_year <- sub(
+    ".*\\b((January|February|March|April|May|June|July|August|September|October|November|December)\\s+[0-9]{4})\\b.*",
+    "\\1",
+    fname
+  )
+
+  if (identical(month_year, fname)) {
+    stop("Couldn't find 'Month YYYY' in PDF file name: ", fname)
+  }
+
+  parts <- strsplit(month_year, " ")[[1]]
+  month <- parts[1]
+  year <- parts[2]
+
+  # Build source citation for PDF
+  # Format: Children's Bureau. (YYYY, MMM). [STATE] - CFSR 4 Data Profile - MMM YYYY [pdf file]. ...
+  month_abbrev <- substr(month, 1, 3)
+  source <- paste0(
+    "Children's Bureau. (", year, ", ", month_abbrev, "). ",
+    state, " - CFSR 4 Data Profile - ", month_abbrev, " ", year, " [pdf file]. ",
+    "U.S. Department of Health & Human Services, Administration for Children and Families, ",
+    "Administration on Children, Youth and Families."
+  )
+
+  list(
+    file_path = pdf_path,
+    state = state,
+    profile_version = month_year,
+    month = month,
+    year = year,
+    source = source
+  )
+}
 
 # Rank states by performance for all periods
 # -------------------------------

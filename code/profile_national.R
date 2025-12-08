@@ -186,7 +186,7 @@ message("\n=== Data processing complete ===")
 message("Now preparing data for Shiny app...\n")
 
 # Run prepare_app_data.R with the same profile_period
-prepare_script <- "D:/repo_childmetrix/cfsr-profile/shiny_app/prepare_app_data.R"
+prepare_script <- "D:/repo_childmetrix/cfsr-profile/code/prepare_app_data.R"
 if (file.exists(prepare_script)) {
   source(prepare_script)
   message("\n=== All done! ===")
