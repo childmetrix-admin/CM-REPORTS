@@ -10,11 +10,11 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-# Source helper functions and load data
-source("functions/utils.R")
-source("functions/data_prep.R")
-source("functions/chart_builder.R")
-source("modules/indicator_page.R")
+# Source helper functions and load data (absolute paths for reliability)
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/utils.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/data_prep.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/chart_builder.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/modules/indicator_page.R")
 
 #####################################
 # DATA LOADING ----

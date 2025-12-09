@@ -17,15 +17,17 @@ library(ggplot2)
 # HELPER FUNCTIONS ----
 #####################################
 
-source("functions/utils.R")
-source("functions/data_prep.R")
-source("functions/chart_builder.R")
+# Shared functions at performance/ level (use absolute paths for reliability)
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/utils.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/data_prep.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/chart_builder.R")
 
 #####################################
 # MODULES ----
 #####################################
 
-source("modules/indicator_page.R")
+# Shared modules at performance/ level (use absolute paths for reliability)
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/modules/indicator_page.R")
 
 #####################################
 # LOAD DATA ----

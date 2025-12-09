@@ -1,49 +1,124 @@
-# Launch CFSR Dashboard
+# Launch CFSR Dashboard (Both Apps)
 #
-# This script starts the CFSR Statewide Data Indicators interactive dashboard
-# on http://localhost:3838
+# This script starts BOTH CFSR Shiny apps in background processes:
+#   - National comparison app on http://localhost:3838
+#   - RSP (Risk-Standardized Performance) app on http://localhost:3839
 #
 # INSTRUCTIONS:
 # 1. Open this file in R or RStudio
-# 2. Click "Source" or press Ctrl+Shift+S (RStudio) or Ctrl+Shift+Enter (R)
+# 2. Click "Source" or press Ctrl+Shift+S (RStudio)
 # 3. Keep R running - don't close this window!
-# 4. Open your browser to: file:///D:/repo_childmetrix/cm-reports/md/index.html#/cfsr
+# 4. Open your browser to: file:///D:/repo_childmetrix/cm-reports/app.html
 #
-# To stop the dashboard: Press Ctrl+C or close R
+# To stop: Close this R session (both apps will terminate)
 
-# Load shiny package
+# Load required packages
 if (!require("shiny")) {
   install.packages("shiny")
   library(shiny)
 }
 
-# Path to the CFSR dashboard app (shared location)
-app_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app"
-
-# Check if app directory exists
-if (!dir.exists(app_path)) {
-  stop("App directory not found: ", app_path)
+if (!require("callr")) {
+  install.packages("callr")
+  library(callr)
 }
 
-# Check if data file exists
-data_file <- file.path(app_path, "data", "cfsr_indicators_latest.rds")
-if (!file.exists(data_file)) {
-  warning("Data file not found: ", data_file,
+# Path to the CFSR dashboard apps (shared location)
+app_national_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_national"
+app_rsp_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_rsp"
+data_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+
+# Check if app directories exist
+if (!dir.exists(app_national_path)) {
+  stop("National app directory not found: ", app_national_path)
+}
+if (!dir.exists(app_rsp_path)) {
+  stop("RSP app directory not found: ", app_rsp_path)
+}
+
+# Check if data directory exists
+if (!dir.exists(data_path)) {
+  warning("Data directory not found: ", data_path,
           "\n\nYou may need to run cfsr-profile.R first to generate data.")
 }
 
-# Launch the app
-cat("\n===============================================\n")
-cat("  CFSR Dashboard Starting...\n")
-cat("===============================================\n\n")
-cat("Once you see 'Listening on http://127.0.0.1:3838',\n")
-cat("open your browser to:\n\n")
-cat("  file:///D:/repo_childmetrix/cm-reports/md/index.html#/cfsr\n\n")
-cat("Or access directly at:\n\n")
-cat("  http://localhost:3838/?state=MD\n\n")
-cat("Keep this R session running!\n")
-cat("Press Ctrl+C to stop the dashboard.\n\n")
-cat("===============================================\n\n")
+# Launch banner
+cat("\n")
+cat("================================================================\n")
+cat("  CFSR Dashboard - Starting Both Apps...\n")
+cat("================================================================\n\n")
 
-# Run the app
-shiny::runApp(app_path, port = 3838, launch.browser = FALSE)
+# Function to run app in background
+run_app_background <- function(app_path, port) {
+  callr::r_bg(
+    function(path, p) {
+      shiny::runApp(path, port = p, launch.browser = FALSE)
+    },
+    args = list(path = app_path, p = port),
+    supervise = TRUE
+  )
+}
+
+# Start RSP app in background (port 3839)
+cat("Starting RSP app on port 3839...")
+rsp_process <- run_app_background(app_rsp_path, 3839)
+Sys.sleep(2)  # Give it time to start
+if (rsp_process$is_alive()) {
+  cat(" OK\n")
+} else {
+  cat(" FAILED\n")
+  cat("RSP app error:", rsp_process$read_error(), "\n")
+}
+
+# Start National app in background (port 3838)
+cat("Starting National app on port 3838...")
+national_process <- run_app_background(app_national_path, 3838)
+Sys.sleep(2)  # Give it time to start
+if (national_process$is_alive()) {
+  cat(" OK\n")
+} else {
+  cat(" FAILED\n")
+  cat("National app error:", national_process$read_error(), "\n")
+}
+
+cat("\n")
+cat("================================================================\n")
+cat("  Both CFSR Apps Running!\n")
+cat("================================================================\n\n")
+cat("App URLs:\n")
+cat("  National (state-by-state): http://localhost:3838/?state=MD\n")
+cat("  RSP (risk-standardized):   http://localhost:3839/?state=MD\n\n")
+cat("Full platform:\n")
+cat("  file:///D:/repo_childmetrix/cm-reports/app.html\n\n")
+cat("Keep this R session running! Close it to stop both apps.\n")
+cat("================================================================\n\n")
+
+# Keep session alive and monitor processes
+cat("Press Ctrl+C to stop both apps and exit.\n\n")
+
+# Monitor loop - keeps R session alive
+tryCatch({
+  while (TRUE) {
+    Sys.sleep(5)
+
+    # Check if processes died unexpectedly
+    if (!national_process$is_alive() && !rsp_process$is_alive()) {
+      cat("\nBoth apps have stopped.\n")
+      break
+    }
+  }
+}, interrupt = function(e) {
+  cat("\n\nShutting down apps...\n")
+})
+
+# Cleanup on exit
+if (exists("national_process") && national_process$is_alive()) {
+  national_process$kill()
+  cat("National app stopped.\n")
+}
+if (exists("rsp_process") && rsp_process$is_alive()) {
+  rsp_process$kill()
+  cat("RSP app stopped.\n")
+}
+
+cat("Done.\n")

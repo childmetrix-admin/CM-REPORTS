@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CFSR Statewide Data Indicators - Performance Dashboard</title>
+  <title>CFSR Risk-Standardized Performance - Kentucky</title>
   <style>
     body, html {
       margin: 0;
@@ -109,25 +109,24 @@
     <!-- Error/Instructions -->
     <div class="message hidden" id="errorMessage">
       <div class="instructions">
-        <h3>⚠️ Shiny Server Not Running</h3>
-        <p>The CFSR dashboard requires a running Shiny server. To start it:</p>
+        <h3>Shiny Server Not Running</h3>
+        <p>The RSP dashboard requires a running Shiny server. To start it:</p>
 
         <p><strong>Step 1:</strong> Open R or RStudio</p>
 
         <p><strong>Step 2:</strong> Run this command:</p>
-        <div class="code-block">shiny::runApp("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app", port = 3838)</div>
+        <div class="code-block">shiny::runApp("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_rsp", port = 3839)</div>
 
         <p><strong>Step 3:</strong> Once running, choose an option:</p>
         <p>
-          <a href="http://localhost:3838/?state=MD" class="button" target="_blank">Open Dashboard Directly</a>
+          <a href="http://localhost:3839/?state=KY" class="button" target="_blank">Open Dashboard Directly</a>
           <a href="#" class="button" onclick="location.reload(); return false;">Reload This Page</a>
         </p>
 
         <hr style="margin: 20px 0; border: none; border-top: 1px solid #d1d5db;">
 
         <p style="font-size: 13px; color: #6b7280;">
-          <strong>Need help?</strong> See <a href="launch_local.html" target="_blank">detailed instructions</a> or
-          <a href="README.md" target="_blank">README.md</a>
+          <strong>Note:</strong> The RSP app runs on port 3839. The national performance app runs on port 3838.
         </p>
       </div>
     </div>
@@ -137,7 +136,7 @@
       id="shinyFrame"
       class="hidden"
       src=""
-      title="CFSR Statewide Data Indicators Dashboard"
+      title="CFSR Risk-Standardized Performance Dashboard"
       allow="fullscreen"
     ></iframe>
   </div>
@@ -147,33 +146,35 @@
     const loading = document.getElementById('loadingIndicator');
     const error = document.getElementById('errorMessage');
 
+    // RSP app port (different from national app on 3838)
+    const RSP_PORT = 3839;
+
     // Get state from URL query parameter (passed from parent)
     function getStateFromURL() {
       const params = new URLSearchParams(window.location.search);
-      return params.get('state') || 'MD';
+      return params.get('state') || 'KY';
     }
 
     // Get profile period from URL or use default
     function getProfileFromURL() {
       const params = new URLSearchParams(window.location.search);
-      return params.get('profile') || '2025_02';
+      return params.get('profile') || 'latest';
     }
 
     // Check if Shiny server is running
     async function checkShinyServer() {
       try {
-        const response = await fetch('http://localhost:3838/', {
+        const response = await fetch(`http://localhost:${RSP_PORT}/`, {
           method: 'HEAD',
-          mode: 'no-cors' // Won't get response details, but will error if server is down
+          mode: 'no-cors'
         });
         return true;
       } catch (err) {
-        // Try with a timeout
         return new Promise((resolve) => {
           const img = new Image();
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = 'http://localhost:3838/favicon.ico?' + Date.now();
+          img.src = `http://localhost:${RSP_PORT}/favicon.ico?` + Date.now();
           setTimeout(() => resolve(false), 2000);
         });
       }
@@ -190,7 +191,7 @@
 
       if (serverRunning) {
         // Server is running, load the app
-        const appURL = `http://localhost:3838/?state=${state}&profile=${profile}`;
+        const appURL = `http://localhost:${RSP_PORT}/?state=${state}&profile=${profile}`;
         iframe.src = appURL;
 
         iframe.onload = function() {

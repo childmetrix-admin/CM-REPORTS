@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CFSR Statewide Data Indicators - Performance Dashboard</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* Shiny iframe container */
+    .iframe-container {
+      height: 100vh;
+      width: 100%;
+      position: relative;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Loading/Error messages */
+    .message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      max-width: 600px;
+      padding: 24px;
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .instructions {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: left;
+    }
+
+    .instructions h3 {
+      margin-top: 0;
+      color: #92400e;
+    }
+
+    .code-block {
+      background: #1f2937;
+      color: #10b981;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 12px 0;
+      font-family: monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+
+    .button {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 6px;
+      margin: 8px 4px;
+      font-weight: 500;
+    }
+
+    .button:hover {
+      background: #2563eb;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Shiny app iframe -->
+  <div class="iframe-container">
+    <!-- Loading indicator -->
+    <div class="message" id="loadingIndicator">
+      <div class="spinner"></div>
+      <div style="color: #6b7280;">Checking for Shiny server...</div>
+    </div>
+
+    <!-- Error/Instructions -->
+    <div class="message hidden" id="errorMessage">
+      <div class="instructions">
+        <h3>⚠️ Shiny Server Not Running</h3>
+        <p>The CFSR dashboard requires a running Shiny server. To start it:</p>
+
+        <p><strong>Step 1:</strong> Open R or RStudio</p>
+
+        <p><strong>Step 2:</strong> Run this command:</p>
+        <div class="code-block">shiny::runApp("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_national", port = 3838)</div>
+
+        <p><strong>Step 3:</strong> Once running, choose an option:</p>
+        <p>
+          <a href="http://localhost:3838/?state=KY" class="button" target="_blank">Open Dashboard Directly</a>
+          <a href="#" class="button" onclick="location.reload(); return false;">Reload This Page</a>
+        </p>
+
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #d1d5db;">
+
+        <p style="font-size: 13px; color: #6b7280;">
+          <strong>Need help?</strong> See <a href="launch_local.html" target="_blank">detailed instructions</a> or
+          <a href="README.md" target="_blank">README.md</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- The actual iframe -->
+    <iframe
+      id="shinyFrame"
+      class="hidden"
+      src=""
+      title="CFSR Statewide Data Indicators Dashboard"
+      allow="fullscreen"
+    ></iframe>
+  </div>
+
+  <script>
+    const iframe = document.getElementById('shinyFrame');
+    const loading = document.getElementById('loadingIndicator');
+    const error = document.getElementById('errorMessage');
+
+    // Get state from URL query parameter (passed from parent)
+    function getStateFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('state') || 'KY';
+    }
+
+    // Get profile period from URL or use default
+    function getProfileFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('profile') || '2025_02';
+    }
+
+    // Check if Shiny server is running
+    async function checkShinyServer() {
+      try {
+        const response = await fetch('http://localhost:3838/', {
+          method: 'HEAD',
+          mode: 'no-cors' // Won't get response details, but will error if server is down
+        });
+        return true;
+      } catch (err) {
+        // Try with a timeout
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = 'http://localhost:3838/favicon.ico?' + Date.now();
+          setTimeout(() => resolve(false), 2000);
+        });
+      }
+    }
+
+    // Load the Shiny app with state parameter
+    async function loadShinyApp(state, profile) {
+      loading.classList.remove('hidden');
+      error.classList.add('hidden');
+      iframe.classList.add('hidden');
+
+      // Check if server is running
+      const serverRunning = await checkShinyServer();
+
+      if (serverRunning) {
+        // Server is running, load the app
+        const appURL = `http://localhost:3838/?state=${state}&profile=${profile}`;
+        iframe.src = appURL;
+
+        iframe.onload = function() {
+          loading.classList.add('hidden');
+          iframe.classList.remove('hidden');
+        };
+
+        // Fallback timeout
+        setTimeout(function() {
+          if (!iframe.classList.contains('hidden')) return;
+          loading.classList.add('hidden');
+          iframe.classList.remove('hidden');
+        }, 3000);
+      } else {
+        // Server not running, show instructions
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+      }
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      const state = getStateFromURL();
+      const profile = getProfileFromURL();
+
+      loadShinyApp(state, profile);
+    });
+
+    // Listen for messages from parent window
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'stateChange') {
+        const newState = event.data.state;
+        const profile = getProfileFromURL();
+        loadShinyApp(newState, profile);
+      }
+    });
+  </script>
+</body>
+</html>
