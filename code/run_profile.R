@@ -7,20 +7,7 @@
 # USAGE ----
 #####################################
 
-# Workflow 1: Specific state + period + all sources
-# run_profile(state = "md", period = "2025_02", source = "national")
-
-# Workflow 2: All periods for a state
-# run_profile(state = "md", source = "all")
-
-# Workflow 3: All states for a period
-# run_profile(period = "2025_02", source = "all")
-
-# Workflow 4: Specific source only
-# run_profile(state = "md", period = "2025_02", source = "national")
-
-# Workflow 5: See what's available
-# print_available_data()
+# Sourced from run.R
 
 #####################################
 # LIBRARIES & CONFIGURATION ----

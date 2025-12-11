@@ -161,7 +161,7 @@ cat("\n\n")
 # National data is identical across states, so save WITHOUT state prefix
 # This avoids duplicate files (MD_...national = KY_...national = etc.)
 
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app/data"
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }
