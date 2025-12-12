@@ -14,8 +14,8 @@ library(scales)
 #####################################
 
 # Data directory (shared with national app)
-# Data is at performance/data/ level (shared across all apps)
-data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+# Data is at cfsr/data/ level (shared across all apps)
+data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 
 #' Get available RSP profiles for a state
 get_available_rsp_profiles <- function(state) {

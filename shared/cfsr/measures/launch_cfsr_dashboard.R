@@ -25,10 +25,10 @@ if (!require("callr")) {
 }
 
 # Path to the CFSR dashboard apps (shared location)
-app_national_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_national"
-app_rsp_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_rsp"
-app_summary_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_summary"
-data_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+app_national_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_national"
+app_rsp_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_rsp"
+app_summary_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/summary/app_summary"
+data_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 
 # Check if app directories exist
 if (!dir.exists(app_national_path)) {

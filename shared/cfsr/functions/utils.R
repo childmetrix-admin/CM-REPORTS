@@ -17,8 +17,8 @@ get_available_profiles <- function(state, type = "national") {
   }
 
   # Build file path in shared location
-  # Data is at performance/data/ level (shared across all apps)
-  data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+  # Data is at cfsr/data/ level (shared across all apps)
+  data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 
   # Naming conventions:
   # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
@@ -59,8 +59,8 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
   }
 
   # Build file path in shared location
-  # Data is at performance/data/ level (shared across all apps)
-  data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+  # Data is at cfsr/data/ level (shared across all apps)
+  data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 
   # If "latest" requested, dynamically find most recent profile
   if (profile == "latest") {

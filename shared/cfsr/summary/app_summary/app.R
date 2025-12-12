@@ -12,7 +12,7 @@ library(dplyr)
 #####################################
 
 # Data directory (shared with other CFSR apps)
-data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 
 #' Get available RSP profiles for a state
 get_available_rsp_profiles <- function(state) {

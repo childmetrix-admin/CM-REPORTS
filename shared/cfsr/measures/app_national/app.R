@@ -11,17 +11,17 @@ library(tidyr)
 library(ggplot2)
 
 # Source helper functions and load data (absolute paths for reliability)
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/utils.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/data_prep.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/chart_builder.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/modules/indicator_page.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/utils.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/data_prep.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/chart_builder.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/modules/indicator_page.R")
 
 #####################################
 # DATA LOADING ----
 #####################################
 
 # Note: load_cfsr_data() function is defined in functions/utils.R
-# It reads from shared/cfsr/performance/app/data/ directory
+# It reads from shared/cfsr/data/ directory
 
 # Load initial data for UI construction
 # Will be overridden in server based on URL parameters

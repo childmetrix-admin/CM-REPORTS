@@ -17,17 +17,17 @@ library(ggplot2)
 # HELPER FUNCTIONS ----
 #####################################
 
-# Shared functions at performance/ level (use absolute paths for reliability)
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/utils.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/data_prep.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/functions/chart_builder.R")
+# Shared functions at cfsr/ level (use absolute paths for reliability)
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/utils.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/data_prep.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/chart_builder.R")
 
 #####################################
 # MODULES ----
 #####################################
 
-# Shared modules at performance/ level (use absolute paths for reliability)
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/modules/indicator_page.R")
+# Shared modules at cfsr/ level (use absolute paths for reliability)
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/modules/indicator_page.R")
 
 #####################################
 # LOAD DATA ----
@@ -39,8 +39,8 @@ source("D:/repo_childmetrix/cm-reports/shared/cfsr/performance/modules/indicator
 # reloading based on URL parameters
 
 # Load default data (Maryland, latest national profile)
-# Data files are in shared/cfsr/performance/app/data/
-# Naming convention: {STATE}_cfsr_profile_{type}_{PERIOD}.rds
+# Data files are in shared/cfsr/data/
+# Naming convention: cfsr_profile_national_{PERIOD}.rds (or {STATE}_cfsr_profile_{type}_{PERIOD}.rds)
 app_data <- load_cfsr_data(state = "MD", profile = "latest", type = "national")
 
 #####################################
