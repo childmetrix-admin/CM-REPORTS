@@ -494,7 +494,7 @@ ui <- fluidPage(
         margin-right: auto;
       }
       .header {
-        flex: 1;
+        margin-bottom: 24px;
       }
       .header h1 {
         font-size: 1.5rem;
@@ -514,10 +514,6 @@ ui <- fluidPage(
         justify-content: start;
       }
       @media (max-width: 768px) {
-        .header-legend-row {
-          flex-direction: column;
-          gap: 16px;
-        }
         .kpi-grid-row {
           grid-template-columns: 1fr;
           max-width: 500px;
@@ -596,50 +592,61 @@ ui <- fluidPage(
         height: 110px;
         margin: 8px -8px 8px -8px;
       }
-      .header-legend-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
-        gap: 24px;
-      }
-      .legend-box {
-        padding: 12px 16px;
+
+      /* Interpretation guide card styling */
+      .interpretation-kpi {
         background: white;
         border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        flex-shrink: 0;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
-      .legend-title {
+      .interpretation-kpi .kpi-title {
+        font-size: 1.10rem;
         font-weight: 600;
-        font-size: 0.85rem;
-        color: #374151;
+        color: #111827;
         margin-bottom: 12px;
+        line-height: 1.3;
       }
-      .legend-items {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        font-size: 0.75rem;
-        color: #6b7280;
+      .interpretation-legend {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
       }
-      .legend-item {
+      .interpretation-legend-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        font-size: 0.7rem;
+        color: #6b7280;
       }
-      .legend-bar {
-        width: 20px;
-        height: 4px;
-        border-radius: 2px;
+      .interpretation-bar {
+        width: 16px;
+        height: 3px;
+        border-radius: 1.5px;
+        flex-shrink: 0;
       }
-      .legend-bar.better { background: #10b981; }
-      .legend-bar.worse { background: #ef4444; }
-      .legend-bar.nodiff { background: #6b7280; }
-      .legend-bar.national {
+      .interpretation-bar.better { background: #10b981; }
+      .interpretation-bar.worse { background: #ef4444; }
+      .interpretation-bar.nodiff { background: #6b7280; }
+      .interpretation-bar.national {
         background: none;
         border-bottom: 2px dashed #3b82f6;
         height: 0;
+      }
+      .interpretation-guide {
+        font-size: 0.75rem;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+      .interpretation-guide p {
+        margin: 0 0 8px 0;
+      }
+      .interpretation-guide p:last-child {
+        margin-bottom: 0;
       }
 
       /* Summary grid for highlights card V1 (counts-based) */
@@ -728,36 +735,46 @@ ui <- fluidPage(
     "))
   ),
 
-  # Header and Legend on same row
-  div(class = "header-legend-row",
-    # Header (left side)
-    div(class = "header",
-      h1(textOutput("header_title")),
-      div(class = "subtitle", textOutput("header_subtitle"))
-    ),
-
-    # Legend (right side)
-    div(class = "legend-box",
-      div(class = "legend-items",
-        div(class = "legend-item",
-          div(class = "legend-bar better"), span("Statistically better than national")
-        ),
-        div(class = "legend-item",
-          div(class = "legend-bar nodiff"), span("No statistical difference")
-        ),
-        div(class = "legend-item",
-          div(class = "legend-bar worse"), span("Statistically worse than national")
-        ),
-        div(class = "legend-item",
-          div(class = "legend-bar national"), span("National performance")
-        )
-      )
-    )
+  # Header
+  div(class = "header",
+    h1(textOutput("header_title")),
+    div(class = "subtitle", textOutput("header_subtitle"))
   ),
 
-  # Row 1: Safety (2 KPIs)
-  # Note: Performance Summary moved to separate Summary app (port 3840)
+  # Row 1: Interpretation Guide + Safety (3 KPIs total)
   div(class = "kpi-grid-row",
+    # Interpretation guide card
+    div(class = "interpretation-kpi",
+      div(class = "kpi-title", "How to Interpret RSP Charts"),
+
+      # Compact legend
+      div(class = "interpretation-legend",
+        div(class = "interpretation-legend-item",
+          div(class = "interpretation-bar better"),
+          span("Stat. better than national")
+        ),
+        div(class = "interpretation-legend-item",
+          div(class = "interpretation-bar nodiff"),
+          span("No stat. difference")
+        ),
+        div(class = "interpretation-legend-item",
+          div(class = "interpretation-bar worse"),
+          span("Stat. worse than national")
+        ),
+        div(class = "interpretation-legend-item",
+          div(class = "interpretation-bar national"),
+          span("National performance")
+        )
+      ),
+
+      # Guidance text
+      div(class = "interpretation-guide",
+        p("Risk-Standardized Performance (RSP) is the percent or rate of children experiencing the outcome of interest, with risk adjustment. The vertical bars in each graph represent the lower and upper 95% confidence intervals for the RSP."),
+        p("To be statistically better or worse than national performance, the entire RSP interval needs to be above or below national performance (the dotted blue line).")
+      )
+    ),
+
+    # Safety KPIs
     uiOutput("kpi_1"),
     uiOutput("kpi_2")
   ),
