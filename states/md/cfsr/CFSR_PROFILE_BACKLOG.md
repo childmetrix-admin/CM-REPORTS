@@ -132,7 +132,7 @@ Reduce whitespace at the top of the sidebar and main content area to maximize ve
 - Use CSS: `padding-top: 0 !important;` on relevant containers
 
 **File to Edit:**
-- `D:/repo_childmetrix/cm-reports/states/md/cfsr/performance/app/app.R` (CSS section)
+- `D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_national/app.R` (CSS section)
 
 **Acceptance Criteria:**
 - [ ] Top padding reduced by at least 20px

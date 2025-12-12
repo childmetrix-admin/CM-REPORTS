@@ -68,7 +68,7 @@ The platform integrates with data processing pipelines:
 **CFSR Data Pipeline:**
 1. Raw data uploaded to ShareFile: `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
 2. Processed by `cfsr-profile` R project
-3. RDS files saved to: `states/{state}/cfsr/performance/app/data/`
+3. RDS files saved to: `shared/cfsr/data/` (shared across all states)
 4. Shiny dashboard loads data and renders visualizations
 
 See [cfsr-profile repository](https://github.com/childmetrix/cfsr-profile) for data processing details.
@@ -171,7 +171,7 @@ Following ChildMetrix standards:
 
 - **Main Platform**: This README
 - **Maryland State**: [states/md/README.md](states/md/README.md)
-- **CFSR Integration**: [states/md/cfsr/performance/README.md](states/md/cfsr/performance/README.md)
+- **CFSR Integration**: [states/md/cfsr/measures/README.md](states/md/cfsr/measures/README.md)
 
 ---
 
