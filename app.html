@@ -225,14 +225,30 @@
           </div>
         </nav>
 
-        <!-- CFSR Tertiary navigation (shown only when CFSR Performance/Measures is active) -->
-        <nav id="cfsrTertiaryNav" class="flex items-center gap-1 px-4 py-2 border-b bg-slate-50" style="display: none;">
-          <a href="#" id="tertiaryStateVsNational" class="px-3 py-1.5 text-sm hover:bg-white rounded bg-white font-semibold" title="Based on your state's CFSR 4 Data Profile PDF file from the Children's Bureau.">Risk Standardized Performance</a>
-          <a href="#" id="tertiaryStateByState" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on the National - Supplemental Context Data Excel file from the Children's Bureau.">Observed performance (by state)</a>
-          <a href="#" id="tertiaryCountyByCounty" class="px-3 py-1.5 text-sm hover:bg-white rounded" title="Based on your state's Supplemental Context Data Excel file from the Children's Bureau.">Observed performance (by county)</a>
-        </nav>
+        <div class="flex-1 overflow-hidden flex">
+          <!-- CFSR Tertiary Sidebar (shown only when CFSR Measures is active) -->
+          <aside id="cfsrTertiarySidebar" class="bg-slate-50 border-r border-gray-200 flex-shrink-0" style="display: none; width: 200px;">
+            <nav class="py-4 px-3">
+              <ul class="space-y-1 text-sm">
+                <li>
+                  <a href="#" id="tertiaryStateVsNational" class="block px-3 py-2 rounded hover:bg-white bg-white font-semibold text-gray-800" title="Based on your state's CFSR 4 Data Profile PDF file from the Children's Bureau.">
+                    Risk Standardized Performance
+                  </a>
+                </li>
+                <li>
+                  <a href="#" id="tertiaryStateByState" class="block px-3 py-2 rounded hover:bg-white text-gray-700" title="Based on the National - Supplemental Context Data Excel file from the Children's Bureau.">
+                    Observed performance (by state)
+                  </a>
+                </li>
+                <li>
+                  <a href="#" id="tertiaryCountyByCounty" class="block px-3 py-2 rounded hover:bg-white text-gray-700" title="Based on your state's Supplemental Context Data Excel file from the Children's Bureau.">
+                    Observed performance (by county)
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </aside>
 
-        <div class="flex-1 overflow-hidden">
           <iframe id="reportFrame"
                   title="Report"
                   src=""
@@ -445,7 +461,7 @@
       const secondaryPresentations = document.getElementById('secondaryPresentations');
       const secondaryDataDict = document.getElementById('secondaryDataDict');
       const secondaryNotes = document.getElementById('secondaryNotes');
-      const cfsrTertiaryNav = document.getElementById('cfsrTertiaryNav');
+      const cfsrTertiarySidebar = document.getElementById('cfsrTertiarySidebar');
       const tertiaryStateVsNational = document.getElementById('tertiaryStateVsNational');
       const tertiaryStateByState = document.getElementById('tertiaryStateByState');
       const tertiaryCountyByCounty = document.getElementById('tertiaryCountyByCounty');
@@ -569,10 +585,10 @@
 
         // Show/hide tertiary nav based on category and subsection
         if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
-          cfsrTertiaryNav.style.display = 'flex';
+          cfsrTertiarySidebar.style.display = 'block';
           setTertiaryActive(currentTertiary);
         } else {
-          cfsrTertiaryNav.style.display = 'none';
+          cfsrTertiarySidebar.style.display = 'none';
         }
 
         // Handle upload page specially (not in sidebar)
@@ -619,7 +635,7 @@
             } else if (currentTertiary === 'county_by_county') {
               frame.src = `states/${stateCode}/cfsr/measures/cfsr_profile_state.html?profile=${period}`;
             }
-            cfsrTertiaryNav.style.display = 'flex';
+            cfsrTertiarySidebar.style.display = 'block';
             setTertiaryActive(currentTertiary);
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/current/index.html`;
@@ -674,7 +690,7 @@
         e.preventDefault();
         const stateCode = window.CM_STATE || 'md';
         currentSubsection = 'summary';
-        cfsrTertiaryNav.style.display = 'none';
+        cfsrTertiarySidebar.style.display = 'none';
         setSecondaryActive('summary');
 
         if (currentCategory === 'cfsr') {
@@ -701,33 +717,33 @@
           currentTertiary = 'state_vs_national';
           const period = periodSelect.value;
           frame.src = `states/${stateCode}/cfsr/measures/cfsr_profile_rsp.html?profile=${period}`;
-          cfsrTertiaryNav.style.display = 'flex';
+          cfsrTertiarySidebar.style.display = 'block';
           setSecondaryActive('performance');
           setTertiaryActive(currentTertiary);
         } else if (currentCategory === 'in-home') {
           currentSubsection = 'performance';
           frame.src = `states/${stateCode}/in_home/current/index.html`;
-          cfsrTertiaryNav.style.display = 'none';
+          cfsrTertiarySidebar.style.display = 'none';
           setSecondaryActive('performance');
         } else if (currentCategory === 'community') {
           currentSubsection = 'performance';
           frame.src = `states/${stateCode}/community/performance/index.html`;
-          cfsrTertiaryNav.style.display = 'none';
+          cfsrTertiarySidebar.style.display = 'none';
           setSecondaryActive('performance');
         } else if (currentCategory === 'cps') {
           currentSubsection = 'performance';
           frame.src = `states/${stateCode}/cps/performance/index.html`;
-          cfsrTertiaryNav.style.display = 'none';
+          cfsrTertiarySidebar.style.display = 'none';
           setSecondaryActive('performance');
         } else if (currentCategory === 'ooh') {
           currentSubsection = 'performance';
           frame.src = `states/${stateCode}/ooh/performance/index.html`;
-          cfsrTertiaryNav.style.display = 'none';
+          cfsrTertiarySidebar.style.display = 'none';
           setSecondaryActive('performance');
         } else if (currentCategory === 'home') {
           currentSubsection = 'performance';
           frame.src = `states/${stateCode}/home/performance/index.html`;
-          cfsrTertiaryNav.style.display = 'none';
+          cfsrTertiarySidebar.style.display = 'none';
           setSecondaryActive('performance');
         }
       });
@@ -736,7 +752,7 @@
         e.preventDefault();
         const stateCode = window.CM_STATE || 'md';
         currentSubsection = 'presentations';
-        cfsrTertiaryNav.style.display = 'none';
+        cfsrTertiarySidebar.style.display = 'none';
         setSecondaryActive('presentations');
 
         if (currentCategory === 'cfsr') {
@@ -758,7 +774,7 @@
         e.preventDefault();
         const stateCode = window.CM_STATE || 'md';
         currentSubsection = 'data_dictionary';
-        cfsrTertiaryNav.style.display = 'none';
+        cfsrTertiarySidebar.style.display = 'none';
         setSecondaryActive('data_dictionary');
 
         if (currentCategory === 'cfsr') {
@@ -780,7 +796,7 @@
         e.preventDefault();
         const stateCode = window.CM_STATE || 'md';
         currentSubsection = 'notes';
-        cfsrTertiaryNav.style.display = 'none';
+        cfsrTertiarySidebar.style.display = 'none';
         setSecondaryActive('notes');
 
         if (currentCategory === 'cfsr') {
