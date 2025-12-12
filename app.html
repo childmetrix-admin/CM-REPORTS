@@ -832,8 +832,9 @@
         if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
           currentTertiary = 'state_vs_national';
           setTertiaryActive(currentTertiary);
+          const period = periodSelect.value;
           const stateCode = window.CM_STATE || 'md';
-          frame.src = `states/${stateCode}/cfsr/measures/cfsr_profile_rsp.html`;
+          frame.src = `states/${stateCode}/cfsr/measures/cfsr_profile_rsp.html?profile=${period}`;
         }
       });
 
@@ -853,8 +854,9 @@
         if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
           currentTertiary = 'county_by_county';
           setTertiaryActive(currentTertiary);
+          const period = periodSelect.value;
           const stateCode = window.CM_STATE || 'md';
-          frame.src = `states/${stateCode}/cfsr/measures/cfsr_profile_state.html`;
+          frame.src = `states/${stateCode}/cfsr/measures/cfsr_profile_state.html?profile=${period}`;
         }
       });
 
