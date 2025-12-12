@@ -494,7 +494,7 @@ ui <- fluidPage(
         margin-right: auto;
       }
       .header {
-        margin-bottom: 24px;
+        flex: 1;
       }
       .header h1 {
         font-size: 1.5rem;
@@ -514,6 +514,10 @@ ui <- fluidPage(
         justify-content: start;
       }
       @media (max-width: 768px) {
+        .header-legend-row {
+          flex-direction: column;
+          gap: 16px;
+        }
         .kpi-grid-row {
           grid-template-columns: 1fr;
           max-width: 500px;
@@ -592,12 +596,19 @@ ui <- fluidPage(
         height: 110px;
         margin: 8px -8px 8px -8px;
       }
-      .legend-box {
+      .header-legend-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
         margin-bottom: 24px;
-        padding: 16px 20px;
+        gap: 24px;
+      }
+      .legend-box {
+        padding: 12px 16px;
         background: white;
         border: 1px solid #e5e7eb;
-        border-radius: 10px;
+        border-radius: 8px;
+        flex-shrink: 0;
       }
       .legend-title {
         font-weight: 600;
@@ -608,8 +619,8 @@ ui <- fluidPage(
       .legend-items {
         display: flex;
         flex-wrap: wrap;
-        gap: 20px;
-        font-size: 0.8rem;
+        gap: 16px;
+        font-size: 0.75rem;
         color: #6b7280;
       }
       .legend-item {
@@ -717,26 +728,29 @@ ui <- fluidPage(
     "))
   ),
 
-  # Header
-  div(class = "header",
-    h1(textOutput("header_title")),
-    div(class = "subtitle", textOutput("header_subtitle"))
-  ),
+  # Header and Legend on same row
+  div(class = "header-legend-row",
+    # Header (left side)
+    div(class = "header",
+      h1(textOutput("header_title")),
+      div(class = "subtitle", textOutput("header_subtitle"))
+    ),
 
-  # Legend
-  div(class = "legend-box",
-    div(class = "legend-items",
-      div(class = "legend-item",
-        div(class = "legend-bar better"), span("Statistically better than national")
-      ),
-      div(class = "legend-item",
-        div(class = "legend-bar nodiff"), span("No statistical difference")
-      ),
-      div(class = "legend-item",
-        div(class = "legend-bar worse"), span("Statistically worse than national")
-      ),
-      div(class = "legend-item",
-        div(class = "legend-bar national"), span("National performance")
+    # Legend (right side)
+    div(class = "legend-box",
+      div(class = "legend-items",
+        div(class = "legend-item",
+          div(class = "legend-bar better"), span("Statistically better than national")
+        ),
+        div(class = "legend-item",
+          div(class = "legend-bar nodiff"), span("No statistical difference")
+        ),
+        div(class = "legend-item",
+          div(class = "legend-bar worse"), span("Statistically worse than national")
+        ),
+        div(class = "legend-item",
+          div(class = "legend-bar national"), span("National performance")
+        )
       )
     )
   ),
