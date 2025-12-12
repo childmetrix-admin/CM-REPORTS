@@ -597,7 +597,8 @@
 
         if (currentSubsection === 'summary') {
           if (currentCategory === 'cfsr') {
-            frame.src = `states/${stateCode}/cfsr/summary/index.html`;
+            const period = periodSelect.value;
+            frame.src = `states/${stateCode}/cfsr/summary/index.html?profile=${period}`;
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/summary/index.html`;
           } else if (currentCategory === 'community') {
@@ -612,9 +613,9 @@
             const period = periodSelect.value;
             // Load the current tertiary page based on currentTertiary state
             if (currentTertiary === 'state_vs_national') {
-              frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html?profile=${period}`;
+              frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_rsp.html?profile=${period}`;
             } else if (currentTertiary === 'state_by_state') {
-              frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
+              frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_national.html?profile=${period}`;
             } else if (currentTertiary === 'county_by_county') {
               frame.src = `states/${stateCode}/cfsr/performance/county_by_county.html?profile=${period}`;
             }
@@ -677,7 +678,8 @@
         setSecondaryActive('summary');
 
         if (currentCategory === 'cfsr') {
-          frame.src = `states/${stateCode}/cfsr/summary/index.html`;
+          const period = periodSelect.value;
+          frame.src = `states/${stateCode}/cfsr/summary/index.html?profile=${period}`;
         } else if (currentCategory === 'in-home') {
           frame.src = `states/${stateCode}/in_home/summary/index.html`;
         } else if (currentCategory === 'community') {
@@ -698,7 +700,7 @@
           currentSubsection = 'performance';
           currentTertiary = 'state_vs_national';
           const period = periodSelect.value;
-          frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html?profile=${period}`;
+          frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_rsp.html?profile=${period}`;
           cfsrTertiaryNav.style.display = 'flex';
           setSecondaryActive('performance');
           setTertiaryActive(currentTertiary);
@@ -808,9 +810,9 @@
           } else if (currentSubsection === 'performance') {
             // For performance, reload the current tertiary page
             if (currentTertiary === 'state_by_state') {
-              frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
+              frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_national.html?profile=${period}`;
             } else if (currentTertiary === 'state_vs_national') {
-              frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html?profile=${period}`;
+              frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_rsp.html?profile=${period}`;
             } else if (currentTertiary === 'county_by_county') {
               frame.src = `states/${stateCode}/cfsr/performance/county_by_county.html?profile=${period}`;
             }
@@ -831,7 +833,7 @@
           currentTertiary = 'state_vs_national';
           setTertiaryActive(currentTertiary);
           const stateCode = window.CM_STATE || 'md';
-          frame.src = `states/${stateCode}/cfsr/performance/state_vs_national.html`;
+          frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_rsp.html`;
         }
       });
 
@@ -842,7 +844,7 @@
           setTertiaryActive(currentTertiary);
           const period = periodSelect.value;
           const stateCode = window.CM_STATE || 'md';
-          frame.src = `states/${stateCode}/cfsr/performance/state_by_state.html?profile=${period}`;
+          frame.src = `states/${stateCode}/cfsr/performance/cfsr_profile_national.html?profile=${period}`;
         }
       });
 

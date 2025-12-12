@@ -1,8 +1,9 @@
-# Launch CFSR Dashboard (Both Apps)
+# Launch CFSR Dashboard (All Apps)
 #
-# This script starts BOTH CFSR Shiny apps in background processes:
+# This script starts ALL CFSR Shiny apps in background processes:
 #   - National comparison app on http://localhost:3838
 #   - RSP (Risk-Standardized Performance) app on http://localhost:3839
+#   - Summary (Performance Summary) app on http://localhost:3840
 #
 # INSTRUCTIONS:
 # 1. Open this file in R or RStudio
@@ -10,7 +11,7 @@
 # 3. Keep R running - don't close this window!
 # 4. Open your browser to: file:///D:/repo_childmetrix/cm-reports/app.html
 #
-# To stop: Close this R session (both apps will terminate)
+# To stop: Close this R session (all apps will terminate)
 
 # Load required packages
 if (!require("shiny")) {
@@ -26,6 +27,7 @@ if (!require("callr")) {
 # Path to the CFSR dashboard apps (shared location)
 app_national_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_national"
 app_rsp_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_rsp"
+app_summary_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/app_summary"
 data_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
 
 # Check if app directories exist
@@ -34,6 +36,9 @@ if (!dir.exists(app_national_path)) {
 }
 if (!dir.exists(app_rsp_path)) {
   stop("RSP app directory not found: ", app_rsp_path)
+}
+if (!dir.exists(app_summary_path)) {
+  stop("Summary app directory not found: ", app_summary_path)
 }
 
 # Check if data directory exists
@@ -45,7 +50,7 @@ if (!dir.exists(data_path)) {
 # Launch banner
 cat("\n")
 cat("================================================================\n")
-cat("  CFSR Dashboard - Starting Both Apps...\n")
+cat("  CFSR Dashboard - Starting All Apps...\n")
 cat("================================================================\n\n")
 
 # Function to run app in background
@@ -81,20 +86,32 @@ if (national_process$is_alive()) {
   cat("National app error:", national_process$read_error(), "\n")
 }
 
+# Start Summary app in background (port 3840)
+cat("Starting Summary app on port 3840...")
+summary_process <- run_app_background(app_summary_path, 3840)
+Sys.sleep(2)  # Give it time to start
+if (summary_process$is_alive()) {
+  cat(" OK\n")
+} else {
+  cat(" FAILED\n")
+  cat("Summary app error:", summary_process$read_error(), "\n")
+}
+
 cat("\n")
 cat("================================================================\n")
-cat("  Both CFSR Apps Running!\n")
+cat("  All CFSR Apps Running!\n")
 cat("================================================================\n\n")
 cat("App URLs:\n")
 cat("  National (state-by-state): http://localhost:3838/?state=MD\n")
-cat("  RSP (risk-standardized):   http://localhost:3839/?state=MD\n\n")
+cat("  RSP (risk-standardized):   http://localhost:3839/?state=MD\n")
+cat("  Summary (performance):     http://localhost:3840/?state=MD\n\n")
 cat("Full platform:\n")
 cat("  file:///D:/repo_childmetrix/cm-reports/app.html\n\n")
-cat("Keep this R session running! Close it to stop both apps.\n")
+cat("Keep this R session running! Close it to stop all apps.\n")
 cat("================================================================\n\n")
 
 # Keep session alive and monitor processes
-cat("Press Ctrl+C to stop both apps and exit.\n\n")
+cat("Press Ctrl+C to stop all apps and exit.\n\n")
 
 # Monitor loop - keeps R session alive
 tryCatch({
@@ -102,8 +119,8 @@ tryCatch({
     Sys.sleep(5)
 
     # Check if processes died unexpectedly
-    if (!national_process$is_alive() && !rsp_process$is_alive()) {
-      cat("\nBoth apps have stopped.\n")
+    if (!national_process$is_alive() && !rsp_process$is_alive() && !summary_process$is_alive()) {
+      cat("\nAll apps have stopped.\n")
       break
     }
   }
@@ -119,6 +136,10 @@ if (exists("national_process") && national_process$is_alive()) {
 if (exists("rsp_process") && rsp_process$is_alive()) {
   rsp_process$kill()
   cat("RSP app stopped.\n")
+}
+if (exists("summary_process") && summary_process$is_alive()) {
+  summary_process$kill()
+  cat("Summary app stopped.\n")
 }
 
 cat("Done.\n")

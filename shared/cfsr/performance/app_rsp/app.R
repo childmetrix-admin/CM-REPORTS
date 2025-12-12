@@ -48,7 +48,18 @@ load_rsp_data <- function(state, profile = "latest") {
     stop("RSP data file not found: ", file_path)
   }
 
-  readRDS(file_path)
+  data <- readRDS(file_path)
+
+  # Ensure period is a factor with correct chronological ordering
+  # If period is not already a factor, convert it with sorted levels
+  if (!is.factor(data$period)) {
+    # Get unique periods and sort them
+    # This will sort chronologically for consistent period formats
+    unique_periods <- sort(unique(as.character(data$period)))
+    data$period <- factor(data$period, levels = unique_periods)
+  }
+
+  data
 }
 
 #####################################
@@ -177,7 +188,11 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
         overlaps_national ~ "#6b7280",  # Gray for no difference
         is_better ~ "#10b981",          # Green for better
         TRUE ~ "#ef4444"                # Red for worse
-      )
+      ),
+      # Format label for display
+      rsp_label = ifelse(!is.na(rsp_display),
+                         formatC(rsp_display, digits = 1, format = "f"),
+                         "")
     )
 
   # Calculate y-axis range - always start at 0
@@ -205,19 +220,23 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
       geom_errorbar(data = plot_data_valid,
                     aes(ymin = lower_display, ymax = upper_display,
                         color = bar_color, group = period_label),
-                    width = 0.25, linewidth = 1.5) +
+                    width = 0.2, linewidth = 0.8) +
+      # Line connecting RSP values
+      geom_line(data = plot_data_valid,
+                aes(y = rsp_display, group = 1),
+                color = "#6b7280", linewidth = 0.5) +
       # RSP point values
       geom_point(data = plot_data_valid,
                  aes(y = rsp_display, color = bar_color, group = period_label),
-                 size = 3.5) +
+                 size = 2) +
       scale_color_identity()
   }
 
-  # Add DQ labels for missing data
+  # Add DQ labels for missing data (positioned below national line)
   if (nrow(plot_data_dq) > 0) {
     p <- p +
       geom_text(data = plot_data_dq,
-                aes(y = national_display, label = "DQ"),
+                aes(y = national_display * 0.75, label = "DQ"),
                 color = "#f59e0b", fontface = "bold", size = 3.5)
   }
 
@@ -232,12 +251,226 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
       panel.grid.major.x = element_blank(),
       panel.grid.minor = element_blank(),
       panel.grid.major.y = element_line(color = "#e5e7eb", linewidth = 0.5),
-      plot.margin = margin(5, 10, 5, 5),
+      plot.margin = margin(5, 10, 1, 5),
       plot.background = element_rect(fill = "transparent", color = NA),
       panel.background = element_rect(fill = "transparent", color = NA)
     )
 
   p
+}
+
+#####################################
+# HIGHLIGHTS CARD FUNCTIONS ----
+#####################################
+
+#' Calculate current performance counts
+calculate_current_performance <- function(latest_data) {
+  perf_counts <- list(better = 0, nodiff = 0, worse = 0, dq = 0)
+
+  for (i in seq_len(nrow(latest_data))) {
+    row <- latest_data[i, ]
+
+    # Call existing helper function
+    status <- get_performance_status(
+      rsp = row$rsp,
+      rsp_lower = row$rsp_lower,
+      rsp_upper = row$rsp_upper,
+      national_std = row$national_standard,
+      direction_rule = row$direction_rule,
+      format_type = row$format
+    )
+
+    # Count by status including DQ
+    if (status$status == "better") {
+      perf_counts$better <- perf_counts$better + 1
+    } else if (status$status == "nodiff") {
+      perf_counts$nodiff <- perf_counts$nodiff + 1
+    } else if (status$status == "worse") {
+      perf_counts$worse <- perf_counts$worse + 1
+    } else if (status$status == "dq") {
+      perf_counts$dq <- perf_counts$dq + 1
+    }
+  }
+
+  return(perf_counts)
+}
+
+#' Calculate consistency analysis across all periods
+calculate_consistency_analysis <- function(data) {
+  consistency_counts <- list(always_worse = 0, always_better = 0, other = 0)
+
+  # For each indicator, check consistency across all periods
+  for (ind_sort in rsp_indicator_order) {
+    ind_data <- data %>% filter(indicator_sort == ind_sort)
+
+    if (nrow(ind_data) == 0) next
+
+    # Get metadata for this indicator
+    direction_rule <- ind_data$direction_rule[1]
+    format_type <- ind_data$format[1]
+    national_std <- ind_data$national_standard[1]
+
+    # Track status for each period
+    statuses <- c()
+    has_dq <- FALSE
+
+    for (i in seq_len(nrow(ind_data))) {
+      row <- ind_data[i, ]
+
+      status <- get_performance_status(
+        rsp = row$rsp,
+        rsp_lower = row$rsp_lower,
+        rsp_upper = row$rsp_upper,
+        national_std = national_std,
+        direction_rule = direction_rule,
+        format_type = format_type
+      )
+
+      if (status$status == "dq") {
+        has_dq <- TRUE
+      } else {
+        statuses <- c(statuses, status$status)
+      }
+    }
+
+    # Classify consistency
+    if (length(statuses) == 0) {
+      # All DQ - skip
+      next
+    }
+
+    unique_statuses <- unique(statuses)
+
+    if (length(unique_statuses) == 1 && unique_statuses[1] == "worse") {
+      consistency_counts$always_worse <- consistency_counts$always_worse + 1
+    } else if (length(unique_statuses) == 1 && unique_statuses[1] == "better") {
+      consistency_counts$always_better <- consistency_counts$always_better + 1
+    } else {
+      # Mixed or all nodiff or includes DQ
+      consistency_counts$other <- consistency_counts$other + 1
+    }
+  }
+
+  return(consistency_counts)
+}
+
+#' Build highlights KPI card - VERSION 1 (counts-based)
+#' PRESERVED for potential reversion
+build_highlights_kpi_v1 <- function(current_perf, consistency_counts) {
+  div(class = "kpi-box highlights-kpi",
+    div(class = "kpi-title", "Performance Summary"),
+    div(class = "kpi-subtitle", "Overview of all 7 indicators"),
+
+    # Current Performance Section
+    div(style = "margin-bottom: 12px;",
+      div(style = "font-size: 0.85rem; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase;",
+        "Current Performance vs. National Performance"
+      ),
+      div(class = "summary-grid",
+        div(class = "summary-item",
+          div(class = "summary-count better", current_perf$better),
+          div(class = "summary-label", "Better")
+        ),
+        div(class = "summary-item",
+          div(class = "summary-count nodiff", current_perf$nodiff),
+          div(class = "summary-label", "No Diff")
+        ),
+        div(class = "summary-item",
+          div(class = "summary-count worse", current_perf$worse),
+          div(class = "summary-label", "Worse")
+        ),
+        div(class = "summary-item",
+          div(class = "summary-count dq", current_perf$dq),
+          div(class = "summary-label", "DQ")
+        )
+      )
+    ),
+
+    # Consistency Section
+    div(style = "border-top: 1px solid #e5e7eb; padding-top: 12px;",
+      div(style = "font-size: 0.85rem; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase;",
+        "Performance Consistency"
+      ),
+      div(class = "summary-grid",
+        div(class = "summary-item",
+          div(class = "summary-count worse", consistency_counts$always_worse),
+          div(class = "summary-label", "Always Worse")
+        ),
+        div(class = "summary-item",
+          div(class = "summary-count better", consistency_counts$always_better),
+          div(class = "summary-label", "Always Better")
+        ),
+        div(class = "summary-item",
+          div(class = "summary-count nodiff", consistency_counts$other),
+          div(class = "summary-label", "Mixed")
+        )
+      )
+    )
+  )
+}
+
+#' Build highlights KPI card - VERSION 2 (list-based)
+#' Shows all 7 indicators with their individual status
+build_highlights_kpi_v2 <- function(latest_by_indicator) {
+  # Build indicator rows
+  indicator_rows <- lapply(1:nrow(latest_by_indicator), function(i) {
+    row <- latest_by_indicator[i, ]
+
+    status <- get_performance_status(
+      rsp = row$rsp,
+      rsp_lower = row$rsp_lower,
+      rsp_upper = row$rsp_upper,
+      national_std = row$national_standard,
+      direction_rule = row$direction_rule,
+      format_type = row$format
+    )
+
+    status_class <- status$status
+    status_label <- switch(status$status,
+      "better" = "Better",
+      "nodiff" = "No Diff",
+      "worse" = "Worse",
+      "dq" = "DQ",
+      "Unknown"
+    )
+
+    div(class = "indicator-row",
+      div(class = "indicator-name", row$indicator_very_short),
+      div(class = paste("indicator-status", status_class), status_label)
+    )
+  })
+
+  div(class = "kpi-box highlights-kpi",
+    div(class = "kpi-title", "Performance Summary"),
+    div(class = "kpi-subtitle", "Current vs. national performance"),
+
+    div(class = "indicator-list",
+      indicator_rows
+    )
+  )
+}
+
+#' Build complete highlights card
+build_highlights_card <- function(data) {
+  if (is.null(data) || nrow(data) == 0) {
+    return(NULL)
+  }
+
+  # Get each indicator's most recent period (varies by indicator)
+  # For each indicator, find the last period with valid data
+  latest_by_indicator <- data %>%
+    group_by(indicator_sort) %>%
+    arrange(period) %>%
+    slice_tail(n = 1) %>%
+    ungroup()
+
+  # VERSION 1: Counts-based (preserved)
+  # current_perf <- calculate_current_performance(latest_by_indicator)
+  # consistency_counts <- calculate_consistency_analysis(data)
+  # build_highlights_kpi_v1(current_perf, consistency_counts)
+
+  # VERSION 2: List-based (current)
+  build_highlights_kpi_v2(latest_by_indicator)
 }
 
 #####################################
@@ -257,6 +490,8 @@ ui <- fluidPage(
       .container-fluid {
         padding: 24px;
         max-width: 1400px;
+        margin-left: 0;
+        margin-right: auto;
       }
       .header {
         margin-bottom: 24px;
@@ -271,24 +506,20 @@ ui <- fluidPage(
         color: #6b7280;
         font-size: 0.9rem;
       }
-      .kpi-grid-top {
+      .kpi-grid-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 350px));
         gap: 16px;
         margin-bottom: 16px;
-      }
-      .kpi-grid-bottom {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        max-width: 75%;
-      }
-      @media (max-width: 1200px) {
-        .kpi-grid-top { grid-template-columns: repeat(2, 1fr); }
-        .kpi-grid-bottom { grid-template-columns: repeat(2, 1fr); max-width: 100%; }
+        justify-content: start;
       }
       @media (max-width: 768px) {
-        .kpi-grid-top, .kpi-grid-bottom { grid-template-columns: 1fr; max-width: 100%; }
+        .kpi-grid-row {
+          grid-template-columns: 1fr;
+          max-width: 500px;
+          margin-left: auto;
+          margin-right: auto;
+        }
       }
       .kpi-box {
         background: white;
@@ -296,37 +527,33 @@ ui <- fluidPage(
         border-radius: 10px;
         padding: 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        max-width: 100%;
       }
-      .kpi-box.status-better { border-left: 4px solid #10b981; }
-      .kpi-box.status-worse { border-left: 4px solid #ef4444; }
-      .kpi-box.status-nodiff { border-left: 4px solid #6b7280; }
-      .kpi-box.status-dq { border-left: 4px solid #f59e0b; }
+      .highlights-kpi .kpi-title {
+        background: #0f4c75;
+        color: white;
+        margin: -16px -16px 12px -16px;
+        padding: 12px 16px;
+        border-radius: 10px 10px 0 0;
+      }
       .kpi-title {
-        font-size: 1.05rem;
+        font-size: 1.40rem;
         font-weight: 600;
         color: #111827;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
         line-height: 1.3;
       }
       .kpi-subtitle {
-        font-size: 0.75rem;
-        color: #9ca3af;
+        font-size: 0.8rem;
+        color: #6b7280;
         margin-bottom: 10px;
+        line-height: 1.4;
       }
       .kpi-metrics {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        margin-bottom: 6px;
-      }
-      .kpi-value-section {
-        display: flex;
-        flex-direction: column;
-      }
-      .kpi-value-row {
-        display: flex;
         align-items: baseline;
-        gap: 2px;
+        gap: 6px;
+        margin-bottom: 6px;
       }
       .kpi-value {
         font-size: 1.6rem;
@@ -336,14 +563,26 @@ ui <- fluidPage(
       .kpi-unit {
         font-size: 0.85rem;
         color: #6b7280;
+        # margin-right: 4px;
+      }
+      .kpi-separator {
+        font-size: 1.2rem;
+        color: #d1d5db;
+        margin: 0 4px;
       }
       .kpi-national {
-        text-align: right;
-        font-size: 0.75rem;
+        font-size: 0.9rem; #not in use
         color: #6b7280;
       }
-      .kpi-national .label { display: block; }
-      .kpi-national .value { font-weight: 600; color: #374151; }
+      .kpi-national-label {
+        color: #6b7280;
+        font-size: 0.9rem; 
+      }
+      .kpi-national-value {
+        font-weight: 700;
+        color: #3b82f6;
+        margin-left: 4px;
+      }
       .kpi-direction {
         font-size: 0.7rem;
         color: #6b7280;
@@ -353,19 +592,8 @@ ui <- fluidPage(
         height: 110px;
         margin: 8px -8px 8px -8px;
       }
-      .kpi-status {
-        font-size: 0.7rem;
-        padding: 4px 10px;
-        border-radius: 4px;
-        display: inline-block;
-        font-weight: 500;
-      }
-      .kpi-status.better { background: #d1fae5; color: #065f46; }
-      .kpi-status.worse { background: #fee2e2; color: #991b1b; }
-      .kpi-status.nodiff { background: #f3f4f6; color: #374151; }
-      .kpi-status.dq { background: #fef3c7; color: #92400e; }
       .legend-box {
-        margin-top: 24px;
+        margin-bottom: 24px;
         padding: 16px 20px;
         background: white;
         border: 1px solid #e5e7eb;
@@ -402,6 +630,90 @@ ui <- fluidPage(
         border-bottom: 2px dashed #3b82f6;
         height: 0;
       }
+
+      /* Summary grid for highlights card V1 (counts-based) */
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        gap: 8px;
+      }
+      .summary-item {
+        text-align: center;
+      }
+      .summary-count {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        line-height: 1.2;
+      }
+      .summary-count.better {
+        color: #10b981;
+      }
+      .summary-count.nodiff {
+        color: #6b7280;
+      }
+      .summary-count.worse {
+        color: #ef4444;
+      }
+      .summary-count.dq {
+        color: #f59e0b;
+      }
+      .summary-label {
+        font-size: 0.85rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-weight: 500;
+      }
+
+      /* Indicator list for highlights card V2 (list-based) */
+      .indicator-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .indicator-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: #f9fafb;
+        border-radius: 6px;
+        border-left: 3px solid transparent;
+      }
+      .indicator-row:hover {
+        background: #f3f4f6;
+      }
+      .indicator-name {
+        font-size: 0.875rem;
+        color: #374151;
+        font-weight: 500;
+        flex: 1;
+      }
+      .indicator-status {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 12px;
+        min-width: 70px;
+        text-align: center;
+      }
+      .indicator-status.better {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .indicator-status.nodiff {
+        background: #e5e7eb;
+        color: #374151;
+      }
+      .indicator-status.worse {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .indicator-status.dq {
+        background: #fef3c7;
+        color: #92400e;
+      }
     "))
   ),
 
@@ -411,24 +723,8 @@ ui <- fluidPage(
     div(class = "subtitle", textOutput("header_subtitle"))
   ),
 
-  # Top row: 4 KPI boxes
-  div(class = "kpi-grid-top",
-    uiOutput("kpi_1"),
-    uiOutput("kpi_2"),
-    uiOutput("kpi_3"),
-    uiOutput("kpi_4")
-  ),
-
-  # Bottom row: 3 KPI boxes
-  div(class = "kpi-grid-bottom",
-    uiOutput("kpi_5"),
-    uiOutput("kpi_6"),
-    uiOutput("kpi_7")
-  ),
-
   # Legend
   div(class = "legend-box",
-    div(class = "legend-title", "How to interpret the charts"),
     div(class = "legend-items",
       div(class = "legend-item",
         div(class = "legend-bar better"), span("Statistically better than national")
@@ -440,9 +736,29 @@ ui <- fluidPage(
         div(class = "legend-bar worse"), span("Statistically worse than national")
       ),
       div(class = "legend-item",
-        div(class = "legend-bar national"), span("National standard")
+        div(class = "legend-bar national"), span("National performance")
       )
     )
+  ),
+
+  # Row 1: Safety (2 KPIs)
+  # Note: Performance Summary moved to separate Summary app (port 3840)
+  div(class = "kpi-grid-row",
+    uiOutput("kpi_1"),
+    uiOutput("kpi_2")
+  ),
+
+  # Row 2: Permanency in 12 months (3 KPIs)
+  div(class = "kpi-grid-row",
+    uiOutput("kpi_3"),
+    uiOutput("kpi_4"),
+    uiOutput("kpi_5")
+  ),
+
+  # Row 3: Re-entry and Placement Stability (2 KPIs)
+  div(class = "kpi-grid-row",
+    uiOutput("kpi_6"),
+    uiOutput("kpi_7")
   )
 )
 
@@ -495,6 +811,8 @@ server <- function(input, output, session) {
     paste0("CFSR Round 4 Data Profile | ", profile_ver)
   })
 
+  # Note: Performance Highlights Card moved to separate Summary app (port 3840)
+
   # Generate KPI box for each indicator
   build_kpi_output <- function(indicator_sort_val) {
     data <- rsp_data()
@@ -509,6 +827,7 @@ server <- function(input, output, session) {
 
     # Get metadata
     ind_short <- ind_data$indicator_short[1]
+    ind_desc <- ind_data$description[1]
     format_type <- ind_data$format[1]
     decimal_prec <- ind_data$decimal_precision[1]
     scale_val <- ind_data$scale[1]
@@ -528,43 +847,47 @@ server <- function(input, output, session) {
 
     # Format display values
     if (format_type == "percent") {
-      display_val <- if (!is.na(latest_rsp)) formatC(latest_rsp * 100, digits = decimal_prec, format = "f") else "N/A"
+      display_val <- if (!is.na(latest_rsp)) formatC(latest_rsp * 100, digits = decimal_prec, format = "f") else "DQ"
       unit_label <- "%"
-      subtitle_text <- "RSP (%)"
-      national_display <- paste0(formatC(national_std, digits = decimal_prec, format = "f"), "%")
-    } else {
-      display_val <- if (!is.na(latest_rsp)) formatC(latest_rsp, digits = decimal_prec, format = "f") else "N/A"
-      unit_label <- ""
-      subtitle_text <- paste0("RSP (per ", format(scale_val, big.mark = ","), ")")
       national_display <- formatC(national_std, digits = decimal_prec, format = "f")
+      national_unit <- "%"
+    } else {
+      display_val <- if (!is.na(latest_rsp)) formatC(latest_rsp, digits = decimal_prec, format = "f") else "DQ"
+      unit_label <- ""
+      national_display <- formatC(national_std, digits = decimal_prec, format = "f")
+      national_unit <- ""
     }
 
     # Direction arrow
     arrow <- if (direction_rule == "lt") "\u25BC" else "\u25B2"
 
+    # Determine value color based on performance status
+    value_color <- switch(perf$status,
+      "better" = "#10b981",   # Green
+      "worse" = "#ef4444",    # Red
+      "nodiff" = "#6b7280",   # Gray
+      "dq" = "#f59e0b",       # Orange
+      "#111827"               # Default dark gray
+    )
+
     # Build KPI box
-    div(class = paste("kpi-box", perf$css_class),
+    div(class = "kpi-box",
       div(class = "kpi-title", ind_short),
-      div(class = "kpi-subtitle", subtitle_text),
+      div(class = "kpi-subtitle", ind_desc),
       div(class = "kpi-metrics",
-        div(class = "kpi-value-section",
-          div(class = "kpi-value-row",
-            span(class = "kpi-value", display_val),
-            span(class = "kpi-unit", unit_label)
-          )
-        ),
-        div(class = "kpi-national",
-          span(class = "label", "National:"),
-          span(class = "value", national_display)
-        )
+        span(class = "kpi-value", style = paste0("color: ", value_color), display_val),
+        span(class = "kpi-unit", unit_label),
+        span(class = "kpi-separator", "|"),
+        span(class = "kpi-national-value", national_display),
+        span(class = "kpi-unit", national_unit),
+        span(class = "kpi-national-label", "(National Performance)")
       ),
       div(class = "kpi-direction", paste(arrow, direction_legend)),
       div(class = "kpi-chart-container",
         renderPlot({
           build_rsp_chart(ind_data, national_std, format_type, direction_rule)
         }, height = 100, bg = "transparent")
-      ),
-      div(class = paste("kpi-status", perf$status), perf$label)
+      )
     )
   }
 
