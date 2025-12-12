@@ -299,23 +299,6 @@ expand_rsp_intervals <- function(df) {
   non_interval <- df %>% filter(Measure_Type != "RSP interval")
   interval_rows <- df %>% filter(Measure_Type == "RSP interval")
 
-  # DEBUG: Show raw RSP interval data before parsing
-  if (nrow(interval_rows) > 0) {
-    message("\n=== DEBUG: Raw RSP Interval Data (before parsing) ===")
-    for (i in 1:nrow(interval_rows)) {
-      ind <- interval_rows$Indicator[i]
-      message("\nIndicator: ", ind)
-      # Get all period columns (exclude Indicator, Measure_Type, National_Perf)
-      period_cols <- names(interval_rows)[!names(interval_rows) %in%
-                                           c("Indicator", "Measure_Type", "National_Perf")]
-      for (col in period_cols) {
-        val <- interval_rows[[col]][i]
-        message("  ", col, ": '", ifelse(is.na(val), "NA", val), "'")
-      }
-    }
-    message("=== END DEBUG ===\n")
-  }
-
   lower_rows <- interval_rows %>%
     mutate(Measure_Type = "RSP Lower") %>%
     mutate(across(-c(Indicator, Measure_Type, National_Perf), ~ {
@@ -394,25 +377,9 @@ df_top_raw <- extract_tableau_table(raw_data,
   x_cuts = top_x_cuts
 )
 
-# DEBUG: Show raw extraction before process_table filters
-message("\n=== DEBUG: Raw Top Table (before process_table) ===")
-message("Total rows extracted: ", nrow(df_top_raw))
-message("\nFirst 20 rows (showing y_group and first few columns):")
-print(df_top_raw %>% select(1:6) %>% head(20))
-message("=== END DEBUG ===\n")
-
 df_top_processed <- process_table(df_top_raw, top_cols) %>%
   fix_shadow_text() %>%
   fix_rsp_interval_bleed()
-
-# DEBUG: Show what survived process_table filtering
-message("\n=== DEBUG: After process_table (before indicator names) ===")
-message("Rows after filtering: ", nrow(df_top_processed))
-message("\nMeasure_Type values:")
-print(table(df_top_processed$Measure_Type, useNA = "ifany"))
-message("\nFirst 15 rows:")
-print(df_top_processed %>% select(1:6) %>% head(15))
-message("=== END DEBUG ===\n")
 
 final_top <- df_top_processed %>%
   mutate(Indicator = rep(c(
@@ -676,7 +643,7 @@ if (!file.exists(dict_path)) {
   message("\n--- Saving RDS Files ---")
 
   # PROD: Period-specific file with state prefix (shared app location)
-  output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/performance/data"
+  output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
   if (!dir.exists(output_dir_prod)) {
     dir.create(output_dir_prod, recursive = TRUE)
   }
