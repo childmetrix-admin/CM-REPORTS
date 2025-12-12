@@ -685,6 +685,17 @@
         }
       }
 
+      // Helper function to navigate to CFSR Notes tab (called from within iframes)
+      window.navigateToCfsrNotes = function() {
+        if (currentCategory === 'cfsr') {
+          const stateCode = window.CM_STATE || 'md';
+          currentSubsection = 'notes';
+          cfsrTertiarySidebar.style.display = 'none';
+          setSecondaryActive('notes');
+          frame.src = `states/${stateCode}/cfsr/notes/index.html`;
+        }
+      };
+
       // Secondary menu navigation
       secondarySummary.addEventListener('click', (e) => {
         e.preventDefault();

@@ -602,29 +602,33 @@ ui <- fluidPage(
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
       .interpretation-kpi .kpi-title {
-        font-size: 1.10rem;
+        background: #0f4c75;
+        color: white;
+        margin: -16px -16px 12px -16px;
+        padding: 12px 16px;
+        border-radius: 10px 10px 0 0;
+        font-size: 1.40rem;
         font-weight: 600;
-        color: #111827;
-        margin-bottom: 12px;
         line-height: 1.3;
       }
       .interpretation-legend {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
-        margin-bottom: 12px;
-        padding-bottom: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
         border-bottom: 1px solid #e5e7eb;
       }
       .interpretation-legend-item {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 0.7rem;
-        color: #6b7280;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #374151;
+        font-weight: 500;
       }
       .interpretation-bar {
-        width: 16px;
+        width: 20px;
         height: 3px;
         border-radius: 1.5px;
         flex-shrink: 0;
@@ -632,21 +636,34 @@ ui <- fluidPage(
       .interpretation-bar.better { background: #10b981; }
       .interpretation-bar.worse { background: #ef4444; }
       .interpretation-bar.nodiff { background: #6b7280; }
+      .interpretation-bar.dq { background: #f59e0b; }
       .interpretation-bar.national {
         background: none;
         border-bottom: 2px dashed #3b82f6;
         height: 0;
       }
       .interpretation-guide {
-        font-size: 0.75rem;
-        color: #6b7280;
-        line-height: 1.5;
+        font-size: 0.95rem;
+        color: #374151;
+        line-height: 1.6;
       }
       .interpretation-guide p {
-        margin: 0 0 8px 0;
+        margin: 0 0 10px 0;
       }
       .interpretation-guide p:last-child {
         margin-bottom: 0;
+      }
+      .interpretation-guide a {
+        color: #1C7ED6;
+        text-decoration: none;
+      }
+      .interpretation-guide a:hover {
+        text-decoration: underline;
+      }
+      .dq-text {
+        color: #f59e0b;
+        font-weight: 700;
+        font-size: 0.95rem;
       }
 
       /* Summary grid for highlights card V1 (counts-based) */
@@ -751,26 +768,30 @@ ui <- fluidPage(
       div(class = "interpretation-legend",
         div(class = "interpretation-legend-item",
           div(class = "interpretation-bar better"),
-          span("Stat. better than national")
+          span("Better than national performance")
         ),
         div(class = "interpretation-legend-item",
-          div(class = "interpretation-bar nodiff"),
-          span("No stat. difference")
+          span(class = "dq-text", "DQ"),
+          span("Not calculated due to data quality issues")
         ),
         div(class = "interpretation-legend-item",
           div(class = "interpretation-bar worse"),
-          span("Stat. worse than national")
+          span("Worse than national performance")
         ),
         div(class = "interpretation-legend-item",
           div(class = "interpretation-bar national"),
           span("National performance")
+        ),
+        div(class = "interpretation-legend-item",
+          div(class = "interpretation-bar nodiff"),
+          span("Same as national performance")
         )
       ),
 
       # Guidance text
       div(class = "interpretation-guide",
         p("Risk-Standardized Performance (RSP) is the percent or rate of children experiencing the outcome of interest, with risk adjustment. The vertical bars in each graph represent the lower and upper 95% confidence intervals for the RSP."),
-        p("To be statistically better or worse than national performance, the entire RSP interval needs to be above or below national performance (the dotted blue line).")
+        p("To be statistically better or worse than national performance, the entire RSP interval needs to be above or below national performance (the dotted blue line). See ", tags$a(href = "#", onclick = "if(window.parent.navigateToCfsrNotes) window.parent.navigateToCfsrNotes(); return false;", "Notes"), " for more information.")
       )
     ),
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CFSR Notes</title>
+  <title>CFSR Notes & Footnotes</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -11,34 +11,114 @@
       margin: 2rem auto;
       padding: 0 2rem;
       line-height: 1.6;
+      color: #374151;
     }
-    h1 { color: #4472C4; }
-    .note { background: #f9fafb; padding: 1rem; margin: 1rem 0; border-left: 4px solid #4472C4; }
-    .note-date { color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    h1 {
+      color: #0f4c75;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      color: #0f4c75;
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    .intro {
+      color: #6b7280;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+    .footnote {
+      background: #f9fafb;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-left: 4px solid #0f4c75;
+      border-radius: 0 8px 8px 0;
+    }
+    .footnote h3 {
+      color: #0f4c75;
+      font-size: 1.1rem;
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    .footnote p {
+      margin: 0.5rem 0;
+    }
+    .footnote p:last-child {
+      margin-bottom: 0;
+    }
+    .footnote strong, .footnote b {
+      color: #1f2937;
+      font-weight: 600;
+    }
+    .term {
+      color: #0e9ba4;
+      font-weight: 600;
+    }
+    .note-list {
+      list-style: none;
+      padding: 0;
+    }
+    .note-list li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .note-list li:last-child {
+      border-bottom: none;
+    }
   </style>
 </head>
 <body>
-  <h1>CFSR Notes & Documentation</h1>
-  <p>Technical notes, methodology updates, and important information about CFSR Data Profile reports.</p>
+  <h1>CFSR Notes & Footnotes</h1>
+  <p class="intro">Technical notes, definitions, and important information about CFSR Risk-Standardized Performance reports.</p>
 
-  <div class="note">
-    <div class="note-date"><strong>October 2025</strong></div>
-    <h3>Data Source Updates</h3>
-    <p>Beginning with the August 2025 report, maltreatment recurrence calculations now include a 6-month lookback period to align with federal CFSR standards.</p>
+  <h2>Footnotes</h2>
+
+  <div class="footnote">
+    <h3>National Performance (NP)</h3>
+    <p><strong>National Performance (NP)</strong> is the percent or rate of children in the nation experiencing the <strong>outcome of interest</strong>, with <strong>risk adjustment</strong>. The <strong>outcome of interest</strong> is defined for each indicator (e.g., for Indicator 1, the outcome of interest is victimization of maltreatment while in foster care; a lower rate is better performance).</p>
   </div>
 
-  <div class="note">
-    <div class="note-date"><strong>May 2025</strong></div>
-    <h3>Reporting Period Changes</h3>
-    <p>CFSR Data Profile reports are now generated semi-annually (February and August) instead of quarterly to align with state fiscal year reporting cycles.</p>
+  <div class="footnote">
+    <h3>Risk-Standardized Performance (RSP)</h3>
+    <p><strong>Risk-Standardized Performance (RSP)</strong> is the percent or rate of children in your state experiencing the <strong>outcome of interest</strong>, with <strong>risk adjustment</strong>.</p>
+    <p><strong>Risk adjustment</strong> accounts for factors outside of the state's control that could affect performance on the CFSR indicators.</p>
   </div>
 
-  <div class="note">
-    <div class="note-date"><strong>January 2025</strong></div>
-    <h3>New Performance Indicators</h3>
-    <p>Added three new well-being outcome measures related to educational stability and mental health service delivery for children in foster care.</p>
+  <div class="footnote">
+    <h3>RSP Interval</h3>
+    <p>The <strong>RSP interval</strong> is the range defined by the lower and upper bounds of the 95% confidence interval for your state's RSP. This interval represents the uncertainty in the estimated RSP value.</p>
+    <p>To be statistically better or worse than national performance, the <strong>entire RSP interval</strong> needs to be above or below the national performance line (shown as a dotted blue line in the charts).</p>
+    <p>If the RSP interval overlaps with the national performance line, there is <strong>no statistical difference</strong> between your state's performance and national performance.</p>
   </div>
 
-  <p><em>Placeholder notes. Additional documentation will be added here.</em></p>
+  <div class="footnote">
+    <h3>Data Used</h3>
+    <p>The data used for each profile are identified by:</p>
+    <ul class="note-list">
+      <li><strong>FY</strong> = Federal fiscal year (October 1 - September 30)</li>
+      <li><strong>A</strong> = First half of fiscal year (October 1 - March 31)</li>
+      <li><strong>B</strong> = Second half of fiscal year (April 1 - September 30)</li>
+    </ul>
+    <p>For example, "FY 2024A" refers to data from October 1, 2023 through March 31, 2024.</p>
+  </div>
+
+  <div class="footnote">
+    <h3>Data Quality (DQ) Issues</h3>
+    <p><strong>DQ</strong> = Performance was not calculated due to exceeding the data quality limit on one or more data quality (DQ) checks done for the indicator.</p>
+    <p>When an indicator is marked as "DQ," it means the data did not meet the quality standards required for calculating reliable performance statistics. This could be due to:</p>
+    <ul class="note-list">
+      <li>Missing or incomplete data</li>
+      <li>Data inconsistencies</li>
+      <li>Insufficient sample size</li>
+      <li>Other data quality concerns identified during validation</li>
+    </ul>
+    <p>States should work with their data quality team to address these issues before the next reporting period.</p>
+  </div>
+
 </body>
 </html>
