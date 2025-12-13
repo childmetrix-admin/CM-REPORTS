@@ -119,7 +119,7 @@
 
         <p><strong>Step 3:</strong> Once running, choose an option:</p>
         <p>
-          <a href="http://localhost:3838/?state=MD" class="button" target="_blank">Open Dashboard Directly</a>
+          <a href="http://localhost:3838/" id="directLink" class="button" target="_blank">Open Dashboard Directly</a>
           <a href="#" class="button" onclick="location.reload(); return false;">Reload This Page</a>
         </p>
 
@@ -215,6 +215,12 @@
     window.addEventListener('DOMContentLoaded', function() {
       const state = getStateFromURL();
       const profile = getProfileFromURL();
+
+      // Update direct link with current state
+      const directLink = document.getElementById('directLink');
+      if (directLink) {
+        directLink.href = `http://localhost:3838/?state=${state}&profile=${profile}`;
+      }
 
       loadShinyApp(state, profile);
     });

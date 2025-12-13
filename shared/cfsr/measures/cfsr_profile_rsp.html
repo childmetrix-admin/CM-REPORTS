@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CFSR Risk-Standardized Performance - Kentucky</title>
+  <title>CFSR Risk-Standardized Performance</title>
   <style>
     body, html {
       margin: 0;
@@ -119,7 +119,7 @@
 
         <p><strong>Step 3:</strong> Once running, choose an option:</p>
         <p>
-          <a href="http://localhost:3839/?state=KY" class="button" target="_blank">Open Dashboard Directly</a>
+          <a href="http://localhost:3839/" id="directLink" class="button" target="_blank">Open Dashboard Directly</a>
           <a href="#" class="button" onclick="location.reload(); return false;">Reload This Page</a>
         </p>
 
@@ -152,7 +152,7 @@
     // Get state from URL query parameter (passed from parent)
     function getStateFromURL() {
       const params = new URLSearchParams(window.location.search);
-      return params.get('state') || 'KY';
+      return params.get('state') || 'MD';
     }
 
     // Get profile period from URL or use default
@@ -216,6 +216,12 @@
     window.addEventListener('DOMContentLoaded', function() {
       const state = getStateFromURL();
       const profile = getProfileFromURL();
+
+      // Update direct link with current state
+      const directLink = document.getElementById('directLink');
+      if (directLink) {
+        directLink.href = `http://localhost:${RSP_PORT}/?state=${state}`;
+      }
 
       loadShinyApp(state, profile);
     });
