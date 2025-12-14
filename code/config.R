@@ -89,13 +89,13 @@ discover_periods <- function(state) {
 #'
 #' @param state Lowercase 2-letter state code
 #' @param period Period in YYYY_MM format
-#' @return Named logical vector (national, rsp, state)
+#' @return Named logical vector (national, rsp, observed, state)
 #' @export
 discover_sources <- function(state, period) {
   uploads_path <- file.path(CFSR_SHAREFILE_BASE, state, "cfsr/uploads", period)
 
   if (!dir.exists(uploads_path)) {
-    return(c(national = FALSE, rsp = FALSE, state = FALSE))
+    return(c(national = FALSE, rsp = FALSE, observed = FALSE, state = FALSE))
   }
 
   files <- list.files(uploads_path, full.names = FALSE, ignore.case = TRUE)
@@ -106,6 +106,8 @@ discover_sources <- function(state, period) {
     # RSP: Check for accessible text file OR PDF (PDF will be auto-converted)
     rsp = any(grepl("adobe_to_accessible_text\\.txt$", files, ignore.case = TRUE)) ||
           any(grepl("\\.pdf$", files, ignore.case = TRUE)),
+    # Observed: Check for PDF (same source as RSP, page 4)
+    observed = any(grepl("\\.pdf$", files, ignore.case = TRUE)),
     state = any(grepl("State.*\\.xlsx?$", files, ignore.case = TRUE))
   )
 
@@ -161,11 +163,11 @@ validate_period <- function(period, state = NULL) {
 
 #' Validate source
 #'
-#' @param source Source type (national, rsp, state, or all)
+#' @param source Source type (national, rsp, observed, state, or all)
 #' @return TRUE if valid, stops with error if invalid
 #' @export
 validate_source <- function(source) {
-  valid_sources <- c("national", "rsp", "state", "all")
+  valid_sources <- c("national", "rsp", "observed", "state", "all")
 
   if (!tolower(source) %in% valid_sources) {
     stop("Source must be one of: ", paste(valid_sources, collapse = ", "),

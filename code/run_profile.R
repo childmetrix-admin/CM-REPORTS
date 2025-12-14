@@ -24,7 +24,7 @@ source("D:/repo_childmetrix/cfsr-profile/code/config.R")
 #'
 #' @param state Lowercase 2-letter state code (NULL = all states)
 #' @param period Period in YYYY_MM format (NULL = all periods)
-#' @param source Data source: "national", "rsp", "state", or "all" (default: "all")
+#' @param source Data source: "national", "rsp", "observed", "state", or "all" (default: "all")
 #' @param verbose Print detailed progress messages (default: TRUE)
 #' @return Invisibly returns list of processing results
 #' @export
@@ -226,7 +226,7 @@ process_combination <- function(state, period, source, verbose) {
 
 #' Process a specific data source
 #'
-#' @param source Source type (national, rsp, state)
+#' @param source Source type (national, rsp, observed, state)
 #' @param state State code
 #' @param period Period
 #' @param verbose Print messages
@@ -236,6 +236,7 @@ process_source <- function(source, state, period, verbose) {
   script_path <- switch(source,
     national = file.path(CFSR_CODE_DIR, "profile_national.R"),
     rsp = file.path(CFSR_CODE_DIR, "profile_rsp.R"),
+    observed = file.path(CFSR_CODE_DIR, "profile_observed.R"),
     state = file.path(CFSR_CODE_DIR, "profile_state.R"),
     stop("Unknown source: ", source)
   )
