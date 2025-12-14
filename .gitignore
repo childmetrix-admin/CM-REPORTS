@@ -1,4 +1,5 @@
 *.csv
+!code/cfsr_round4_indicators_dictionary.csv
 *.xlsx
 *.xlsm
 *.docx
