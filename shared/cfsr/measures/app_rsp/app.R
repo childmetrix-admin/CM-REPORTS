@@ -656,8 +656,17 @@ ui <- fluidPage(
       .interpretation-guide a {
         color: #1C7ED6;
         text-decoration: none;
+        cursor: pointer;
       }
       .interpretation-guide a:hover {
+        text-decoration: underline;
+      }
+      .notes-link {
+        color: #1C7ED6;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .notes-link:hover {
         text-decoration: underline;
       }
       .dq-text {
@@ -791,7 +800,7 @@ ui <- fluidPage(
       # Guidance text
       div(class = "interpretation-guide",
         p("Risk-Standardized Performance (RSP) is the percent or rate of children experiencing the outcome of interest, with risk adjustment. The vertical bars in each graph represent the lower and upper 95% confidence intervals for the RSP."),
-        p("To be statistically better or worse than national performance, the entire RSP interval needs to be above or below national performance (the dotted blue line). See ", tags$a(href = "javascript:void(0);", onclick = "if(window.parent && window.parent.navigateToCfsrNotes) { window.parent.navigateToCfsrNotes(); }", "Notes"), " for more information.")
+        p("To be statistically better or worse than national performance, the entire RSP interval needs to be above or below national performance (the dotted blue line).")
       )
     ),
 

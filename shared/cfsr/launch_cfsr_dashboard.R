@@ -4,6 +4,7 @@
 #   - National comparison app on http://localhost:3838
 #   - RSP (Risk-Standardized Performance) app on http://localhost:3839
 #   - Summary (Performance Summary) app on http://localhost:3840
+#   - Observed Performance app on http://localhost:3841
 #
 # INSTRUCTIONS:
 # 1. Open this file in R or RStudio
@@ -28,6 +29,7 @@ if (!require("callr")) {
 app_national_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_national"
 app_rsp_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_rsp"
 app_summary_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/summary/app_summary"
+app_observed_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_observed"
 data_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 
 # Check if app directories exist
@@ -39,6 +41,9 @@ if (!dir.exists(app_rsp_path)) {
 }
 if (!dir.exists(app_summary_path)) {
   stop("Summary app directory not found: ", app_summary_path)
+}
+if (!dir.exists(app_observed_path)) {
+  stop("Observed Performance app directory not found: ", app_observed_path)
 }
 
 # Check if data directory exists
@@ -97,6 +102,17 @@ if (summary_process$is_alive()) {
   cat("Summary app error:", summary_process$read_error(), "\n")
 }
 
+# Start Observed Performance app in background (port 3841)
+cat("Starting Observed Performance app on port 3841...")
+observed_process <- run_app_background(app_observed_path, 3841)
+Sys.sleep(2)  # Give it time to start
+if (observed_process$is_alive()) {
+  cat(" OK\n")
+} else {
+  cat(" FAILED\n")
+  cat("Observed app error:", observed_process$read_error(), "\n")
+}
+
 cat("\n")
 cat("================================================================\n")
 cat("  All CFSR Apps Running!\n")
@@ -104,7 +120,8 @@ cat("================================================================\n\n")
 cat("App URLs:\n")
 cat("  National (state-by-state): http://localhost:3838/?state=MD\n")
 cat("  RSP (risk-standardized):   http://localhost:3839/?state=MD\n")
-cat("  Summary (performance):     http://localhost:3840/?state=MD\n\n")
+cat("  Summary (performance):     http://localhost:3840/?state=MD\n")
+cat("  Observed Performance:      http://localhost:3841/?state=MD&indicator=overview\n\n")
 cat("Full platform:\n")
 cat("  file:///D:/repo_childmetrix/cm-reports/app.html\n\n")
 cat("Keep this R session running! Close it to stop all apps.\n")
@@ -119,7 +136,8 @@ tryCatch({
     Sys.sleep(5)
 
     # Check if processes died unexpectedly
-    if (!national_process$is_alive() && !rsp_process$is_alive() && !summary_process$is_alive()) {
+    if (!national_process$is_alive() && !rsp_process$is_alive() &&
+        !summary_process$is_alive() && !observed_process$is_alive()) {
       cat("\nAll apps have stopped.\n")
       break
     }
@@ -140,6 +158,10 @@ if (exists("rsp_process") && rsp_process$is_alive()) {
 if (exists("summary_process") && summary_process$is_alive()) {
   summary_process$kill()
   cat("Summary app stopped.\n")
+}
+if (exists("observed_process") && observed_process$is_alive()) {
+  observed_process$kill()
+  cat("Observed Performance app stopped.\n")
 }
 
 cat("Done.\n")

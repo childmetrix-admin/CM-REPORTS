@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observed Performance - CFSR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #shiny-container {
+      width: 100vw;
+      height: 100vh;
+      border: 0;
+    }
+    .error-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f9fafb;
+    }
+    .button {
+      display: inline-block;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Error message (shown if Shiny not running) -->
+  <div id="error-message" class="error-container" style="display: none;">
+    <div class="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Shiny App Not Running</h2>
+      <p class="text-gray-600 mb-4">
+        The Observed Performance dashboard requires a local Shiny server.
+      </p>
+      <p class="text-sm text-gray-500 mb-4">
+        Please start the Shiny app on port 3841:
+      </p>
+      <pre class="bg-gray-100 p-4 rounded text-xs mb-4 overflow-x-auto">shiny::runApp("shared/cfsr/measures/app_observed", port = 3841)</pre>
+      <a href="http://localhost:3841/" id="directLink" class="button bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        Open Dashboard Directly
+      </a>
+    </div>
+  </div>
+
+  <!-- Shiny app iframe -->
+  <iframe id="shiny-container" style="display: none;"></iframe>
+
+  <script>
+    const OBSERVED_PORT = 3841;
+
+    // Get state, profile, indicator, and tab from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const state = urlParams.get('state') || 'MD';
+    const profile = urlParams.get('profile') || 'latest';
+    const indicator = urlParams.get('indicator') || 'overview';
+    const tab = urlParams.get('tab') || 'state_us';
+
+    // Construct Shiny app URL
+    const shinyUrl = `http://localhost:${OBSERVED_PORT}/?state=${state}&profile=${profile}&indicator=${indicator}&tab=${tab}`;
+
+    const iframe = document.getElementById('shiny-container');
+    const errorDiv = document.getElementById('error-message');
+    const directLink = document.getElementById('directLink');
+
+    // Update direct link with full URL
+    if (directLink) {
+      directLink.href = shinyUrl;
+    }
+
+    // Check if Shiny server is running
+    fetch(`http://localhost:${OBSERVED_PORT}/`)
+      .then(response => {
+        if (response.ok) {
+          // Shiny is running - load the app
+          iframe.src = shinyUrl;
+          iframe.style.display = 'block';
+          errorDiv.style.display = 'none';
+        } else {
+          // Shiny returned an error
+          iframe.style.display = 'none';
+          errorDiv.style.display = 'flex';
+        }
+      })
+      .catch(() => {
+        // Shiny is not running
+        iframe.style.display = 'none';
+        errorDiv.style.display = 'flex';
+      });
+  </script>
+
+</body>
+</html>

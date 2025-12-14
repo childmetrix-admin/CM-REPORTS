@@ -230,21 +230,76 @@
           <aside id="cfsrTertiarySidebar" class="bg-slate-50 border-r border-gray-200 flex-shrink-0" style="display: none; width: 200px;">
             <nav class="py-4 px-3">
               <ul class="space-y-1 text-sm">
+
+                <!-- RSP - Standalone clickable item -->
                 <li>
-                  <a href="#" id="tertiaryStateVsNational" class="block px-3 py-2 rounded hover:bg-white bg-white font-semibold text-gray-800" title="Based on your state's CFSR 4 Data Profile PDF file from the Children's Bureau.">
+                  <a href="#" id="tertiaryRSP" class="block px-3 py-2 rounded hover:bg-white bg-white font-semibold text-gray-800" title="Risk-standardized performance based on your state's CFSR 4 Data Profile PDF">
                     Risk Standardized Performance
                   </a>
                 </li>
+
+                <!-- Observed Performance - Section heading (not clickable) -->
+                <li class="mt-4 mb-2">
+                  <div class="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Observed Performance
+                  </div>
+                </li>
+
+                <!-- Nested items under Observed Performance -->
                 <li>
-                  <a href="#" id="tertiaryStateByState" class="block px-3 py-2 rounded hover:bg-white text-gray-700" title="Based on the National - Supplemental Context Data Excel file from the Children's Bureau.">
-                    Observed performance (by state)
+                  <a href="#" id="tertiaryObsOverview" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" title="Overview of all 8 indicators for your state">
+                    Overview
                   </a>
                 </li>
+
                 <li>
-                  <a href="#" id="tertiaryCountyByCounty" class="block px-3 py-2 rounded hover:bg-white text-gray-700" title="Based on your state's Supplemental Context Data Excel file from the Children's Bureau.">
-                    Observed performance (by county)
+                  <a href="#" id="tertiaryObsEntry" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="1">
+                    Entry Rate
                   </a>
                 </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsMaltreatment" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="2">
+                    Maltreatment in Care
+                  </a>
+                </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsRecurrence" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="3">
+                    Recurrence
+                  </a>
+                </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsPerm1" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="4">
+                    Perm 12mo - Entries
+                  </a>
+                </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsPerm2" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="5">
+                    Perm 12mo - 12-23mo
+                  </a>
+                </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsPerm3" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="6">
+                    Perm 12mo - 24+mo
+                  </a>
+                </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsReentry" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="7">
+                    Reentry
+                  </a>
+                </li>
+
+                <li>
+                  <a href="#" id="tertiaryObsPlacement" class="block px-3 py-2 rounded hover:bg-white text-gray-700 pl-6" data-indicator="8">
+                    Placement Stability
+                  </a>
+                </li>
+
               </ul>
             </nav>
           </aside>
@@ -462,13 +517,11 @@
       const secondaryDataDict = document.getElementById('secondaryDataDict');
       const secondaryNotes = document.getElementById('secondaryNotes');
       const cfsrTertiarySidebar = document.getElementById('cfsrTertiarySidebar');
-      const tertiaryStateVsNational = document.getElementById('tertiaryStateVsNational');
-      const tertiaryStateByState = document.getElementById('tertiaryStateByState');
-      const tertiaryCountyByCounty = document.getElementById('tertiaryCountyByCounty');
+      const tertiaryRSP = document.getElementById('tertiaryRSP');
 
       let currentCategory = null; // Track current report category (cfsr, cps, etc.)
       let currentSubsection = 'summary'; // Track subsection within CFSR (default to summary)
-      let currentTertiary = 'state_vs_national'; // Track tertiary selection within CFSR Performance
+      let currentTertiary = 'rsp'; // Track tertiary selection within CFSR Performance
 
       function setActive(hash) {
         navList.querySelectorAll('a').forEach(a => {
@@ -492,13 +545,30 @@
       }
 
       function setTertiaryActive(tertiary) {
-        [tertiaryStateVsNational, tertiaryStateByState, tertiaryCountyByCounty].forEach(a => {
-          a.classList.remove('bg-white', 'font-semibold');
+        // Remove active state from all tertiary links
+        const sidebar = document.getElementById('cfsrTertiarySidebar');
+        if (!sidebar) return;
+
+        sidebar.querySelectorAll('a').forEach(link => {
+          link.classList.remove('bg-white', 'font-semibold', 'text-gray-800');
+          link.classList.add('text-gray-700');
         });
 
-        if (tertiary === 'state_vs_national') tertiaryStateVsNational.classList.add('bg-white', 'font-semibold');
-        if (tertiary === 'state_by_state') tertiaryStateByState.classList.add('bg-white', 'font-semibold');
-        if (tertiary === 'county_by_county') tertiaryCountyByCounty.classList.add('bg-white', 'font-semibold');
+        // Add active state to current tertiary
+        let activeLink = null;
+        if (tertiary === 'rsp') {
+          activeLink = document.getElementById('tertiaryRSP');
+        } else if (tertiary === 'obs_overview') {
+          activeLink = document.getElementById('tertiaryObsOverview');
+        } else if (tertiary.startsWith('obs_ind_')) {
+          const indNum = tertiary.replace('obs_ind_', '');
+          activeLink = document.querySelector(`[data-indicator="${indNum}"]`);
+        }
+
+        if (activeLink) {
+          activeLink.classList.remove('text-gray-700');
+          activeLink.classList.add('bg-white', 'font-semibold', 'text-gray-800');
+        }
       }
 
       // Page title configuration
@@ -628,12 +698,13 @@
           if (currentCategory === 'cfsr') {
             const period = periodSelect.value;
             // Load the current tertiary page based on currentTertiary state
-            if (currentTertiary === 'state_vs_national') {
+            if (currentTertiary === 'rsp') {
               frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
-            } else if (currentTertiary === 'state_by_state') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_national.html?state=${stateCode}&profile=${period}`;
-            } else if (currentTertiary === 'county_by_county') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_state.html?state=${stateCode}&profile=${period}`;
+            } else if (currentTertiary === 'obs_overview') {
+              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=overview`;
+            } else if (currentTertiary.startsWith('obs_ind_')) {
+              const indNum = currentTertiary.replace('obs_ind_', '');
+              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=${indNum}&tab=state_us`;
             }
             cfsrTertiarySidebar.style.display = 'block';
             setTertiaryActive(currentTertiary);
@@ -724,7 +795,7 @@
         const stateCode = window.CM_STATE || 'md';
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
-          currentTertiary = 'state_vs_national';
+          currentTertiary = 'rsp';
           const period = periodSelect.value;
           frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
           cfsrTertiarySidebar.style.display = 'block';
@@ -835,12 +906,13 @@
             frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}`;
           } else if (currentSubsection === 'performance') {
             // For performance, reload the current tertiary page
-            if (currentTertiary === 'state_by_state') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_national.html?state=${stateCode}&profile=${period}`;
-            } else if (currentTertiary === 'state_vs_national') {
+            if (currentTertiary === 'rsp') {
               frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
-            } else if (currentTertiary === 'county_by_county') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_state.html?state=${stateCode}&profile=${period}`;
+            } else if (currentTertiary === 'obs_overview') {
+              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=overview`;
+            } else if (currentTertiary.startsWith('obs_ind_')) {
+              const indNum = currentTertiary.replace('obs_ind_', '');
+              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=${indNum}&tab=state_us`;
             }
           } else if (currentSubsection === 'presentations') {
             frame.src = `shared/cfsr/presentations/index.html`;
@@ -853,37 +925,49 @@
       });
 
 	  // Tertiary navigation click handlers
-      tertiaryStateVsNational.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
-          currentTertiary = 'state_vs_national';
-          setTertiaryActive(currentTertiary);
-          const period = periodSelect.value;
-          const stateCode = window.CM_STATE || 'md';
-          frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
-        }
-      });
 
-      tertiaryStateByState.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
-          currentTertiary = 'state_by_state';
-          setTertiaryActive(currentTertiary);
-          const period = periodSelect.value;
-          const stateCode = window.CM_STATE || 'md';
-          frame.src = `shared/cfsr/measures/cfsr_profile_national.html?state=${stateCode}&profile=${period}`;
-        }
-      });
+      // RSP - Risk Standardized Performance
+      if (tertiaryRSP) {
+        tertiaryRSP.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
+            currentTertiary = 'rsp';
+            setTertiaryActive(currentTertiary);
+            const period = periodSelect.value;
+            const stateCode = window.CM_STATE || 'md';
+            frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
+          }
+        });
+      }
 
-      tertiaryCountyByCounty.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
-          currentTertiary = 'county_by_county';
-          setTertiaryActive(currentTertiary);
-          const period = periodSelect.value;
-          const stateCode = window.CM_STATE || 'md';
-          frame.src = `shared/cfsr/measures/cfsr_profile_state.html?state=${stateCode}&profile=${period}`;
-        }
+      // Observed Performance - Overview
+      const tertiaryObsOverview = document.getElementById('tertiaryObsOverview');
+      if (tertiaryObsOverview) {
+        tertiaryObsOverview.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
+            currentTertiary = 'obs_overview';
+            setTertiaryActive(currentTertiary);
+            const period = periodSelect.value;
+            const stateCode = window.CM_STATE || 'md';
+            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=overview`;
+          }
+        });
+      }
+
+      // Observed Performance - Indicators (generic handler for all 8)
+      document.querySelectorAll('[id^="tertiaryObs"][data-indicator]').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
+            const indicatorNum = this.getAttribute('data-indicator');
+            currentTertiary = `obs_ind_${indicatorNum}`;
+            setTertiaryActive(currentTertiary);
+            const period = periodSelect.value;
+            const stateCode = window.CM_STATE || 'md';
+            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=${indicatorNum}&tab=state_us`;
+          }
+        });
       });
 
       // Header utility link handler for Upload
