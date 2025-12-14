@@ -144,10 +144,89 @@ Line endings normalized to LF in repository via `.gitattributes`:
 - **`md/index.html`** - Maryland hub (reference implementation with advanced UI)
 - **`ky/index.html`** - Kentucky hub (simpler tile-based navigation)
 
+## CFSR Shiny Apps
+
+The `shared/cfsr/` directory contains interactive R Shiny dashboards that are embedded into state CFSR pages via iframes.
+
+### App Structure
+
+```
+shared/cfsr/
+├── data/                               # RDS data files from cfsr-profile extraction
+│   ├── {STATE}_cfsr_profile_rsp_{YYYY_MM}.rds
+│   └── {STATE}_cfsr_profile_observed_{YYYY_MM}.rds
+├── measures/
+│   ├── app_national/                   # National comparison app (port 3838)
+│   ├── app_rsp/                        # Risk-Standardized Performance (port 3839)
+│   │   ├── app.R                       # Main app logic
+│   │   └── global.R                    # Data loading and global variables
+│   ├── app_observed/                   # Observed Performance (port 3841)
+│   │   ├── app.R
+│   │   └── global.R
+│   ├── cfsr_profile_rsp.html           # Iframe wrapper for RSP app
+│   └── cfsr_profile_observed.html      # Iframe wrapper for observed app
+├── summary/
+│   └── app_summary/                    # Performance summary app (port 3840)
+└── launch_cfsr_dashboard.R             # Multi-app launcher script
+```
+
+### Data Pipeline
+
+**Source**: Data is extracted from CFSR 4 Data Profile PDFs using the `cfsr-profile` repository
+**Output**: RDS files are saved to `shared/cfsr/data/` for consumption by Shiny apps
+**Format**: Each RDS contains state-specific indicator data with period, performance metrics, and metadata
+
+### Running CFSR Apps Locally
+
+```r
+# Launch all CFSR apps simultaneously on different ports
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/launch_cfsr_dashboard.R")
+```
+
+This starts:
+- **National comparison**: http://localhost:3838
+- **RSP app**: http://localhost:3839
+- **Summary app**: http://localhost:3840
+- **Observed Performance**: http://localhost:3841
+
+Apps run in background R processes and can be stopped via the launcher script.
+
+### App Integration
+
+**Embedding pattern**: Static HTML pages embed Shiny apps via iframes
+```html
+<iframe src="http://localhost:3839/?state=MD&profile=2025_02"
+        style="width: 100%; height: calc(100vh - 100px); border: none;">
+</iframe>
+```
+
+**URL parameters**:
+- `state`: State code (e.g., MD, KY)
+- `profile`: Profile period in YYYY_MM format (e.g., 2025_02)
+
+### Color Palette (Shiny Apps)
+
+Apps use a consistent blue/teal palette matching the static site:
+- **Primary blue**: `#1C7ED6`
+- **Teal accent**: `#0e9ba4`
+- **Warning (DQ)**: `#f59e0b` (amber)
+- **Better than national**: `#16a34a` (green)
+- **Worse than national**: `#dc2626` (red)
+
+## Integration with cfsr-profile Repository
+
+The `cfsr-profile` repository (D:\repo_childmetrix\cfsr-profile\) contains extraction scripts that:
+1. Parse CFSR 4 Data Profile PDFs (from ShareFile)
+2. Extract RSP and observed performance data
+3. Save processed RDS files to `cm-reports/shared/cfsr/data/`
+
+**Workflow**: PDF extraction → RDS output → Shiny app consumption → iframe embedding in static pages
+
 ## Notes
 
+- **Static + Dynamic Hybrid**: Static HTML site with embedded Shiny apps for interactive dashboards
 - **No JavaScript framework** - Vanilla JS for navigation and UI interactions
-- **No server-side code** - Pure static hosting
 - **Mobile-first responsive** - Tailwind utilities + custom media queries for sidebar
 - **Accessibility**: Form inputs use proper labels, buttons have aria-labels
 - **Preview mode**: Current login form is non-functional UI preview; production will integrate real auth
+- **Multi-app architecture**: Shiny apps run on separate ports and are embedded via iframes for modularity
