@@ -65,33 +65,11 @@
     const shinyUrl = `http://localhost:${OBSERVED_PORT}/?state=${state}&profile=${profile}&indicator=${indicator}&tab=${tab}`;
 
     const iframe = document.getElementById('shiny-container');
-    const errorDiv = document.getElementById('error-message');
-    const directLink = document.getElementById('directLink');
 
-    // Update direct link with full URL
-    if (directLink) {
-      directLink.href = shinyUrl;
-    }
-
-    // Check if Shiny server is running
-    fetch(`http://localhost:${OBSERVED_PORT}/`)
-      .then(response => {
-        if (response.ok) {
-          // Shiny is running - load the app
-          iframe.src = shinyUrl;
-          iframe.style.display = 'block';
-          errorDiv.style.display = 'none';
-        } else {
-          // Shiny returned an error
-          iframe.style.display = 'none';
-          errorDiv.style.display = 'flex';
-        }
-      })
-      .catch(() => {
-        // Shiny is not running
-        iframe.style.display = 'none';
-        errorDiv.style.display = 'flex';
-      });
+    // Load the iframe directly (skip CORS-blocked connectivity check)
+    // If Shiny isn't running, user will see Shiny's error page in the iframe
+    iframe.src = shinyUrl;
+    iframe.style.display = 'block';
   </script>
 
 </body>
