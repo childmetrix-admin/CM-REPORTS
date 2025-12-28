@@ -23,7 +23,7 @@ source("D:/repo_childmetrix/cfsr-profile/code/run_profile.R")
 # - state
 
 # Workflow 1: Specific state + period + all 3 files
-run_profile(state = "md", period = "2025_02", source = "observed")
+run_profile(state = "md", period = "2025_02", source = "all")
 
 # Workflow 2: Specific state + period + specific file
 # run_profile(state = "md", period = "2025_02", source = "national")

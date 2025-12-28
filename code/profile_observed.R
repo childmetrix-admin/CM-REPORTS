@@ -363,8 +363,8 @@ message("DEBUG: Expected 6 rows (2 indicators × 3 measure types)")
 if (nrow(df_bottom_processed) == 6) {
   final_bottom <- df_bottom_processed %>%
     mutate(Indicator = rep(c(
-      "Maltreatment in care (victimizations/100,000 days in care)",
-      "Recurrence of maltreatment"
+      "Maltreatment in care (victimizations / 100,000 days in care)",
+      "Maltreatment recurrence within 12 months"
     ), each = 3))
 } else {
   warning("Bottom table has ", nrow(df_bottom_processed), " rows, expected 6. Using as-is.")
@@ -458,6 +458,47 @@ if (nrow(final_bottom) > 0) {
 # Combine top and bottom
 observed_data <- bind_rows(top_long, bottom_long)
 
+########################################
+# JOIN DATA_USED FROM RSP ----
+########################################
+
+# Build path to RSP CSV file (should exist since RSP runs before observed)
+rsp_file_pattern <- paste0(
+  folder_date,
+  " - cfsr profile - rsp - ",
+  format(Sys.Date(), "%Y-%m-%d"),
+  ".csv"
+)
+
+rsp_csv_path <- file.path(
+  base_data_dir,
+  "processed",
+  state_code,
+  profile_period,
+  format(Sys.Date(), "%Y-%m-%d"),
+  "rsp",
+  rsp_file_pattern
+)
+
+# Try to load RSP data to get data_used values
+if (file.exists(rsp_csv_path)) {
+  rsp_data <- read.csv(rsp_csv_path, stringsAsFactors = FALSE)
+
+  # Join on indicator and period to get data_used
+  # Note: State column is added later in mutate(), so we only join on indicator + period
+  observed_data <- observed_data %>%
+    left_join(
+      rsp_data %>% select(indicator, period, data_used),
+      by = c("indicator", "period")
+    )
+
+  cat("  ✓ Joined data_used from RSP file\n")
+} else {
+  # Graceful fallback: add empty data_used column
+  observed_data$data_used <- NA_character_
+  warning("RSP file not found, data_used set to NA: ", rsp_csv_path)
+}
+
 # Get as_of_date from national file if available, otherwise use profile period
 as_of_date <- tryCatch({
   # Try to extract from national file (requires profile_national.R to have run)
@@ -492,6 +533,7 @@ observed_data <- observed_data %>%
     denominator,
     numerator,
     observed_performance,
+    data_used,
     as_of_date,
     profile_version,
     source
