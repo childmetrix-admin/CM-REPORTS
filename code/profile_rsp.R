@@ -95,6 +95,75 @@ raw_data <- raw_data_original %>%
   filter(text != "")
 
 ########################################
+# MALTREATMENT PERIOD EXTRACTION ----
+########################################
+
+#' Extract maltreatment period headers from PDF page 2
+#'
+#' Reads actual period values from the PDF instead of deriving them mathematically.
+#' Handles text fragmentation by concatenating fragments within column boundaries.
+#'
+#' @param raw_data Cleaned PDF text data from page 2
+#' @return Named list with zone_a and zone_b period vectors (length 3 each)
+extract_maltreatment_periods <- function(raw_data) {
+  # Extract period header row (y=484, with ±2 tolerance)
+  period_text <- raw_data %>%
+    filter(y >= 482 & y <= 486) %>%
+    filter(x < 700) %>%  # Exclude footnote area on right
+    arrange(x)
+
+  # Define column boundaries based on observed x-coordinates in PDF
+  # Zone A: Maltreatment in care (##AB_FY##)
+  zone_a_bounds <- list(
+    col1 = c(230, 290),  # 20AB_FY20 at x~244-267
+    col2 = c(300, 370),  # 21AB_FY21 at x~315-338
+    col3 = c(375, 420)   # 22AB_FY22 at x~386-409 (reduced from 440 to avoid footnotes)
+  )
+
+  # Zone B: Recurrence (FY##-##)
+  zone_b_bounds <- list(
+    col1 = c(450, 515),  # FY20-21 at x~467-489
+    col2 = c(525, 590),  # FY21-22 at x~538-560
+    col3 = c(595, 640)   # FY22-23 at x~608-631 (reduced from 660 to avoid footnotes)
+  )
+
+  # Extract Zone A periods
+  zone_a_periods <- sapply(zone_a_bounds, function(bounds) {
+    col_text <- period_text %>%
+      filter(x >= bounds[1] & x <= bounds[2]) %>%
+      pull(text) %>%
+      paste(collapse = "")
+
+    # Clean: remove spaces, commas, ensure underscore separator
+    cleaned <- col_text %>%
+      str_remove_all("\\s|,") %>%
+      str_replace("([0-9]{2}AB)(FY)", "\\1_\\2")
+
+    cleaned
+  })
+
+  # Extract Zone B periods
+  zone_b_periods <- sapply(zone_b_bounds, function(bounds) {
+    col_text <- period_text %>%
+      filter(x >= bounds[1] & x <= bounds[2]) %>%
+      pull(text) %>%
+      paste(collapse = "")
+
+    # Clean: remove spaces, normalize hyphen
+    cleaned <- col_text %>%
+      str_remove_all("\\s") %>%
+      str_replace("FY([0-9]{2})-?([0-9]{2})", "FY\\1-\\2")
+
+    cleaned
+  })
+
+  list(
+    zone_a = unname(zone_a_periods),
+    zone_b = unname(zone_b_periods)
+  )
+}
+
+########################################
 # STATUS CALCULATION FUNCTION ----
 ########################################
 
@@ -453,16 +522,13 @@ final_top <- df_top_processed %>%
 # EXTRACT BOTTOM TABLE ----
 ########################################
 
-generate_bottom_cols <- function(top_cols) {
-  top_periods <- top_cols[4:length(top_cols)]
-  start_year <- as.numeric(str_extract(top_periods[1], "^\\d+")) + 1  # Maltreatment table starts 1 year after top table
-  years <- start_year:(start_year + 2)
-  ab_fy_cols <- paste0(years, "AB_FY", years)
-  fy_cols <- paste0("FY", years, "-", years + 1)
-  c("Indicator", "National_Perf", "Measure_Type", ab_fy_cols, fy_cols)
-}
+# Extract period headers from PDF (replaces mathematical derivation)
+maltreatment_periods <- extract_maltreatment_periods(raw_data)
 
-bottom_cols <- generate_bottom_cols(top_cols)
+# Build column names from extracted periods
+bottom_cols <- c("Indicator", "National_Perf", "Measure_Type",
+                 maltreatment_periods$zone_a,
+                 maltreatment_periods$zone_b)
 
 # Zone A: Maltreatment in care
 zone_a_cuts <- c(135, 165, 215, 285, 355, 425, 520, 610, 700)
@@ -478,22 +544,7 @@ clean_a <- process_table(df_zone_a, bottom_cols) %>%
   fix_shadow_text() %>%
   repair_maltreatment_row()
 
-fix_maltreatment_data_used <- function(df, col_names) {
-  years <- as.numeric(str_extract(col_names[4:6], "^\\d+"))
-  data_used_values <- paste0(years, "A-", years, "B, FY", years, "-", years + 1)
-
-  df %>%
-    mutate(
-      !!col_names[4] := ifelse(Measure_Type == "Data used",
-        data_used_values[1], .data[[col_names[4]]]),
-      !!col_names[5] := ifelse(Measure_Type == "Data used",
-        data_used_values[2], .data[[col_names[5]]]),
-      !!col_names[6] := ifelse(Measure_Type == "Data used",
-        data_used_values[3], .data[[col_names[6]]])
-    )
-}
-
-clean_a <- fix_maltreatment_data_used(clean_a, bottom_cols)
+# Data_used values are already extracted from PDF (no mathematical derivation needed)
 
 # Zone B: Maltreatment recurrence
 zone_b_cuts <- c(135, 165, 215, 285, 355, 425, 495, 570, 650)

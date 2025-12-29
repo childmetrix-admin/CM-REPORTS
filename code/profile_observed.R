@@ -70,6 +70,72 @@ raw_data_original <- suppressMessages(pdf_data(pdf_path))[[4]]
 raw_data <- raw_data_original %>%
   mutate(text = str_replace_all(text, "[^[:graph:]]", "")) %>%
   filter(text != "")
+
+########################################
+# BOTTOM TABLE PERIOD EXTRACTION ----
+########################################
+
+#' Extract bottom table (maltreatment) period headers from PDF page 4
+#'
+#' @param raw_data Cleaned PDF text data from page 4
+#' @return Named list with zone_a and zone_b period vectors (length 3 each)
+extract_observed_bottom_periods <- function(raw_data) {
+  # Extract period header row (y=403, with ±2 tolerance)
+  period_text <- raw_data %>%
+    filter(y >= 401 & y <= 405) %>%
+    arrange(x)
+
+  # Define column boundaries based on observed x-coordinates
+  # Zone A: Maltreatment in care (##AB.FY##)
+  zone_a_bounds <- list(
+    col1 = c(245, 290),  # 19AB_FY19 at x~253-277
+    col2 = c(310, 355),  # 20AB_FY20 at x~320-344
+    col3 = c(375, 425)   # 21AB_FY21 at x~387-411
+  )
+
+  # Zone B: Recurrence (FY##-##)
+  zone_b_bounds <- list(
+    col1 = c(455, 500),  # FY19-20 at x~464-487
+    col2 = c(520, 565),  # FY20-21 at x~531-554
+    col3 = c(585, 635)   # FY21-22 at x~598-621
+  )
+
+  # Extract Zone A periods
+  zone_a_periods <- sapply(zone_a_bounds, function(bounds) {
+    col_text <- period_text %>%
+      filter(x >= bounds[1] & x <= bounds[2]) %>%
+      pull(text) %>%
+      paste(collapse = "")
+
+    # Clean: remove spaces, commas, ensure dot separator
+    cleaned <- col_text %>%
+      str_remove_all("\\s|,") %>%
+      str_replace("([0-9]{2}AB)(FY)", "\\1.\\2")
+
+    cleaned
+  })
+
+  # Extract Zone B periods
+  zone_b_periods <- sapply(zone_b_bounds, function(bounds) {
+    col_text <- period_text %>%
+      filter(x >= bounds[1] & x <= bounds[2]) %>%
+      pull(text) %>%
+      paste(collapse = "")
+
+    # Clean: remove spaces, normalize hyphen
+    cleaned <- col_text %>%
+      str_remove_all("\\s") %>%
+      str_replace("FY([0-9]{2})-?([0-9]{2})", "FY\\1-\\2")
+
+    cleaned
+  })
+
+  list(
+    zone_a = unname(zone_a_periods),
+    zone_b = unname(zone_b_periods)
+  )
+}
+
 # Show sample of data around expected table area
 # Find period headers - search for text matching period patterns (e.g., "19B20A", "20A20B")
 ########################################
@@ -241,9 +307,13 @@ if (nrow(df_top_processed) %% 3 == 0) {
 # - FY20-21: x~475, FY21-22: x~542, FY22-23: x~610
 # Split points between column centers
 bottom_x_cuts <- c(135, 240, 298, 365, 437, 508, 576)
-# Manually define period headers (concatenating fragmented text)
-bottom_cols <- c("Indicator", "Measure_Type", "20AB.FY20", "21AB.FY21", "22AB.FY22",
-                  "FY20-21", "FY21-22", "FY22-23")
+# Extract period headers from PDF (replaces hardcoded values)
+observed_bottom_periods <- extract_observed_bottom_periods(raw_data)
+
+# Build column names from extracted periods
+bottom_cols <- c("Indicator", "Measure_Type",
+                 observed_bottom_periods$zone_a,
+                 observed_bottom_periods$zone_b)
 # Extract bottom table data (y=410 to y=520)
 df_bottom_raw <- extract_tableau_table(raw_data,
   y_min = 410,
