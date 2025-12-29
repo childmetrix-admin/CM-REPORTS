@@ -480,23 +480,56 @@ rsp_csv_path <- file.path(
   rsp_file_pattern
 )
 
-# Try to load RSP data to get data_used values
-if (file.exists(rsp_csv_path)) {
-  rsp_data <- read.csv(rsp_csv_path, stringsAsFactors = FALSE)
+########################################
+# JOIN STATUS AND DATA_USED FROM RSP ----
+########################################
 
-  # Join on indicator and period to get data_used
-  # Note: State column is added later in mutate(), so we only join on indicator + period
+# Load RSP RDS file to get pre-calculated status and data_used
+# RDS is more reliable than CSV path construction
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+rsp_rds_path <- file.path(output_dir_prod,
+  paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
+
+# Try to load RSP data
+if (file.exists(rsp_rds_path)) {
+  rsp_data <- readRDS(rsp_rds_path)
+
+  message("Loading RSP data from: ", rsp_rds_path)
+  message("RSP data has ", nrow(rsp_data), " rows")
+
+  # Join on indicator and period to get status and data_used
   observed_data <- observed_data %>%
     left_join(
-      rsp_data %>% select(indicator, period, data_used),
+      rsp_data %>% select(indicator, period, status, data_used),
       by = c("indicator", "period")
     )
 
-  cat("  ✓ Joined data_used from RSP file\n")
+  # Report join results for transparency
+  n_matched <- sum(!is.na(observed_data$status))
+  n_unmatched <- sum(is.na(observed_data$status))
+
+  message("  ✓ Joined status and data_used from RSP RDS")
+  message("    Matched: ", n_matched, " rows")
+  message("    Unmatched (status=NA): ", n_unmatched, " rows")
+
+  # Show which indicator-period combinations have no RSP match
+  # (Expected for some periods, e.g., FY periods in Maltreatment indicators)
+  if (n_unmatched > 0) {
+    unmatched_summary <- observed_data %>%
+      filter(is.na(status)) %>%
+      distinct(indicator, period) %>%
+      arrange(indicator, period)
+
+    message("    Unmatched indicator-period combinations:")
+    print(unmatched_summary)
+  }
+
 } else {
-  # Graceful fallback: add empty data_used column
+  # Graceful fallback if RSP RDS not found
+  observed_data$status <- NA_character_
   observed_data$data_used <- NA_character_
-  warning("RSP file not found, data_used set to NA: ", rsp_csv_path)
+  warning("RSP RDS file not found: ", rsp_rds_path)
+  warning("Status and data_used set to NA. Run profile_rsp.R first.")
 }
 
 # Get as_of_date from national file if available, otherwise use profile period
@@ -533,6 +566,7 @@ observed_data <- observed_data %>%
     denominator,
     numerator,
     observed_performance,
+    status,        # Added: RSP status (better/worse/nodiff/dq)
     data_used,
     as_of_date,
     profile_version,

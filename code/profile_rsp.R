@@ -95,6 +95,63 @@ raw_data <- raw_data_original %>%
   filter(text != "")
 
 ########################################
+# STATUS CALCULATION FUNCTION ----
+########################################
+
+#' Calculate RSP performance status based on confidence interval overlap
+#'
+#' @param rsp_lower RSP lower CI bound (decimal for percent, e.g., 0.26 = 26%)
+#' @param rsp_upper RSP upper CI bound (same scale as rsp_lower)
+#' @param national_standard National standard (display value, e.g., 35.2 = 35.2%)
+#' @param direction_rule "lt" (lower is better) or "gt" (higher is better)
+#' @param format_type "percent" or "rate"
+#' @return Character: "better", "worse", "nodiff", or "dq"
+calculate_rsp_status <- function(rsp_lower, rsp_upper, national_standard, direction_rule, format_type) {
+  # Handle missing data
+  if (is.na(rsp_lower) || is.na(rsp_upper) || is.na(national_standard)) {
+    return("dq")
+  }
+
+  # Convert RSP bounds to display scale for comparison
+  # RSP for percent indicators stored as decimal (0.26 = 26%)
+  # National standard stored as display value (35.2 = 35.2%)
+  if (format_type == "percent") {
+    lower_display <- rsp_lower * 100
+    upper_display <- rsp_upper * 100
+  } else {
+    lower_display <- rsp_lower
+    upper_display <- rsp_upper
+  }
+
+  # Check if interval overlaps national standard
+  overlaps <- lower_display <= national_standard && upper_display >= national_standard
+
+  if (overlaps) {
+    return("nodiff")
+  }
+
+  # Determine better/worse based on direction
+  if (direction_rule == "lt") {
+    # Lower is better (safety indicators)
+    if (upper_display < national_standard) {
+      return("better")
+    } else {
+      return("worse")
+    }
+  } else {
+    # Higher is better (permanency indicators)
+    if (lower_display > national_standard) {
+      return("better")
+    } else {
+      return("worse")
+    }
+  }
+}
+
+# Vectorize for use with dplyr::mutate()
+calculate_rsp_status <- Vectorize(calculate_rsp_status)
+
+########################################
 # HELPER FUNCTIONS FOR PDF EXTRACTION ----
 ########################################
 
@@ -636,6 +693,28 @@ if (!file.exists(dict_path)) {
     warning("The following indicators did not match the dictionary:")
     print(missing_joins$indicator)
   }
+
+  ########################################
+  # CALCULATE RSP STATUS ----
+  ########################################
+
+  # Calculate RSP status for each row based on confidence interval overlap
+  rsp_app_data <- rsp_app_data %>%
+    mutate(
+      status = calculate_rsp_status(
+        rsp_lower = rsp_lower,
+        rsp_upper = rsp_upper,
+        national_standard = national_standard,
+        direction_rule = direction_rule,
+        format_type = format
+      )
+    )
+
+  message("Calculated RSP status for ", nrow(rsp_app_data), " rows")
+
+  # Verify status distribution (helpful for debugging)
+  status_counts <- table(rsp_app_data$status, useNA = "ifany")
+  message("Status distribution: ", paste(names(status_counts), "=", status_counts, collapse = ", "))
 
   # --- Save RDS Files ---
   # Note: No _latest.rds files needed - app dynamically finds most recent profile
