@@ -19,20 +19,25 @@
 #            observed_performance, as_of_date, profile_version, source
 # IMPORTANT: This script expects state_code and profile_period to be set
 # by the orchestrator (run_profile.R) or manually before sourcing.
+
 #####################################
 # LIBRARIES & UTILITIES ----
 #####################################
+
 # Load packages and generic functions
 if (!exists("state_code") || !exists("profile_period")) {
   message("WARNING: state_code and profile_period not set.")
   message("Either run via run_profile.R or set manually before sourcing.")
 }
 source("D:/repo_childmetrix/utilities-core/loader.R")
-# Load CFSR profile functions (shared functions)
+# Load CFSR profile functions (shared and RSP-specific)
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_shared.R")
 source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
+
 ########################################
 # CONFIGURATION ----
 ########################################
+
 # Establish current period and set up folders and global variables
 # Uses CFSR-specific setup for multi-state support
 my_setup <- setup_cfsr_folders(profile_period, state_code)
@@ -40,9 +45,11 @@ my_setup <- setup_cfsr_folders(profile_period, state_code)
 folder_date <- paste0(state_code, "_", profile_period)
 commitment <- "cfsr profile"
 commitment_description <- "observed"
+
 ########################################
 # FIND AND READ PDF ----
 ########################################
+
 # Find the state-specific CFSR Data Profile PDF
 pdf_files <- list.files(
   folder_uploads,
@@ -58,9 +65,11 @@ pdf_path <- pdf_files[1]
 message("Processing PDF: ", basename(pdf_path))
 # Extract metadata from PDF filename
 pdf_metadata <- extract_pdf_metadata(pdf_path)
+
 ########################################
 # EXTRACT OBSERVED PERFORMANCE DATA FROM PDF ----
 ########################################
+
 library(pdftools)
 library(tidyverse)
 library(stringr)
@@ -138,23 +147,13 @@ extract_observed_bottom_periods <- function(raw_data) {
 
 # Show sample of data around expected table area
 # Find period headers - search for text matching period patterns (e.g., "19B20A", "20A20B")
+
 ########################################
 # HELPER FUNCTIONS FOR PDF EXTRACTION ----
 ########################################
-# NOTE: extract_tableau_table() and extract_headers() are reused from profile_rsp.R
-# These functions are defined in the script above (lines 101-362 of profile_rsp.R)
-# They should ideally be moved to a shared functions file
-extract_tableau_table <- function(data, y_min, y_max, x_cuts, y_tolerance = 5) {
-  section_data <- data %>%
-    filter(y >= y_min & y <= y_max) %>%
-    mutate(y_group = round(y / y_tolerance) * y_tolerance) %>%
-    mutate(col_id = findInterval(x, x_cuts))
-  grid <- section_data %>%
-    group_by(y_group, col_id) %>%
-    summarise(cell_text = paste(text, collapse = " "), .groups = "drop") %>%
-    pivot_wider(names_from = col_id, values_from = cell_text)
-  grid
-}
+
+# NOTE: extract_tableau_table() and extract_headers() moved to functions_cfsr_profile_shared.R
+
 process_table_observed <- function(df, column_names) {
   # Similar to process_table() from RSP but adapted for observed performance structure
   # Row types: Denominator / Numerator / Observed performance (instead of RSP / RSP interval / Data used)
@@ -185,28 +184,7 @@ process_table_observed <- function(df, column_names) {
     ))
   df_clean
 }
-extract_headers <- function(data, y_min, y_max, x_cuts, has_national_perf = TRUE) {
-  headers_data <- data %>%
-    filter(y >= y_min & y <= y_max) %>%
-    mutate(col_id = findInterval(x, x_cuts))
-  n_cols <- length(x_cuts)
-  header_map <- headers_data %>%
-    group_by(col_id) %>%
-    summarise(text = paste(text, collapse = ""), .groups = "drop") %>%
-    arrange(col_id)
-  extracted_cols <- setNames(rep(NA_character_, n_cols + 1), 0:n_cols)
-  extracted_cols[as.character(header_map$col_id)] <- header_map$text
-  # Page 4 (observed) doesn't have National_Perf column
-  if (has_national_perf) {
-    extracted_cols["0"] <- "Indicator"
-    extracted_cols["1"] <- "National_Perf"
-    extracted_cols["2"] <- "Measure_Type"
-  } else {
-    extracted_cols["0"] <- "Indicator"
-    extracted_cols["1"] <- "Measure_Type"
-  }
-  extracted_cols
-}
+
 # Convert period strings to meaningful labels for observed performance
 # Observed performance uses standard AFCARS/NCANDS period formats
 make_period_meaningful_observed <- function(period) {
@@ -239,9 +217,11 @@ make_period_meaningful_observed <- function(period) {
 }
 # Vectorize the function
 make_period_meaningful_observed <- Vectorize(make_period_meaningful_observed)
+
 ########################################
 # EXTRACT TOP TABLE ----
 ########################################
+
 # Page 4 x coordinates - different structure from page 2
 # Page 4 has NO National_Perf column
 # Column structure:
@@ -297,6 +277,7 @@ if (nrow(df_top_processed) %% 3 == 0) {
 ########################################
 # EXTRACT BOTTOM TABLE ----
 ########################################
+
 # Bottom table period headers are at y=403 in a different format:
 # - Maltreatment in care: "20AB, FY20", "21AB, FY21", "22AB, FY22"
 # - Recurrence: "FY20- 21", "FY21- 22", "FY22- 23"
@@ -306,6 +287,7 @@ if (nrow(df_top_processed) %% 3 == 0) {
 # - 20AB.FY20: x~265, 21AB.FY21: x~332, 22AB.FY22: x~399
 # - FY20-21: x~475, FY21-22: x~542, FY22-23: x~610
 # Split points between column centers
+
 bottom_x_cuts <- c(135, 240, 298, 365, 437, 508, 576)
 # Extract period headers from PDF (replaces hardcoded values)
 observed_bottom_periods <- extract_observed_bottom_periods(raw_data)
@@ -337,6 +319,7 @@ if (nrow(df_bottom_processed) == 6) {
 ########################################
 # RESHAPE WIDE TO LONG ----
 ########################################
+
 reshape_observed_wide_to_long <- function(df) {
   # Get period columns (everything except Indicator, Measure_Type)
   # Note: Page 4 doesn't have National_Perf column
@@ -405,11 +388,14 @@ if (nrow(final_bottom) > 0) {
 ########################################
 # COMBINE AND ADD METADATA ----
 ########################################
+
 # Combine top and bottom
 observed_data <- bind_rows(top_long, bottom_long)
+
 ########################################
 # JOIN DATA_USED FROM RSP ----
 ########################################
+
 # Build path to RSP CSV file (should exist since RSP runs before observed)
 rsp_file_pattern <- paste0(
   folder_date,
@@ -429,6 +415,7 @@ rsp_csv_path <- file.path(
 ########################################
 # JOIN STATUS AND DATA_USED FROM RSP ----
 ########################################
+
 # Load RSP RDS file to get pre-calculated status and data_used
 # RDS is more reliable than CSV path construction
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
@@ -507,6 +494,7 @@ observed_data <- observed_data %>%
     profile_version,
     source
   )
+
 ########################################
 # SAVE PROCESSED DATA ----
 ########################################
@@ -519,7 +507,9 @@ if (!dir.exists(folder_run)) {
 }
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
+
 # Save using save_to_folder_run pattern
+
 ########################################
 # VALIDATION ----
 ########################################
@@ -560,9 +550,11 @@ save_to_folder_run(observed_data, "csv")
 message("Processed ", nrow(observed_data), " rows for ", pdf_metadata$state)
 message("Profile version: ", pdf_metadata$profile_version)
 message("CSV saved to: ", folder_run)
+
 ########################################
 # PREPARE RDS FOR SHINY APP ----
 ########################################
+
 message("\n--- Preparing RDS for Shiny App ---")
 # Load dictionary for metadata joins
 dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
@@ -620,6 +612,7 @@ if (!file.exists(dict_path)) {
 ########################################
 # SUMMARY ----
 ########################################
+
 message("State: ", state_code)
 message("Profile period: ", profile_period)
 message("Total rows: ", nrow(observed_data))

@@ -114,11 +114,12 @@ This project depends on centralized R utilities:
 
 CFSR profile processing functions are located in `code/functions/`:
 
+- **functions_cfsr_profile_shared.R** - Shared PDF extraction helpers
+  - Key functions: `extract_tableau_table()`, `extract_headers()`
 - **functions_cfsr_profile_nat.R** - National data processing functions
   - Key functions: `process_standard_indicator()`, `process_entry_rate_indicator()`, `setup_cfsr_folders()`
-- **functions_cfsr_profile_rsp.R** - RSP data extraction functions
-  - Key function: `extract_cfsr_profile_txt()`
-- **functions_cfsr_profile_state.R** - State-level functions (planned)
+- **functions_cfsr_profile_rsp.R** - RSP-specific utility functions
+  - Key functions: `make_period_meaningful_rsp()`, `extract_pdf_metadata()`, `rank_states_by_performance()`
 
 ### R Packages
 

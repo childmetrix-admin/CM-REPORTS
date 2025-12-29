@@ -39,7 +39,8 @@ if (!exists("state_code") || !exists("profile_period")) {
 
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
-# Load CFSR profile functions (RSP-specific)
+# Load CFSR profile functions (shared and RSP-specific)
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_shared.R")
 source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
 
 ########################################
@@ -224,19 +225,7 @@ calculate_rsp_status <- Vectorize(calculate_rsp_status)
 # HELPER FUNCTIONS FOR PDF EXTRACTION ----
 ########################################
 
-extract_tableau_table <- function(data, y_min, y_max, x_cuts, y_tolerance = 5) {
-  section_data <- data %>%
-    filter(y >= y_min & y <= y_max) %>%
-    mutate(y_group = round(y / y_tolerance) * y_tolerance) %>%
-    mutate(col_id = findInterval(x, x_cuts))
-
-  grid <- section_data %>%
-    group_by(y_group, col_id) %>%
-    summarise(cell_text = paste(text, collapse = " "), .groups = "drop") %>%
-    pivot_wider(names_from = col_id, values_from = cell_text)
-
-  grid
-}
+# NOTE: extract_tableau_table() and extract_headers() moved to functions_cfsr_profile_shared.R
 
 process_table <- function(df, column_names) {
   max_index <- length(column_names) - 1
@@ -463,28 +452,6 @@ expand_rsp_intervals <- function(df) {
       }
     ) %>%
     arrange(Indicator, Measure_Type)
-}
-
-extract_headers <- function(data, y_min, y_max, x_cuts) {
-  headers_data <- data %>%
-    filter(y >= y_min & y <= y_max) %>%
-    mutate(col_id = findInterval(x, x_cuts))
-
-  n_cols <- length(x_cuts)
-
-  header_map <- headers_data %>%
-    group_by(col_id) %>%
-    summarise(text = paste(text, collapse = ""), .groups = "drop") %>%
-    arrange(col_id)
-
-  extracted_cols <- setNames(rep(NA_character_, n_cols + 1), 0:n_cols)
-  extracted_cols[as.character(header_map$col_id)] <- header_map$text
-
-  extracted_cols["0"] <- "Indicator"
-  extracted_cols["1"] <- "National_Perf"
-  extracted_cols["2"] <- "Measure_Type"
-
-  extracted_cols
 }
 
 ########################################
