@@ -455,7 +455,7 @@ final_top <- df_top_processed %>%
 
 generate_bottom_cols <- function(top_cols) {
   top_periods <- top_cols[4:length(top_cols)]
-  start_year <- as.numeric(str_extract(top_periods[1], "^\\d+"))
+  start_year <- as.numeric(str_extract(top_periods[1], "^\\d+")) + 1  # Maltreatment table starts 1 year after top table
   years <- start_year:(start_year + 2)
   ab_fy_cols <- paste0(years, "AB_FY", years)
   fy_cols <- paste0("FY", years, "-", years + 1)
