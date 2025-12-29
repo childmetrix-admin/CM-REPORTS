@@ -245,7 +245,10 @@ process_source <- function(source, state, period, verbose) {
     return(list(processed = FALSE, error = paste("Script not found:", script_path)))
   }
 
-  # Source the script (which expects state_code and profile_period to be set)
+  # Initialize common globals (libraries, folders, PDF discovery)
+  initialize_common_globals(state, period, source)
+
+  # Source the script (which expects all globals to be set)
   source(script_path, local = FALSE)
 
   return(list(processed = TRUE, script = script_path))

@@ -28,56 +28,20 @@
 # by the orchestrator (run_profile.R) or manually before sourcing.
 
 #####################################
-# LIBRARIES & UTILITIES ----
+# INITIALIZATION ----
 #####################################
 
-# Load packages and generic functions
-if (!exists("state_code") || !exists("profile_period")) {
-  message("WARNING: state_code and profile_period not set.")
-  message("Either run via run_profile.R or set manually before sourcing.")
-}
+# IMPORTANT: This script expects the following globals to be set by run_profile.R:
+#   - state_code, profile_period (set by setup_profile_env)
+#   - folder_uploads, folder_processed, folder_app_data (set by initialize_common_globals)
+#   - folder_date, commitment, my_setup (set by initialize_common_globals)
+#   - pdf_path, pdf_metadata (set by initialize_common_globals)
 
-source("D:/repo_childmetrix/utilities-core/loader.R")
-
-# Load CFSR profile functions (shared and RSP-specific)
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_shared.R")
+# Source RSP-specific functions
 source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
 
-########################################
-# CONFIGURATION ----
-########################################
-
-# Establish current period and set up folders and global variables
-# Uses CFSR-specific setup for multi-state support
-my_setup <- setup_cfsr_folders(profile_period, state_code)
-
-# Set file name elements for save_to_folder_run()
-folder_date <- paste0(state_code, "_", profile_period)
-commitment <- "cfsr profile"
+# Set source-specific configuration
 commitment_description <- "rsp"
-
-########################################
-# FIND AND READ PDF ----
-########################################
-
-# Find the state-specific CFSR Data Profile PDF
-pdf_files <- list.files(
-  folder_uploads,
-  pattern = "\\.pdf$",
-  full.names = TRUE,
-  ignore.case = TRUE
-)
-
-if (length(pdf_files) == 0) {
-  stop("No PDF files found in: ", folder_uploads)
-}
-
-# Use the first PDF found (should be the state profile)
-pdf_path <- pdf_files[1]
-message("Processing PDF: ", basename(pdf_path))
-
-# Extract metadata from PDF filename
-pdf_metadata <- extract_pdf_metadata(pdf_path)
 
 ########################################
 # EXTRACT RSP DATA FROM PDF ----

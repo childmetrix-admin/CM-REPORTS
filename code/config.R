@@ -213,6 +213,77 @@ setup_profile_env <- function(state, period) {
   return(config)
 }
 
+#' Initialize common global variables for CFSR extraction scripts
+#'
+#' Centralizes common setup logic shared across profile_rsp.R, profile_observed.R,
+#' and profile_national.R. This function handles:
+#' - Library loading (utilities-core, shared CFSR functions)
+#' - Folder setup (via setup_cfsr_folders)
+#' - Global variable assignment (folder_date, commitment, my_setup)
+#' - PDF discovery and metadata extraction (RSP and Observed only)
+#'
+#' This function is called by run_profile.R before sourcing extraction scripts.
+#'
+#' @param state Lowercase 2-letter state code (e.g., "md")
+#' @param period Period in YYYY_MM format (e.g., "2025_02")
+#' @param source Source type: "national", "rsp", "observed", or "state"
+#' @return Invisible NULL (all outputs assigned to global environment)
+#' @export
+initialize_common_globals <- function(state, period, source) {
+
+  # Source core utilities (if not already loaded)
+  if (!exists("r_load_packages")) {
+    source("D:/repo_childmetrix/utilities-core/loader.R")
+  }
+
+  # Source shared CFSR functions
+  shared_functions <- file.path(CFSR_FUNCTIONS_DIR, "functions_cfsr_profile_shared.R")
+  source(shared_functions)
+
+  # Set up CFSR folders (assigns folder paths to global environment)
+  my_setup <- setup_cfsr_folders(period, state, assign_globals = TRUE)
+
+  # Set common global variables
+  folder_date <- paste0(state, "_", period)
+  commitment <- "cfsr profile"
+
+  # Assign configuration to global environment
+  assign("folder_date", folder_date, envir = .GlobalEnv)
+  assign("commitment", commitment, envir = .GlobalEnv)
+  assign("my_setup", my_setup, envir = .GlobalEnv)
+
+  # PDF discovery (only for RSP and Observed sources)
+  if (source %in% c("rsp", "observed")) {
+    # Get folder_uploads from global environment (set by setup_cfsr_folders)
+    folder_uploads <- get("folder_uploads", envir = .GlobalEnv)
+
+    # Discover PDF files
+    pdf_files <- list.files(folder_uploads,
+                           pattern = "\\.pdf$",
+                           full.names = TRUE,
+                           ignore.case = TRUE)
+
+    if (length(pdf_files) == 0) {
+      stop("No PDF files found in: ", folder_uploads, call. = FALSE)
+    }
+
+    # Use first PDF found
+    pdf_path <- pdf_files[1]
+    message("PDF discovered: ", basename(pdf_path))
+
+    # Extract metadata from PDF filename
+    pdf_metadata <- extract_pdf_metadata(pdf_path)
+
+    # Assign to global environment
+    assign("pdf_path", pdf_path, envir = .GlobalEnv)
+    assign("pdf_metadata", pdf_metadata, envir = .GlobalEnv)
+  }
+
+  # National source uses Excel files - no PDF discovery needed
+
+  invisible(NULL)
+}
+
 #' Set up CFSR folder structure (legacy, use setup_profile_env instead)
 #'
 #' This function maintains backward compatibility with existing scripts
