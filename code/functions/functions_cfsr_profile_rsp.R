@@ -846,7 +846,7 @@ extract_cfsr_profile_pdf <- function(pdf_path, page = 2) {
   library(tidyverse)
 
   # Read PDF using pdf_data for better structure
-  pdf_data_list <- pdf_data(pdf_path)
+  pdf_data_list <- suppressMessages(pdf_data(pdf_path))
   page_data <- pdf_data_list[[page]]
 
   # Reconstruct text by sorting by y-position (top to bottom) then x-position (left to right)

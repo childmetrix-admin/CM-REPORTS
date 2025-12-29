@@ -87,7 +87,7 @@ library(tidyverse)
 library(stringr)
 
 # Read PDF page 2 (contains RSP tables)
-raw_data_original <- pdf_data(pdf_path)[[2]]
+raw_data_original <- suppressMessages(pdf_data(pdf_path))[[2]]
 
 # Pre-process: clean text
 raw_data <- raw_data_original %>%

@@ -65,7 +65,7 @@ library(pdftools)
 library(tidyverse)
 library(stringr)
 # Read PDF page 4 (contains observed performance tables)
-raw_data_original <- pdf_data(pdf_path)[[4]]
+raw_data_original <- suppressMessages(pdf_data(pdf_path))[[4]]
 # Pre-process: clean text
 raw_data <- raw_data_original %>%
   mutate(text = str_replace_all(text, "[^[:graph:]]", "")) %>%
