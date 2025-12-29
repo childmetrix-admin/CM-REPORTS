@@ -185,39 +185,6 @@ process_table_observed <- function(df, column_names) {
   df_clean
 }
 
-# Convert period strings to meaningful labels for observed performance
-# Observed performance uses standard AFCARS/NCANDS period formats
-make_period_meaningful_observed <- function(period) {
-  if (is.na(period) || period == "" || period == "NA") {
-    return(NA_character_)
-  }
-  # Case 1: Format "YYAYYB" (e.g., "20A20B") => Oct 'prev_year - Sep 'year
-  if (grepl("^[0-9]{2}A[0-9]{2}B$", period)) {
-    year1 <- as.numeric(substr(period, 1, 2))
-    year2 <- as.numeric(substr(period, 4, 5))
-    start_year <- (year1 - 1) + 2000
-    start_label <- paste0("Oct '", substr(as.character(start_year), 3, 4))
-    end_label <- paste0("Sep '", substr(as.character(year2 + 2000), 3, 4))
-    return(paste(start_label, "-", end_label))
-  }
-  # Case 2: Format "YYBYYA" (e.g., "19B20A") => Apr 'year - Mar 'next_year
-  if (grepl("^[0-9]{2}B[0-9]{2}A$", period)) {
-    year1 <- as.numeric(substr(period, 1, 2))
-    year2 <- as.numeric(substr(period, 4, 5))
-    start_label <- paste0("Apr '", substr(as.character(year1 + 2000), 3, 4))
-    end_label <- paste0("Mar '", substr(as.character(year2 + 2000), 3, 4))
-    return(paste(start_label, "-", end_label))
-  }
-  # Case 3: Fiscal year format "FYYY-YY" (e.g., "FY20-21") => FY20-21 (keep as-is)
-  if (grepl("^FY[0-9]{2}-[0-9]{2}$", period)) {
-    return(period)
-  }
-  # Fallback: return as-is if no pattern matches
-  return(NA_character_)
-}
-# Vectorize the function
-make_period_meaningful_observed <- Vectorize(make_period_meaningful_observed)
-
 ########################################
 # EXTRACT TOP TABLE ----
 ########################################
@@ -474,7 +441,7 @@ as_of_date <- tryCatch({
 observed_data <- observed_data %>%
   mutate(
     state = pdf_metadata$state,
-    period_meaningful = make_period_meaningful_rsp(period),
+    period_meaningful = make_period_meaningful(period),
     as_of_date = as_of_date,
     profile_version = pdf_metadata$profile_version,
     source = pdf_metadata$source

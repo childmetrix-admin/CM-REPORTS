@@ -550,3 +550,123 @@ rank_states_by_performance <- function(df) {
     ) %>%
     ungroup()
 }
+
+# ============================================================================
+# PERIOD FORMATTING
+# ============================================================================
+
+#' Convert CFSR period strings to meaningful date labels
+#'
+#' Converts various CFSR period format codes to human-readable date labels.
+#' Handles period formats from both RSP and Observed data extraction,
+#' including standard AFCARS periods, maltreatment periods, and cohort ranges.
+#'
+#' @param period Character vector of period codes to format
+#'
+#' @return Character vector of formatted period labels
+#'
+#' @details
+#' Handles 5 distinct period format patterns:
+#'
+#' **Case 1: YYAYYB** (e.g., "20A20B")
+#' - Oct 'prev_year - Sep 'year
+#' - Example: "20A20B" → "Oct '19 - Sep '20"
+#'
+#' **Case 2: YYBYYA** (e.g., "19B20A")
+#' - Apr 'year - Mar 'next_year
+#' - Example: "19B20A" → "Apr '19 - Mar '20"
+#'
+#' **Case 3: YYAB_FYYY** (e.g., "20AB_FY20")
+#' - Oct 'prev_year - Sep 'year, FYYY
+#' - AFCARS AB (two 6-month submissions) + NCANDS FY
+#' - RSP/Observed use underscore separator (differs from National comma separator)
+#' - Example: "20AB_FY20" → "Oct '19 - Sep '20, FY20"
+#'
+#' **Case 4: FYYY-YY** (e.g., "FY20-21")
+#' - Fiscal year spans (kept as-is)
+#' - Two NCANDS FY submissions
+#' - Example: "FY20-21" → "FY20-21"
+#'
+#' **Case 5: YYA-YYA or YYB-YYB** (e.g., "19B-21B")
+#' - Multi-year cohort periods
+#' - Appears in RSP "Data used" row
+#' - Example: "19B-21B" → "Apr '19 - Sep '21"
+#'
+#' @examples
+#' make_period_meaningful(c("20A20B", "19B20A", "20AB_FY20", "FY20-21", "19B-21B"))
+#' # Returns: "Oct '19 - Sep '20", "Apr '19 - Mar '20", "Oct '19 - Sep '20, FY20",
+#' #          "FY20-21", "Apr '19 - Sep '21"
+#'
+#' @note This function is vectorized for element-wise application over character vectors
+make_period_meaningful <- function(period) {
+  if (is.na(period) || period == "" || period == "NA") {
+    return(NA_character_)
+  }
+
+  # Case 1: Format "YYAYYB" (e.g., "20A20B") => Oct 'prev_year - Sep 'year
+  if (grepl("^[0-9]{2}A[0-9]{2}B$", period)) {
+    year1 <- as.numeric(substr(period, 1, 2))
+    year2 <- as.numeric(substr(period, 4, 5))
+    start_year <- (year1 - 1) + 2000
+    start_label <- paste0("Oct '", substr(as.character(start_year), 3, 4))
+    end_label <- paste0("Sep '", substr(as.character(year2 + 2000), 3, 4))
+    return(paste(start_label, "-", end_label))
+  }
+
+  # Case 2: Format "YYBYYA" (e.g., "19B20A") => Apr 'year - Mar 'next_year
+  if (grepl("^[0-9]{2}B[0-9]{2}A$", period)) {
+    year1 <- as.numeric(substr(period, 1, 2))
+    year2 <- as.numeric(substr(period, 4, 5))
+    start_label <- paste0("Apr '", substr(as.character(year1 + 2000), 3, 4))
+    end_label <- paste0("Mar '", substr(as.character(year2 + 2000), 3, 4))
+    return(paste(start_label, "-", end_label))
+  }
+
+  # Case 3: Format "YYAB_FYYY" (e.g., "20AB_FY20") => Oct 'prev_year - Sep 'year, FY20
+  # RSP/Observed use underscore separator (different from National which uses comma)
+  # String positions: "20AB_FY20"
+  #                    123456789
+  if (grepl("^[0-9]{2}AB_FY[0-9]{2}$", period)) {
+    year <- as.numeric(substr(period, 1, 2))
+    fy_year <- substr(period, 8, 9)  # Keep as 2-digit string
+    start_year <- (year - 1) + 2000
+    end_year <- year + 2000
+    return(paste0("Oct '", substr(as.character(start_year), 3, 4),
+                  " - Sep '", substr(as.character(end_year), 3, 4),
+                  ", FY", fy_year))
+  }
+
+  # Case 4: Format "FYYY-YY" (e.g., "FY20-21") => FY20-21 (keep as-is)
+  if (grepl("^FY[0-9]{2}-[0-9]{2}$", period)) {
+    return(period)
+  }
+
+  # Case 5: Format with hyphen ranges like "19B-21B" or "20A-22A" (cohort periods)
+  # These appear in the RSP "Data used" row and represent multi-year cohorts
+  if (grepl("^[0-9]{2}[AB]-[0-9]{2}[AB]$", period)) {
+    # Extract start and end
+    start_part <- substr(period, 1, 3)  # e.g., "19B"
+    end_part <- substr(period, 5, 7)    # e.g., "21B"
+
+    start_year <- as.numeric(substr(start_part, 1, 2)) + 2000
+    start_half <- substr(start_part, 3, 3)
+    end_year <- as.numeric(substr(end_part, 1, 2)) + 2000
+    end_half <- substr(end_part, 3, 3)
+
+    # A = Oct-Mar, B = Apr-Sep
+    start_month <- if (start_half == "A") "Oct" else "Apr"
+    end_month <- if (end_half == "A") "Mar" else "Sep"
+
+    # Adjust start year for A period (Oct of previous year)
+    if (start_half == "A") start_year <- start_year - 1
+
+    return(paste0(start_month, " '", substr(as.character(start_year), 3, 4),
+                  " - ", end_month, " '", substr(as.character(end_year), 3, 4)))
+  }
+
+  # Fallback: return NA if no pattern matches
+  return(NA_character_)
+}
+
+# Vectorize the function for element-wise application
+make_period_meaningful <- Vectorize(make_period_meaningful)

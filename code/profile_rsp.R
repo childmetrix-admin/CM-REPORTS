@@ -617,7 +617,7 @@ as_of_date <- tryCatch({
 rsp_data <- rsp_data %>%
   mutate(
     state = pdf_metadata$state,
-    period_meaningful = make_period_meaningful_rsp(period),
+    period_meaningful = make_period_meaningful(period),
     as_of_date = as_of_date,
     profile_version = pdf_metadata$profile_version,
     source = pdf_metadata$source
