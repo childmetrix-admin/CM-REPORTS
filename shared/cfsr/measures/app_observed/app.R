@@ -86,42 +86,8 @@ observed_indicator_order <- c(1, 2, 4, 5, 6, 7, 8)
 # HELPER FUNCTIONS ----
 #####################################
 
-#' Get performance status based on observed value vs national standard
-#' @param observed Observed performance value (decimal for percent, e.g., 0.26 = 26%)
-#' @param national_std National standard (display value, e.g., 35.2 = 35.2%)
-#' @param direction_rule "lt" (lower is better) or "gt" (higher is better)
-#' @param format_type "percent" or "rate"
-get_performance_status <- function(observed, national_std, direction_rule, format_type) {
-  if (is.na(observed) || is.na(national_std)) {
-    return(list(status = "dq", label = "Data quality issue", css_class = "status-dq"))
-  }
-
-  # Convert observed values to display scale for comparison
-  # Observed for percent indicators is stored as decimal (0.26 = 26%)
-  # National standard is stored as display value (35.2 = 35.2%)
-  if (format_type == "percent") {
-    observed_display <- observed * 100
-  } else {
-    observed_display <- observed
-  }
-
-  # Determine better/worse based on direction
-  # Note: For observed data, we don't have confidence intervals,
-  # so we just do a simple comparison
-  if (direction_rule == "lt") {
-    if (observed_display < national_std) {
-      return(list(status = "better", label = "Better than national", css_class = "status-better"))
-    } else {
-      return(list(status = "worse", label = "Worse than national", css_class = "status-worse"))
-    }
-  } else {
-    if (observed_display > national_std) {
-      return(list(status = "better", label = "Better than national", css_class = "status-better"))
-    } else {
-      return(list(status = "worse", label = "Worse than national", css_class = "status-worse"))
-    }
-  }
-}
+# NOTE: Performance status (better/worse/nodiff/dq) is pre-calculated in the RDS file
+# based on RSP confidence interval overlap logic. No longer calculated here.
 
 #' Build observed performance trend chart (simple line chart, no confidence intervals)
 build_observed_chart <- function(data, national_std, format_type, direction_rule) {
@@ -148,17 +114,18 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
 
   national_display <- national_std  # Already in display format
 
-  # Determine point colors based on performance vs national
+  # Use pre-calculated RSP status for point colors
+  # Status is based on RSP confidence interval overlap (statistically valid)
   plot_data <- plot_data %>%
     mutate(
-      is_better = case_when(
-        direction_rule == "lt" ~ observed_display < national_display,
-        TRUE ~ observed_display > national_display
-      ),
       point_color = case_when(
-        is.na(observed_performance) ~ "#f59e0b",  # Yellow for DQ
-        is_better ~ "#10b981",                    # Green for better
-        TRUE ~ "#ef4444"                          # Red for worse
+        is.na(observed_performance) ~ "#f59e0b",  # Amber for DQ (missing observed data)
+        is.na(status) ~ "#6b7280",                # Gray for missing RSP status
+        status == "better" ~ "#10b981",           # Green for statistically better than national
+        status == "worse" ~ "#ef4444",            # Red for statistically worse than national
+        status == "nodiff" ~ "#6b7280",           # Gray for no statistical difference
+        status == "dq" ~ "#f59e0b",               # Amber for RSP data quality issue
+        TRUE ~ "#6b7280"                          # Gray fallback
       )
     )
 
@@ -214,12 +181,12 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
     # Theme
     theme_minimal() +
     theme(
+      axis.title = element_blank(),
+      axis.text.x = element_text(size = 8, hjust = 0.5, color = "#374151"),
+      axis.text.y = element_text(size = 8, color = "#6b7280"),
       panel.grid.major.x = element_blank(),
       panel.grid.minor = element_blank(),
       panel.grid.major.y = element_line(color = "#f3f4f6", size = 0.3),
-      axis.title = element_blank(),
-      axis.text.x = element_text(size = 7, color = "#6b7280", margin = margin(t = 2)),
-      axis.text.y = element_text(size = 8, color = "#6b7280"),
       plot.margin = margin(t = 5, r = 5, b = 5, l = 5),
       plot.background = element_rect(fill = "transparent", color = NA),
       panel.background = element_rect(fill = "transparent", color = NA)
@@ -267,6 +234,7 @@ ui <- fluidPage(
         gap: 16px;
         margin-bottom: 16px;
         justify-content: start;
+        align-items: start;
       }
       @media (max-width: 768px) {
         .kpi-grid-row {
@@ -288,15 +256,62 @@ ui <- fluidPage(
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 10px;
-        padding: 16px;
+        padding: 12px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
       .interpretation-kpi .kpi-title {
         background: #0f4c75;
         color: white;
-        margin: -16px -16px 12px -16px;
-        padding: 12px 16px;
+        margin: -12px -12px 10px -12px;
+        padding: 10px 12px;
         border-radius: 10px 10px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .info-icon {
+        font-size: 1.5rem;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+        position: relative;
+        display: inline-block;
+      }
+      .info-icon:hover {
+        opacity: 1;
+      }
+      .info-popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
+        background: white;
+        padding: 0;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: hidden;
+      }
+      .info-popup img {
+        display: block;
+        background: white;
+        border-radius: 12px;
+      }
+      .info-icon:hover .info-popup {
+        display: block;
+      }
+      .info-popup::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: -1;
       }
       .kpi-title {
         font-size: 1.40rem;
@@ -352,28 +367,31 @@ ui <- fluidPage(
 
       /* Interpretation legend */
       .interpretation-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 16px;
-        padding: 12px;
-        background: #f9fafb;
-        border-radius: 6px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
       }
       .interpretation-legend-item {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 0.75rem;
-        color: #4b5563;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #374151;
+        font-weight: 500;
+        white-space: nowrap;
       }
       .interpretation-point {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
+        flex-shrink: 0;
       }
       .interpretation-point.better { background: #10b981; }
       .interpretation-point.worse { background: #ef4444; }
+      .interpretation-point.nodiff { background: #6b7280; }
       .interpretation-point.dq { background: #f59e0b; }
       .interpretation-line {
         width: 24px;
@@ -386,12 +404,12 @@ ui <- fluidPage(
         background: none;
       }
       .interpretation-notes {
-        font-size: 0.8rem;
-        color: #6b7280;
-        line-height: 1.5;
+        font-size: 0.95rem;
+        color: #374151;
+        line-height: 1.6;
       }
       .interpretation-notes p {
-        margin: 0 0 8px 0;
+        margin: 0 0 6px 0;
       }
 
       /* Status colors */
@@ -411,10 +429,19 @@ ui <- fluidPage(
   div(class = "kpi-grid-row",
     # Interpretation guide card
     div(class = "interpretation-kpi",
-      div(class = "kpi-title", "How to Interpret Observed Performance Charts"),
+      div(class = "kpi-title",
+        span("How to Interpret Observed Performance Charts"),
+        span(class = "info-icon", "\u24D8",  # Info icon (ⓘ)
+          div(class = "info-popup",
+            tags$img(src = "kpi_observed_help.png", alt = "KPI Help Guide",
+                     style = "width: 100%; max-width: 500px;")
+          )
+        )
+      ),
 
       # Compact legend
       div(class = "interpretation-legend",
+        # Row 1: Better, Worse, No difference
         div(class = "interpretation-legend-item",
           div(class = "interpretation-point better"),
           span("Better than national")
@@ -424,12 +451,13 @@ ui <- fluidPage(
           span("Worse than national")
         ),
         div(class = "interpretation-legend-item",
+          div(class = "interpretation-point nodiff"),
+          span("No difference")
+        ),
+        # Row 2: Data quality, National performance
+        div(class = "interpretation-legend-item",
           div(class = "interpretation-point dq"),
           span("Data quality issue")
-        ),
-        div(class = "interpretation-legend-item",
-          div(class = "interpretation-line"),
-          span("Trend line")
         ),
         div(class = "interpretation-legend-item",
           div(class = "interpretation-line national"),
@@ -439,8 +467,8 @@ ui <- fluidPage(
 
       # Notes
       div(class = "interpretation-notes",
-        p("Observed performance shows the raw state performance on CFSR indicators without risk adjustment. Points are colored green (better than national) or red (worse than national)."),
-        p("The dashed blue line represents national performance. Trends show how your state's observed performance changes over time.")
+        p("Observed performance is the percent or rate of children experiencing the outcome, without risk-adjustment."),
+        p("Whether performance is statistically better, worse, or no different than national performance is based on your state's ", tags$strong("risk-adjusted performance"), " (see the RSP page for details) and how it compares to national performance. Those results are shown here for convenience.")
       )
     ),
 
@@ -540,21 +568,23 @@ server <- function(input, output, session) {
       national_unit <- "%"
     } else {
       display_val <- if (!is.na(latest_val)) formatC(latest_val, digits = decimal_prec, format = "f") else "DQ"
-      unit_label <- ""
+      # Add unit labels for specific indicators
+      unit_label <- if (indicator_sort_val == 1) " victimizations" else if (indicator_sort_val == 8) " moves" else ""
       national_display <- formatC(national_std, digits = decimal_prec, format = "f")
-      national_unit <- ""
+      national_unit <- if (indicator_sort_val == 1) " victimizations" else if (indicator_sort_val == 8) " moves" else ""
     }
 
     # Direction arrow (triangle, matching RSP)
     arrow <- if (direction_rule == "lt") "\u25BC" else "\u25B2"
 
-    # Get status for value color
-    status <- get_performance_status(latest_val, national_std, direction_rule, format_type)
-    value_color <- switch(status$status,
+    # Use pre-calculated status from RDS for value color
+    status_val <- latest$status
+    value_color <- switch(status_val,
       "better" = "#10b981",   # Green
       "worse" = "#ef4444",    # Red
-      "dq" = "#f59e0b",       # Orange
-      "#111827"               # Default dark gray
+      "nodiff" = "#6b7280",   # Gray for no statistical difference
+      "dq" = "#f59e0b",       # Amber for data quality issue
+      "#6b7280"               # Gray fallback (includes NA)
     )
 
     # Build KPI box
