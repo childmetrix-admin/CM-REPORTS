@@ -721,7 +721,20 @@ rsp_data <- rsp_data %>%
       format_type = format
     )
   ) %>%
-  select(-national_standard, -direction_rule, -format)  # Remove temp columns
+  select(
+    state,
+    indicator,
+    period,
+    period_meaningful,
+    rsp,
+    rsp_lower,
+    rsp_upper,
+    status,           # Positioned after rsp_upper (was at end)
+    data_used,
+    as_of_date,
+    profile_version,
+    source
+  )
 
 # Verify status distribution
 status_counts <- table(rsp_data[['status']], useNA = "ifany")
