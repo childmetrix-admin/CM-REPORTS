@@ -520,6 +520,42 @@ if (!dir.exists(folder_run)) {
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
 # Save using save_to_folder_run pattern
+########################################
+# VALIDATION ----
+########################################
+
+# Check for NA values in critical fields
+validation_results_obs <- list(
+  period_na = sum(is.na(observed_data[['period']])),
+  period_meaningful_na = sum(is.na(observed_data[['period_meaningful']])),
+  status_na = sum(is.na(observed_data[['status']])),
+  data_used_na = sum(is.na(observed_data[['data_used']]))
+)
+
+total_na_obs <- sum(unlist(validation_results_obs))
+
+if (total_na_obs > 0) {
+  message("\n\u26A0  VALIDATION WARNINGS:")
+  if (validation_results_obs[['period_na']] > 0) {
+    message("  - period: ", validation_results_obs[['period_na']], " NA values")
+  }
+  if (validation_results_obs[['period_meaningful_na']] > 0) {
+    message("  - period_meaningful: ", validation_results_obs[['period_meaningful_na']], " NA values")
+  }
+  if (validation_results_obs[['status_na']] > 0) {
+    message("  - status: ", validation_results_obs[['status_na']], " NA values (expected if RSP join failed)")
+  }
+  if (validation_results_obs[['data_used_na']] > 0) {
+    message("  - data_used: ", validation_results_obs[['data_used_na']], " NA values (expected if RSP join failed)")
+  }
+} else {
+  message("\u2713 All critical fields populated (no NA values)")
+}
+
+# Save validation results for orchestrator
+assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
+
+# Save using save_to_folder_run pattern
 save_to_folder_run(observed_data, "csv")
 message("Processed ", nrow(observed_data), " rows for ", pdf_metadata$state)
 message("Profile version: ", pdf_metadata$profile_version)

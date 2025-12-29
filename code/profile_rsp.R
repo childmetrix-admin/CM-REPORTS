@@ -685,6 +685,84 @@ if (!dir.exists(folder_run)) {
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
 
+########################################
+# ADD STATUS BEFORE CSV SAVE ----
+########################################
+
+# Load dictionary for metadata joins (needed for status calculation)
+dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+if (!file.exists(dict_path)) {
+  stop("Dictionary not found at: ", dict_path)
+}
+
+dict <- read.csv(dict_path, stringsAsFactors = FALSE)
+message("Loaded dictionary with ", nrow(dict), " indicators")
+
+# Join dictionary metadata to get fields needed for status calculation
+rsp_data <- rsp_data %>%
+  left_join(
+    dict %>% select(
+      indicator,
+      national_standard,
+      direction_rule,
+      format
+    ),
+    by = "indicator"
+  )
+
+# Calculate RSP status for each row
+rsp_data <- rsp_data %>%
+  mutate(
+    status = calculate_rsp_status(
+      rsp_lower = rsp_lower,
+      rsp_upper = rsp_upper,
+      national_standard = national_standard,
+      direction_rule = direction_rule,
+      format_type = format
+    )
+  ) %>%
+  select(-national_standard, -direction_rule, -format)  # Remove temp columns
+
+# Verify status distribution
+status_counts <- table(rsp_data[['status']], useNA = "ifany")
+message("Status distribution: ", paste(names(status_counts), "=", status_counts, collapse = ", "))
+
+########################################
+# VALIDATION ----
+########################################
+
+# Check for NA values in critical fields
+validation_results <- list(
+  period_na = sum(is.na(rsp_data[['period']])),
+  period_meaningful_na = sum(is.na(rsp_data[['period_meaningful']])),
+  status_na = sum(is.na(rsp_data[['status']])),
+  data_used_na = sum(is.na(rsp_data[['data_used']]))
+)
+
+total_na <- sum(unlist(validation_results))
+
+if (total_na > 0) {
+  message("\n\u26A0  VALIDATION WARNINGS:")
+  if (validation_results[['period_na']] > 0) {
+    message("  - period: ", validation_results[['period_na']], " NA values")
+  }
+  if (validation_results[['period_meaningful_na']] > 0) {
+    message("  - period_meaningful: ", validation_results[['period_meaningful_na']], " NA values")
+  }
+  if (validation_results[['status_na']] > 0) {
+    message("  - status: ", validation_results[['status_na']], " NA values")
+  }
+  if (validation_results[['data_used_na']] > 0) {
+    message("  - data_used: ", validation_results[['data_used_na']], " NA values")
+  }
+} else {
+  message("\u2713 All critical fields populated (no NA values)")
+}
+
+# Save validation results for orchestrator
+assign("validation_results", validation_results, envir = .GlobalEnv)
+
+
 # Save using save_to_folder_run pattern
 save_to_folder_run(rsp_data, "csv")
 
@@ -694,21 +772,23 @@ message("Profile version: ", pdf_metadata$profile_version)
 message("CSV saved to: ", folder_run)
 
 ########################################
+########################################
 # PREPARE RDS FOR SHINY APP ----
 ########################################
 
 message("\n--- Preparing RDS for Shiny App ---")
 
-# Load dictionary for metadata joins
+# Load dictionary for ADDITIONAL metadata (status already calculated above)
 dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+
 if (!file.exists(dict_path)) {
-  warning("Dictionary not found at: ", dict_path, " - skipping RDS preparation")
+  warning("Dictionary not found at: ", dict_path, " - skipping additional metadata join")
 } else {
   dict <- read.csv(dict_path, stringsAsFactors = FALSE)
   message("Loaded dictionary with ", nrow(dict), " indicators")
-
-  # Join dictionary metadata to RSP data
-  rsp_app_data <- rsp_data %>%
+  
+  # Join additional dictionary metadata (status already added above)
+  rsp_data <- rsp_data %>%
     left_join(
       dict %>% select(
         indicator,
@@ -732,55 +812,31 @@ if (!file.exists(dict_path)) {
       ),
       by = "indicator"
     )
-
-  message("Joined dictionary metadata")
-
+  
+  message("Joined additional dictionary metadata")
+  
   # Check for missing joins
- missing_joins <- rsp_app_data %>%
+  missing_joins <- rsp_data %>%
     filter(is.na(category)) %>%
     distinct(indicator)
-
+  
   if (nrow(missing_joins) > 0) {
     warning("The following indicators did not match the dictionary:")
-    print(missing_joins$indicator)
+    print(missing_joins[["indicator"]])
   }
-
-  ########################################
-  # CALCULATE RSP STATUS ----
-  ########################################
-
-  # Calculate RSP status for each row based on confidence interval overlap
-  rsp_app_data <- rsp_app_data %>%
-    mutate(
-      status = calculate_rsp_status(
-        rsp_lower = rsp_lower,
-        rsp_upper = rsp_upper,
-        national_standard = national_standard,
-        direction_rule = direction_rule,
-        format_type = format
-      )
-    )
-
-  message("Calculated RSP status for ", nrow(rsp_app_data), " rows")
-
-  # Verify status distribution (helpful for debugging)
-  status_counts <- table(rsp_app_data$status, useNA = "ifany")
-  message("Status distribution: ", paste(names(status_counts), "=", status_counts, collapse = ", "))
-
+  
   # --- Save RDS Files ---
-  # Note: No _latest.rds files needed - app dynamically finds most recent profile
-  # Only save to PROD location (cm-reports) - DEV location (cfsr-profile/data/app_data) no longer used
   message("\n--- Saving RDS Files ---")
-
-  # PROD: Period-specific file with state prefix (shared app location)
+  
+  # PROD: Period-specific file with state prefix
   output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
   if (!dir.exists(output_dir_prod)) {
     dir.create(output_dir_prod, recursive = TRUE)
   }
-
+  
   output_file_prod_period <- file.path(output_dir_prod,
     paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
-  saveRDS(rsp_app_data, output_file_prod_period)
+  saveRDS(rsp_data, output_file_prod_period)
   message("Saved to PROD: ", output_file_prod_period)
 }
 
