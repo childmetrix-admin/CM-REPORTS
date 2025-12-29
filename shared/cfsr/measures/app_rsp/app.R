@@ -1,22 +1,17 @@
 # app.R - RSP (Risk-Standardized Performance) Shiny Application
 # CFSR Risk-Standardized Performance Dashboard
-
 library(shiny)
 library(dplyr)
 library(ggplot2)
 library(scales)
-
 # Define %||% operator (null coalescing) if not available
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || x == "") y else x
-
 #####################################
 # DATA LOADING FUNCTIONS ----
 #####################################
-
 # Data directory (shared with national app)
 # Data is at cfsr/data/ level (shared across all apps)
 data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
-
 #' Get available RSP profiles for a state
 get_available_rsp_profiles <- function(state) {
   state <- toupper(state)
@@ -26,12 +21,10 @@ get_available_rsp_profiles <- function(state) {
   periods <- gsub(paste0(state, "_cfsr_profile_rsp_(.*)\\.rds"), "\\1", all_files)
   sort(periods, decreasing = TRUE)
 }
-
 #' Load RSP data for a state and profile period
 #' Each RDS file already contains all historical periods for that profile version
 load_rsp_data <- function(state, profile = "latest") {
   state <- toupper(state)
-
   # If "latest" requested, find most recent profile
   if (profile == "latest") {
     available <- get_available_rsp_profiles(state)
@@ -40,16 +33,12 @@ load_rsp_data <- function(state, profile = "latest") {
     }
     profile <- available[1]
   }
-
   filename <- paste0(state, "_cfsr_profile_rsp_", profile, ".rds")
   file_path <- file.path(data_dir, filename)
-
   if (!file.exists(file_path)) {
     stop("RSP data file not found: ", file_path)
   }
-
   data <- readRDS(file_path)
-
   # Ensure period is a factor with correct chronological ordering
   # If period is not already a factor, convert it with sorted levels
   if (!is.factor(data$period)) {
@@ -58,14 +47,11 @@ load_rsp_data <- function(state, profile = "latest") {
     unique_periods <- sort(unique(as.character(data$period)))
     data$period <- factor(data$period, levels = unique_periods)
   }
-
   data
 }
-
 #####################################
 # DATA & CONFIGURATION ----
 #####################################
-
 # State code mapping
 state_codes <- c(
   "AL" = "Alabama", "AK" = "Alaska", "AZ" = "Arizona", "AR" = "Arkansas",
@@ -82,88 +68,34 @@ state_codes <- c(
   "VT" = "Vermont", "VA" = "Virginia", "WA" = "Washington", "WV" = "West Virginia",
   "WI" = "Wisconsin", "WY" = "Wyoming", "DC" = "D.C.", "PR" = "Puerto Rico"
 )
-
 # RSP indicator order (Safety first, excludes Entry Rate which has no RSP)
 # indicator_sort: 1=Maltreatment in care, 2=Recurrence, 4=Perm12 entries,
 #                 5=Perm12 12-23mo, 6=Perm12 24+mo, 7=Reentry, 8=Placement stability
 rsp_indicator_order <- c(1, 2, 4, 5, 6, 7, 8)
-
 #####################################
 # HELPER FUNCTIONS ----
 #####################################
-
-#' Get performance status based on RSP interval vs national standard
-#' @param rsp RSP value (decimal for percent indicators, e.g., 0.26 = 26%)
-#' @param rsp_lower Lower CI bound (same scale as rsp)
-#' @param rsp_upper Upper CI bound (same scale as rsp)
-#' @param national_std National standard (display value, e.g., 35.2 = 35.2%)
-#' @param direction_rule "lt" (lower is better) or "gt" (higher is better)
-#' @param format_type "percent" or "rate"
-get_performance_status <- function(rsp, rsp_lower, rsp_upper, national_std, direction_rule, format_type) {
-  if (is.na(rsp) || is.na(rsp_lower) || is.na(rsp_upper) || is.na(national_std)) {
-    return(list(status = "dq", label = "Data quality issue", css_class = "status-dq"))
-  }
-
-  # Convert RSP values to display scale for comparison
-  # RSP for percent indicators is stored as decimal (0.26 = 26%)
-  # National standard is stored as display value (35.2 = 35.2%)
-  if (format_type == "percent") {
-    rsp_display <- rsp * 100
-    lower_display <- rsp_lower * 100
-    upper_display <- rsp_upper * 100
-  } else {
-    rsp_display <- rsp
-    lower_display <- rsp_lower
-    upper_display <- rsp_upper
-  }
-
-  # Check if interval overlaps national standard
-  overlaps <- lower_display <= national_std && upper_display >= national_std
-
-  if (overlaps) {
-    return(list(status = "nodiff", label = "No statistical difference", css_class = "status-nodiff"))
-  }
-
-  # Determine better/worse based on direction
-  if (direction_rule == "lt") {
-    if (upper_display < national_std) {
-      return(list(status = "better", label = "Statistically better", css_class = "status-better"))
-    } else {
-      return(list(status = "worse", label = "Statistically worse", css_class = "status-worse"))
-    }
-  } else {
-    if (lower_display > national_std) {
-      return(list(status = "better", label = "Statistically better", css_class = "status-better"))
-    } else {
-      return(list(status = "worse", label = "Statistically worse", css_class = "status-worse"))
-    }
-  }
-}
-
+# NOTE: Performance status (better/worse/nodiff/dq) is pre-calculated in the RDS file
+# based on RSP confidence interval overlap logic. No longer calculated here.
 #' Build RSP confidence interval chart
 build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
   if (nrow(data) == 0) return(NULL)
-
   # Prepare data - convert percentages for display
   # RSP for percent indicators is stored as decimal (0.26 = 26%)
   # National standard is stored as display value (35.2 = 35.2%)
   is_pct <- (format_type == "percent")
   multiplier <- if (is_pct) 100 else 1
-
   # Preserve period order from source data (already in chronological order)
   # If period is a factor, use its levels; otherwise sort alphabetically
   original_levels <- if (is.factor(data$period)) levels(data$period) else NULL
-
   plot_data <- data %>%
     mutate(period_char = trimws(as.character(period)))
-
   # Use original factor levels if available, otherwise sort alphabetically
   if (!is.null(original_levels)) {
     sorted_periods <- intersect(original_levels, unique(plot_data$period_char))
   } else {
     sorted_periods <- sort(unique(plot_data$period_char))
   }
-
   plot_data <- plot_data %>%
     mutate(
       period_label = factor(period_char, levels = sorted_periods),
@@ -172,47 +104,37 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
       lower_display = rsp_lower * multiplier,
       upper_display = rsp_upper * multiplier
     )
-
   national_display <- national_std  # Already in display format
-
-  # Determine bar colors based on performance vs national
+  # Use pre-calculated status from RDS for bar colors
   plot_data <- plot_data %>%
     mutate(
-      overlaps_national = lower_display <= national_display & upper_display >= national_display,
-      is_better = case_when(
-        direction_rule == "lt" ~ upper_display < national_display,
-        TRUE ~ lower_display > national_display
-      ),
       bar_color = case_when(
-        is.na(rsp) ~ "#f59e0b",        # Yellow for DQ
-        overlaps_national ~ "#6b7280",  # Gray for no difference
-        is_better ~ "#10b981",          # Green for better
-        TRUE ~ "#ef4444"                # Red for worse
+        is.na(rsp) ~ "#f59e0b",              # Amber for DQ (missing RSP data)
+        status == "better" ~ "#10b981",      # Green for statistically better
+        status == "worse" ~ "#ef4444",       # Red for statistically worse
+        status == "nodiff" ~ "#6b7280",      # Gray for no difference
+        status == "dq" ~ "#f59e0b",          # Amber for data quality
+        TRUE ~ "#6b7280"                     # Gray fallback
       ),
       # Format label for display
       rsp_label = ifelse(!is.na(rsp_display),
                          formatC(rsp_display, digits = 1, format = "f"),
                          "")
     )
-
   # Calculate y-axis range - always start at 0
   y_vals <- c(plot_data$lower_display, plot_data$upper_display, national_display)
   y_vals <- y_vals[!is.na(y_vals)]
   if (length(y_vals) == 0) return(NULL)
-
   y_min <- 0
   y_max <- max(y_vals) * 1.1  # 10% padding above max
-
   # Separate data with and without RSP values
   plot_data_valid <- plot_data %>% filter(has_data)
   plot_data_dq <- plot_data %>% filter(!has_data)
-
   # Build ggplot using group aesthetic to prevent data collapse
   p <- ggplot(plot_data, aes(x = period_label)) +
     # National standard dashed line
     geom_hline(yintercept = national_display,
                linetype = "dashed", color = "#3b82f6", linewidth = 0.8)
-
   # Add error bars and points for valid data
   if (nrow(plot_data_valid) > 0) {
     p <- p +
@@ -231,7 +153,6 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
                  size = 2) +
       scale_color_identity()
   }
-
   # Add DQ labels for missing data (positioned below national line)
   if (nrow(plot_data_dq) > 0) {
     p <- p +
@@ -239,7 +160,6 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
                 aes(y = national_display * 0.75, label = "DQ"),
                 color = "#f59e0b", fontface = "bold", size = 3.5)
   }
-
   p <- p +
     scale_x_discrete(limits = sorted_periods, drop = FALSE) +
     scale_y_continuous(limits = c(y_min, y_max)) +
@@ -255,92 +175,60 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
       plot.background = element_rect(fill = "transparent", color = NA),
       panel.background = element_rect(fill = "transparent", color = NA)
     )
-
   p
 }
-
 #####################################
 # HIGHLIGHTS CARD FUNCTIONS ----
 #####################################
-
 #' Calculate current performance counts
 calculate_current_performance <- function(latest_data) {
   perf_counts <- list(better = 0, nodiff = 0, worse = 0, dq = 0)
-
   for (i in seq_len(nrow(latest_data))) {
     row <- latest_data[i, ]
-
     # Call existing helper function
-    status <- get_performance_status(
-      rsp = row$rsp,
-      rsp_lower = row$rsp_lower,
-      rsp_upper = row$rsp_upper,
-      national_std = row$national_standard,
-      direction_rule = row$direction_rule,
-      format_type = row$format
-    )
-
+    status_val <- row$status  # Use pre-calculated status
     # Count by status including DQ
-    if (status$status == "better") {
+    if (status_val == "better") {
       perf_counts$better <- perf_counts$better + 1
-    } else if (status$status == "nodiff") {
+    } else if (status_val == "nodiff") {
       perf_counts$nodiff <- perf_counts$nodiff + 1
-    } else if (status$status == "worse") {
+    } else if (status_val == "worse") {
       perf_counts$worse <- perf_counts$worse + 1
-    } else if (status$status == "dq") {
+    } else if (status_val == "dq") {
       perf_counts$dq <- perf_counts$dq + 1
     }
   }
-
   return(perf_counts)
 }
-
 #' Calculate consistency analysis across all periods
 calculate_consistency_analysis <- function(data) {
   consistency_counts <- list(always_worse = 0, always_better = 0, other = 0)
-
   # For each indicator, check consistency across all periods
   for (ind_sort in rsp_indicator_order) {
     ind_data <- data %>% filter(indicator_sort == ind_sort)
-
     if (nrow(ind_data) == 0) next
-
     # Get metadata for this indicator
     direction_rule <- ind_data$direction_rule[1]
     format_type <- ind_data$format[1]
     national_std <- ind_data$national_standard[1]
-
     # Track status for each period
     statuses <- c()
     has_dq <- FALSE
-
     for (i in seq_len(nrow(ind_data))) {
       row <- ind_data[i, ]
-
-      status <- get_performance_status(
-        rsp = row$rsp,
-        rsp_lower = row$rsp_lower,
-        rsp_upper = row$rsp_upper,
-        national_std = national_std,
-        direction_rule = direction_rule,
-        format_type = format_type
-      )
-
-      if (status$status == "dq") {
+      status_val <- row$status
+      if (status_val == "dq") {
         has_dq <- TRUE
       } else {
-        statuses <- c(statuses, status$status)
+        statuses <- c(statuses, status_val)
       }
     }
-
     # Classify consistency
     if (length(statuses) == 0) {
       # All DQ - skip
       next
     }
-
     unique_statuses <- unique(statuses)
-
     if (length(unique_statuses) == 1 && unique_statuses[1] == "worse") {
       consistency_counts$always_worse <- consistency_counts$always_worse + 1
     } else if (length(unique_statuses) == 1 && unique_statuses[1] == "better") {
@@ -350,17 +238,14 @@ calculate_consistency_analysis <- function(data) {
       consistency_counts$other <- consistency_counts$other + 1
     }
   }
-
   return(consistency_counts)
 }
-
 #' Build highlights KPI card - VERSION 1 (counts-based)
 #' PRESERVED for potential reversion
 build_highlights_kpi_v1 <- function(current_perf, consistency_counts) {
   div(class = "kpi-box highlights-kpi",
     div(class = "kpi-title", "Performance Summary"),
     div(class = "kpi-subtitle", "Overview of all 7 indicators"),
-
     # Current Performance Section
     div(style = "margin-bottom: 12px;",
       div(style = "font-size: 0.85rem; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase;",
@@ -385,7 +270,6 @@ build_highlights_kpi_v1 <- function(current_perf, consistency_counts) {
         )
       )
     ),
-
     # Consistency Section
     div(style = "border-top: 1px solid #e5e7eb; padding-top: 12px;",
       div(style = "font-size: 0.85rem; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase;",
@@ -408,54 +292,39 @@ build_highlights_kpi_v1 <- function(current_perf, consistency_counts) {
     )
   )
 }
-
 #' Build highlights KPI card - VERSION 2 (list-based)
 #' Shows all 7 indicators with their individual status
 build_highlights_kpi_v2 <- function(latest_by_indicator) {
   # Build indicator rows
   indicator_rows <- lapply(1:nrow(latest_by_indicator), function(i) {
     row <- latest_by_indicator[i, ]
-
-    status <- get_performance_status(
-      rsp = row$rsp,
-      rsp_lower = row$rsp_lower,
-      rsp_upper = row$rsp_upper,
-      national_std = row$national_standard,
-      direction_rule = row$direction_rule,
-      format_type = row$format
-    )
-
-    status_class <- status$status
-    status_label <- switch(status$status,
+    status_val <- row$status
+    status_class <- status_val
+    status_label <- switch(status_val,
       "better" = "Better",
       "nodiff" = "No Diff",
       "worse" = "Worse",
       "dq" = "DQ",
       "Unknown"
     )
-
     div(class = "indicator-row",
       div(class = "indicator-name", row$indicator_very_short),
       div(class = paste("indicator-status", status_class), status_label)
     )
   })
-
   div(class = "kpi-box highlights-kpi",
     div(class = "kpi-title", "Performance Summary"),
     div(class = "kpi-subtitle", "Current vs. national performance"),
-
     div(class = "indicator-list",
       indicator_rows
     )
   )
 }
-
 #' Build complete highlights card
 build_highlights_card <- function(data) {
   if (is.null(data) || nrow(data) == 0) {
     return(NULL)
   }
-
   # Get each indicator's most recent period (varies by indicator)
   # For each indicator, find the last period with valid data
   latest_by_indicator <- data %>%
@@ -463,20 +332,16 @@ build_highlights_card <- function(data) {
     arrange(period) %>%
     slice_tail(n = 1) %>%
     ungroup()
-
   # VERSION 1: Counts-based (preserved)
   # current_perf <- calculate_current_performance(latest_by_indicator)
   # consistency_counts <- calculate_consistency_analysis(data)
   # build_highlights_kpi_v1(current_perf, consistency_counts)
-
   # VERSION 2: List-based (current)
   build_highlights_kpi_v2(latest_by_indicator)
 }
-
 #####################################
 # UI ----
 #####################################
-
 ui <- fluidPage(
   # Custom CSS
   tags$head(
@@ -593,7 +458,6 @@ ui <- fluidPage(
         height: 110px;
         margin: 8px -8px 8px -8px;
       }
-
       /* Interpretation guide card styling */
       .interpretation-kpi {
         background: white;
@@ -725,7 +589,6 @@ ui <- fluidPage(
         font-weight: 700;
         font-size: 0.95rem;
       }
-
       /* Summary grid for highlights card V1 (counts-based) */
       .summary-grid {
         display: grid;
@@ -759,7 +622,6 @@ ui <- fluidPage(
         text-transform: uppercase;
         font-weight: 500;
       }
-
       /* Indicator list for highlights card V2 (list-based) */
       .indicator-list {
         display: flex;
@@ -811,13 +673,11 @@ ui <- fluidPage(
       }
     "))
   ),
-
   # Header
   div(class = "header",
     h1(textOutput("header_title")),
     div(class = "subtitle", textOutput("header_subtitle"))
   ),
-
   # Row 1: Interpretation Guide + Safety (3 KPIs total)
   div(class = "kpi-grid-row",
     # Interpretation guide card
@@ -831,7 +691,6 @@ ui <- fluidPage(
           )
         )
       ),
-
       # Compact legend
       div(class = "interpretation-legend",
         # Row 1: Better, Worse, No difference
@@ -857,39 +716,32 @@ ui <- fluidPage(
           span("National performance")
         )
       ),
-
       # Guidance text
       div(class = "interpretation-guide",
         p("Risk-Standardized Performance (RSP) is the percent or rate of children experiencing the outcome, with risk adjustment. The vertical bars in each graph represent the lower and upper 95% confidence intervals for the RSP."),
         p("To be statistically better or worse than national performance, the entire RSP interval needs to be above or below national performance (the dotted blue line).")
       )
     ),
-
     # Safety KPIs
     uiOutput("kpi_1"),
     uiOutput("kpi_2")
   ),
-
   # Row 2: Permanency in 12 months (3 KPIs)
   div(class = "kpi-grid-row",
     uiOutput("kpi_3"),
     uiOutput("kpi_4"),
     uiOutput("kpi_5")
   ),
-
   # Row 3: Re-entry and Placement Stability (2 KPIs)
   div(class = "kpi-grid-row",
     uiOutput("kpi_6"),
     uiOutput("kpi_7")
   )
 )
-
 #####################################
 # SERVER ----
 #####################################
-
 server <- function(input, output, session) {
-
   # Get state and profile from URL parameters
   state_code_rv <- reactive({
     query <- parseQueryString(session$clientData$url_search)
@@ -897,33 +749,27 @@ server <- function(input, output, session) {
     if (!code %in% names(state_codes)) code <- "MD"
     code
   })
-
   profile_rv <- reactive({
     query <- parseQueryString(session$clientData$url_search)
     query$profile %||% "latest"
   })
-
   state_name_rv <- reactive({
     state_codes[[state_code_rv()]]
   })
-
   # Load RSP data
   rsp_data <- reactive({
     state <- state_code_rv()
     profile <- profile_rv()
-
     tryCatch({
       load_rsp_data(state, profile)
     }, error = function(e) {
       NULL
     })
   })
-
   # Header outputs
   output$header_title <- renderText({
     paste0(state_name_rv(), " - Risk-Standardized Performance")
   })
-
   output$header_subtitle <- renderText({
     data <- rsp_data()
     if (is.null(data) || nrow(data) == 0) {
@@ -932,21 +778,17 @@ server <- function(input, output, session) {
     profile_ver <- unique(data$profile_version)[1]
     paste0("CFSR Round 4 Data Profile | ", profile_ver)
   })
-
   # Note: Performance Highlights Card moved to separate Summary app (port 3840)
-
   # Generate KPI box for each indicator
   build_kpi_output <- function(indicator_sort_val) {
     data <- rsp_data()
     if (is.null(data) || nrow(data) == 0) {
       return(div(class = "kpi-box", p("No data available")))
     }
-
     ind_data <- data %>% filter(indicator_sort == indicator_sort_val)
     if (nrow(ind_data) == 0) {
       return(div(class = "kpi-box", p("No data for this indicator")))
     }
-
     # Get metadata
     ind_short <- ind_data$indicator_short[1]
     ind_desc <- ind_data$description[1]
@@ -956,17 +798,13 @@ server <- function(input, output, session) {
     direction_rule <- ind_data$direction_rule[1]
     direction_legend <- ind_data$direction_legend[1]
     national_std <- ind_data$national_standard[1]
-
     # Get latest period data
     latest <- ind_data %>% arrange(desc(period)) %>% slice(1)
     latest_rsp <- latest$rsp
     latest_lower <- latest$rsp_lower
     latest_upper <- latest$rsp_upper
-
     # Performance status
-    perf <- get_performance_status(latest_rsp, latest_lower, latest_upper,
-                                    national_std, direction_rule, format_type)
-
+    status_val <- latest$status  # Use pre-calculated status from RDS
     # Format display values
     if (format_type == "percent") {
       display_val <- if (!is.na(latest_rsp)) formatC(latest_rsp * 100, digits = decimal_prec, format = "f") else "DQ"
@@ -980,19 +818,16 @@ server <- function(input, output, session) {
       national_display <- formatC(national_std, digits = decimal_prec, format = "f")
       national_unit <- if (indicator_sort_val == 1) " victimizations" else if (indicator_sort_val == 8) " moves" else ""
     }
-
     # Direction arrow
     arrow <- if (direction_rule == "lt") "\u25BC" else "\u25B2"
-
     # Determine value color based on performance status
-    value_color <- switch(perf$status,
+    value_color <- switch(status_val,
       "better" = "#10b981",   # Green
       "worse" = "#ef4444",    # Red
       "nodiff" = "#6b7280",   # Gray
       "dq" = "#f59e0b",       # Orange
       "#111827"               # Default dark gray
     )
-
     # Build KPI box
     div(class = "kpi-box",
       div(class = "kpi-title", ind_short),
@@ -1013,7 +848,6 @@ server <- function(input, output, session) {
       )
     )
   }
-
   # Render each KPI box
   output$kpi_1 <- renderUI({ build_kpi_output(rsp_indicator_order[1]) })
   output$kpi_2 <- renderUI({ build_kpi_output(rsp_indicator_order[2]) })
@@ -1023,5 +857,4 @@ server <- function(input, output, session) {
   output$kpi_6 <- renderUI({ build_kpi_output(rsp_indicator_order[6]) })
   output$kpi_7 <- renderUI({ build_kpi_output(rsp_indicator_order[7]) })
 }
-
 shinyApp(ui, server)
