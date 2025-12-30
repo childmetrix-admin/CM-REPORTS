@@ -391,10 +391,24 @@ ui <- fluidPage(
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 10px;
-        padding: 16px;
+        padding: 16px 16px 10px 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         max-width: 100%;
+        position: relative;
       }
+      .kpi-status-indicator {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .kpi-status-indicator.better { background: #10b981; }
+      .kpi-status-indicator.worse { background: #ef4444; }
+      .kpi-status-indicator.nodiff { background: #6b7280; }
+      .kpi-status-indicator.dq { background: #f59e0b; }
       .highlights-kpi .kpi-title {
         background: #0f4c75;
         color: white;
@@ -456,7 +470,7 @@ ui <- fluidPage(
       }
       .kpi-chart-container {
         height: 110px;
-        margin: 8px -8px 8px -8px;
+        margin: 8px -8px 0px -8px;
       }
       /* Interpretation guide card styling */
       .interpretation-kpi {
@@ -830,6 +844,7 @@ server <- function(input, output, session) {
     )
     # Build KPI box
     div(class = "kpi-box",
+      div(class = paste("kpi-status-indicator", status_val)),
       div(class = "kpi-title", ind_short),
       div(class = "kpi-subtitle", ind_desc),
       div(class = "kpi-metrics",

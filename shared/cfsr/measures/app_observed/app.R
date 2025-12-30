@@ -130,8 +130,9 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
     )
 
   # Calculate y-axis range - always start at 0
+  # Increased multiplier to 1.25 to create headroom for data labels above points
   y_vals <- c(plot_data$observed_display, national_display)
-  y_max <- max(y_vals, na.rm = TRUE) * 1.15
+  y_max <- max(y_vals, na.rm = TRUE) * 1.25
   y_min <- 0
 
   # Separate data with and without observed values
@@ -158,6 +159,32 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
 
       # Manual color scale
       scale_color_identity()
+  }
+
+  # Add data labels on first and last non-NA periods
+  if (nrow(plot_data_valid) > 0) {
+    # Get first and last rows with non-NA observed performance
+    first_row <- plot_data_valid[1, ]
+    last_row <- plot_data_valid[nrow(plot_data_valid), ]
+
+    # Combine into data frame for labeling
+    label_data <- bind_rows(first_row, last_row) %>%
+      distinct()  # In case there's only 1 non-NA period (first = last)
+
+    # Format labels based on format_type
+    label_data <- label_data %>%
+      mutate(
+        label_text = if (is_pct) {
+          paste0(round(observed_display, 1), "%")
+        } else {
+          as.character(round(observed_display, 2))  # 2 decimals for count indicators
+        }
+      )
+
+    p <- p +
+      geom_text(data = label_data,
+                aes(y = observed_display, label = label_text),
+                color = "#6b7280", fontface = "bold", size = 3.5, vjust = -1.1)
   }
 
   # Add DQ labels for missing data (positioned below national line)
@@ -248,10 +275,24 @@ ui <- fluidPage(
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 10px;
-        padding: 16px;
+        padding: 16px 16px 10px 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         max-width: 100%;
+        position: relative;
       }
+      .kpi-status-indicator {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .kpi-status-indicator.better { background: #10b981; }
+      .kpi-status-indicator.worse { background: #ef4444; }
+      .kpi-status-indicator.nodiff { background: #6b7280; }
+      .kpi-status-indicator.dq { background: #f59e0b; }
       .interpretation-kpi {
         background: white;
         border: 1px solid #e5e7eb;
@@ -362,7 +403,7 @@ ui <- fluidPage(
       }
       .kpi-chart-container {
         height: 110px;
-        margin: 8px -8px 8px -8px;
+        margin: 8px -8px 0px -8px;
       }
 
       /* Interpretation legend */
@@ -589,6 +630,7 @@ server <- function(input, output, session) {
 
     # Build KPI box
     div(class = "kpi-box",
+      div(class = paste("kpi-status-indicator", status_val)),
       div(class = "kpi-title", ind_short),
       div(class = "kpi-subtitle", ind_desc),
       div(class = "kpi-metrics",
