@@ -950,10 +950,22 @@
             setTertiaryActive(currentTertiary);
             const period = periodSelect.value;
             const stateCode = window.CM_STATE || 'md';
-            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=overview`;
+            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&view=overview`;
           }
         });
       }
+
+      // Map indicator numbers to view parameter names
+      const indicatorToView = {
+        '1': 'entry_rate',
+        '2': 'maltreatment',
+        '3': 'recurrence',
+        '4': 'perm12_entries',
+        '5': 'perm12_12_23',
+        '6': 'perm12_24',
+        '7': 'reentry',
+        '8': 'placement'
+      };
 
       // Observed Performance - Indicators (generic handler for all 8)
       document.querySelectorAll('[id^="tertiaryObs"][data-indicator]').forEach(link => {
@@ -961,11 +973,12 @@
           e.preventDefault();
           if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
             const indicatorNum = this.getAttribute('data-indicator');
+            const viewName = indicatorToView[indicatorNum] || 'overview';
             currentTertiary = `obs_ind_${indicatorNum}`;
             setTertiaryActive(currentTertiary);
             const period = periodSelect.value;
             const stateCode = window.CM_STATE || 'md';
-            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=${indicatorNum}&tab=state_us`;
+            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&view=${viewName}`;
           }
         });
       });

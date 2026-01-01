@@ -359,17 +359,21 @@ ui <- fluidPage(
         margin-right: auto;
       }
       .header {
-        margin-bottom: 24px;
+        background: linear-gradient(135deg, #0f4c75 0%, #0e9ba4 100%);
+        color: white;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        border-radius: 4px;
       }
       .header h1 {
-        font-size: 1.5rem;
+        margin: 0;
+        font-size: 1.6rem;
         font-weight: 600;
-        color: #111827;
-        margin: 0 0 6px 0;
       }
       .header .subtitle {
-        color: #6b7280;
-        font-size: 0.9rem;
+        margin-top: 4px;
+        font-size: 0.95rem;
+        opacity: 0.95;
       }
       .kpi-grid-row {
         display: grid;

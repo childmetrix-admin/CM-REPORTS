@@ -54,15 +54,14 @@
   <script>
     const OBSERVED_PORT = 3841;
 
-    // Get state, profile, indicator, and tab from URL params
+    // Get state, profile, and view from URL params
     const urlParams = new URLSearchParams(window.location.search);
     const state = urlParams.get('state') || 'MD';
     const profile = urlParams.get('profile') || 'latest';
-    const indicator = urlParams.get('indicator') || 'overview';
-    const tab = urlParams.get('tab') || 'state_us';
+    const view = urlParams.get('view') || 'overview';
 
     // Construct Shiny app URL
-    const shinyUrl = `http://localhost:${OBSERVED_PORT}/?state=${state}&profile=${profile}&indicator=${indicator}&tab=${tab}`;
+    const shinyUrl = `http://localhost:${OBSERVED_PORT}/?state=${state}&profile=${profile}&view=${view}`;
 
     const iframe = document.getElementById('shiny-container');
 

@@ -1,86 +1,33 @@
-# app.R - Observed Performance Shiny Application
-# CFSR Observed Performance Dashboard
+# app.R - Observed Performance Shiny Application (Integrated with National Comparison)
+# CFSR Observed Performance Dashboard - Single Page with View Parameter Routing
+#
+# NOTE: Data loading, libraries, and shared functions are in global.R
+# This file contains:
+# - build_observed_chart() function for KPI trend charts
+# - Single-page UI that switches content based on ?view= parameter
+# - Server logic for Overview page (7 KPI cards) and indicator detail pages (national bar charts)
+#
+# ARCHITECTURE: This app is embedded in Maryland hub HTML via iframe. The outer page
+# handles sidebar navigation by changing the iframe URL with ?view= parameter.
+# Valid views: overview (default), entry_rate, maltreatment, recurrence,
+#              perm12_entries, perm12_12_23, perm12_24, reentry, placement
 
+# Load libraries
 library(shiny)
+library(plotly)
 library(dplyr)
 library(ggplot2)
-library(scales)
 
-# Define %||% operator (null coalescing) if not available
+# Source global.R first (loads data, helper functions, and global variables)
+# NOTE: Shiny should auto-load global.R, but we source it explicitly to ensure it runs
+source("global.R", local = FALSE)
+
+# Source shared modules and functions
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/modules/indicator_detail.R")
+source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/chart_builder.R")
+
+# Define %||% operator (null coalescing)
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || x == "") y else x
-
-#####################################
-# DATA LOADING FUNCTIONS ----
-#####################################
-
-# Data directory (shared with all CFSR apps)
-data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
-
-#' Get available observed profiles for a state
-get_available_observed_profiles <- function(state) {
-  state <- toupper(state)
-  pattern <- paste0("^", state, "_cfsr_profile_observed_([0-9]{4}_[0-9]{2})\\.rds$")
-  all_files <- list.files(data_dir, pattern = pattern)
-  if (length(all_files) == 0) return(character(0))
-  periods <- gsub(paste0(state, "_cfsr_profile_observed_(.*)\\.rds"), "\\1", all_files)
-  sort(periods, decreasing = TRUE)
-}
-
-#' Load observed data for a state and profile period
-#' Each RDS file contains all historical periods for that profile version
-load_observed_data <- function(state, profile = "latest") {
-  state <- toupper(state)
-
-  # If "latest" requested, find most recent profile
-  if (profile == "latest") {
-    available <- get_available_observed_profiles(state)
-    if (length(available) == 0) {
-      stop("No observed profiles available for ", state)
-    }
-    profile <- available[1]
-  }
-
-  filename <- paste0(state, "_cfsr_profile_observed_", profile, ".rds")
-  file_path <- file.path(data_dir, filename)
-
-  if (!file.exists(file_path)) {
-    stop("Observed data file not found: ", file_path)
-  }
-
-  data <- readRDS(file_path)
-
-  # Leave period as-is (not converting to factor)
-  # The RDS data is already in chronological order within each indicator
-  # and the chart function preserves this order using unique()
-
-  data
-}
-
-#####################################
-# DATA & CONFIGURATION ----
-#####################################
-
-# State code mapping
-state_codes <- c(
-  "AL" = "Alabama", "AK" = "Alaska", "AZ" = "Arizona", "AR" = "Arkansas",
-  "CA" = "California", "CO" = "Colorado", "CT" = "Connecticut", "DE" = "Delaware",
-  "FL" = "Florida", "GA" = "Georgia", "HI" = "Hawaii", "ID" = "Idaho",
-  "IL" = "Illinois", "IN" = "Indiana", "IA" = "Iowa", "KS" = "Kansas",
-  "KY" = "Kentucky", "LA" = "Louisiana", "ME" = "Maine", "MD" = "Maryland",
-  "MA" = "Massachusetts", "MI" = "Michigan", "MN" = "Minnesota", "MS" = "Mississippi",
-  "MO" = "Missouri", "MT" = "Montana", "NE" = "Nebraska", "NV" = "Nevada",
-  "NH" = "New Hampshire", "NJ" = "New Jersey", "NM" = "New Mexico", "NY" = "New York",
-  "NC" = "North Carolina", "ND" = "North Dakota", "OH" = "Ohio", "OK" = "Oklahoma",
-  "OR" = "Oregon", "PA" = "Pennsylvania", "RI" = "Rhode Island", "SC" = "South Carolina",
-  "SD" = "South Dakota", "TN" = "Tennessee", "TX" = "Texas", "UT" = "Utah",
-  "VT" = "Vermont", "VA" = "Virginia", "WA" = "Washington", "WV" = "West Virginia",
-  "WI" = "Wisconsin", "WY" = "Wyoming", "DC" = "D.C.", "PR" = "Puerto Rico"
-)
-
-# Observed indicator order (all 7 indicators with observed data, excludes Entry Rate)
-# indicator_sort: 1=Maltreatment in care, 2=Recurrence, 4=Perm12 entries,
-#                 5=Perm12 12-23mo, 6=Perm12 24+mo, 7=Reentry, 8=Placement stability
-observed_indicator_order <- c(1, 2, 4, 5, 6, 7, 8)
 
 #####################################
 # HELPER FUNCTIONS ----
@@ -94,71 +41,49 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
   if (nrow(data) == 0) return(NULL)
 
   # Prepare data - convert percentages for display
+  # NOTE: observed_performance is stored as proportion (0.125)
+  #       national_std is stored as percentage (12.5)
   is_pct <- (format_type == "percent")
   multiplier <- if (is_pct) 100 else 1
 
   # Preserve period order from the data as it comes in (already chronologically sorted)
-  # Extract unique periods in the order they appear in the input data
+  period_order <- unique(data$period)
+
   plot_data <- data %>%
-    mutate(period_char = trimws(as.character(period)))
-
-  # Get periods in the order they appear in the data (preserves chronological order from RDS)
-  sorted_periods <- unique(plot_data$period_char)
-
-  plot_data <- plot_data %>%
     mutate(
-      period_label = factor(period_char, levels = sorted_periods),
-      has_data = !is.na(observed_performance),
-      observed_display = observed_performance * multiplier
+      observed_display = observed_performance * multiplier,
+      period = factor(period, levels = period_order)
     )
 
-  national_display <- national_std  # Already in display format
+  # Get value range for y-axis
+  # NOTE: Don't multiply national_std - it's already a percentage
+  y_vals <- c(plot_data$observed_display, national_std)
+  y_vals <- y_vals[!is.na(y_vals)]
 
-  # Use pre-calculated RSP status for point colors
-  # Status is based on RSP confidence interval overlap (statistically valid)
-  plot_data <- plot_data %>%
-    mutate(
-      point_color = case_when(
-        is.na(observed_performance) ~ "#f59e0b",  # Amber for DQ (missing observed data)
-        is.na(status) ~ "#6b7280",                # Gray for missing RSP status
-        status == "better" ~ "#10b981",           # Green for statistically better than national
-        status == "worse" ~ "#ef4444",            # Red for statistically worse than national
-        status == "nodiff" ~ "#6b7280",           # Gray for no statistical difference
-        status == "dq" ~ "#f59e0b",               # Amber for RSP data quality issue
-        TRUE ~ "#6b7280"                          # Gray fallback
-      )
-    )
+  if (length(y_vals) == 0) {
+    y_max <- if (is_pct) 100 else 10
+  } else {
+    y_max <- max(y_vals, na.rm = TRUE) * 1.25  # Increased from 1.15 to prevent label cutoff
+  }
 
-  # Calculate y-axis range - always start at 0
-  # Increased multiplier to 1.25 to create headroom for data labels above points
-  y_vals <- c(plot_data$observed_display, national_display)
-  y_max <- max(y_vals, na.rm = TRUE) * 1.25
-  y_min <- 0
+  # Create base plot
+  p <- ggplot(plot_data, aes(x = period, y = observed_display, group = 1))
 
-  # Separate data with and without observed values
-  plot_data_valid <- plot_data %>% filter(has_data)
-  plot_data_dq <- plot_data %>% filter(!has_data)
+  # Add national standard dashed line
+  # NOTE: Don't multiply national_std - it's already a percentage
+  p <- p + geom_hline(yintercept = national_std,
+                     linetype = "dashed", color = "#3b82f6", linewidth = 0.8)
 
-  # Create plot
-  p <- ggplot(plot_data, aes(x = period_label)) +
-    # National standard reference line
-    geom_hline(yintercept = national_display, color = "#3b82f6", linetype = "dashed", size = 0.6)
+  # Add line connecting points
+  p <- p + geom_line(color = "#6b7280", linewidth = 0.5)
 
-  # Add line and points for valid data
+  # Add colored data points based on status
+  plot_data_valid <- plot_data %>% filter(!is.na(observed_display))
+  plot_data_dq <- plot_data %>% filter(is.na(observed_display))
+
   if (nrow(plot_data_valid) > 0) {
-    p <- p +
-      # Observed performance line
-      geom_line(data = plot_data_valid,
-                aes(y = observed_display, group = 1),
-                color = "#6b7280", size = 0.8) +
-
-      # Observed performance points (colored by status)
-      geom_point(data = plot_data_valid,
-                 aes(y = observed_display, color = point_color),
-                 size = 3) +
-
-      # Manual color scale
-      scale_color_identity()
+    p <- p + geom_point(data = plot_data_valid,
+                       aes(color = status), size = 2)
   }
 
   # Add data labels on first and last non-NA periods
@@ -187,39 +112,47 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
                 color = "#6b7280", fontface = "bold", size = 3.5, vjust = -1.1)
   }
 
-  # Add DQ labels for missing data (positioned below national line)
+  # Add "DQ" labels for missing data periods
   if (nrow(plot_data_dq) > 0) {
-    p <- p +
-      geom_text(data = plot_data_dq,
-                aes(y = national_display * 0.75, label = "DQ"),
-                color = "#f59e0b", fontface = "bold", size = 3.5)
+    # Position DQ labels at bottom of chart
+    dq_y <- y_max * 0.05
+    p <- p + geom_text(data = plot_data_dq,
+                      aes(x = period, y = dq_y),
+                      label = "DQ", color = "#f59e0b", fontface = "bold", size = 3)
   }
 
+  # Color scale for status
+  p <- p + scale_color_manual(
+    values = c(
+      "better" = "#10b981",   # Green
+      "worse" = "#ef4444",    # Red
+      "nodiff" = "#6b7280",   # Gray
+      "dq" = "#f59e0b"        # Amber
+    ),
+    guide = "none"  # Hide legend
+  )
+
+  # Format and theme
   p <- p +
-    # X-axis scale with explicit period order
-    scale_x_discrete(limits = sorted_periods, drop = FALSE) +
-
-    # Y-axis scale
     scale_y_continuous(
-      limits = c(y_min, y_max),
-      expand = expansion(mult = c(0, 0.05))
+      limits = c(0, y_max),
+      labels = if (is_pct) {
+        function(x) paste0(x, "%")
+      } else {
+        scales::comma_format()
+      }
     ) +
-
-    # Theme
-    theme_minimal() +
+    labs(x = NULL, y = NULL) +
+    theme_minimal(base_size = 10) +
     theme(
-      axis.title = element_blank(),
-      axis.text.x = element_text(size = 8, hjust = 0.5, color = "#374151"),
-      axis.text.y = element_text(size = 8, color = "#6b7280"),
       panel.grid.major.x = element_blank(),
       panel.grid.minor = element_blank(),
-      panel.grid.major.y = element_line(color = "#f3f4f6", size = 0.3),
-      plot.margin = margin(t = 5, r = 5, b = 5, l = 5),
-      plot.background = element_rect(fill = "transparent", color = NA),
-      panel.background = element_rect(fill = "transparent", color = NA)
+      axis.text.x = element_text(angle = 0, hjust = 0.5, size = 9, color = "#374151"),
+      axis.text.y = element_text(size = 9, color = "#374151"),
+      plot.margin = margin(5, 5, 5, 5)
     )
 
-  p
+  return(p)
 }
 
 #####################################
@@ -230,9 +163,10 @@ ui <- fluidPage(
   # Custom CSS
   tags$head(
     tags$style(HTML("
+      /* Page Layout */
       body {
-        background-color: #f9fafb;
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        background: #f9fafb;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         margin: 0;
         padding: 0;
       }
@@ -242,18 +176,24 @@ ui <- fluidPage(
         margin-left: 0;
         margin-right: auto;
       }
+
+      /* KPI Card Styles (from original app_observed) */
       .header {
-        margin-bottom: 24px;
+        background: linear-gradient(135deg, #0f4c75 0%, #0e9ba4 100%);
+        color: white;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        border-radius: 4px;
       }
       .header h1 {
-        font-size: 1.5rem;
+        margin: 0;
+        font-size: 1.6rem;
         font-weight: 600;
-        color: #111827;
-        margin: 0 0 6px 0;
       }
-      .header .subtitle {
-        color: #6b7280;
-        font-size: 0.9rem;
+      .subtitle {
+        margin-top: 4px;
+        font-size: 0.95rem;
+        opacity: 0.95;
       }
       .kpi-grid-row {
         display: grid;
@@ -274,25 +214,15 @@ ui <- fluidPage(
       .kpi-box {
         background: white;
         border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 16px 16px 10px 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        max-width: 100%;
+        border-radius: 6px;
+        padding: 12px;
         position: relative;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        transition: box-shadow 0.2s;
       }
-      .kpi-status-indicator {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        flex-shrink: 0;
+      .kpi-box:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
       }
-      .kpi-status-indicator.better { background: #10b981; }
-      .kpi-status-indicator.worse { background: #ef4444; }
-      .kpi-status-indicator.nodiff { background: #6b7280; }
-      .kpi-status-indicator.dq { background: #f59e0b; }
       .interpretation-kpi {
         background: white;
         border: 1px solid #e5e7eb;
@@ -306,86 +236,48 @@ ui <- fluidPage(
         margin: -12px -12px 10px -12px;
         padding: 10px 12px;
         border-radius: 10px 10px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .info-icon {
-        font-size: 1.5rem;
-        cursor: pointer;
-        opacity: 0.8;
-        transition: opacity 0.2s;
-        position: relative;
-        display: inline-block;
-      }
-      .info-icon:hover {
-        opacity: 1;
-      }
-      .info-popup {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 10000;
-        background: white;
-        padding: 0;
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        max-width: 90vw;
-        max-height: 90vh;
-        overflow: hidden;
-      }
-      .info-popup img {
-        display: block;
-        background: white;
-        border-radius: 12px;
-      }
-      .info-icon:hover .info-popup {
-        display: block;
-      }
-      .info-popup::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: -1;
+        font-size: 1.40rem;
+        font-weight: 600;
+        line-height: 1.3;
       }
       .kpi-title {
         font-size: 1.40rem;
-        font-weight: 600;
-        color: #111827;
+        font-weight: 700;
+        color: #1f2937;
         margin-bottom: 4px;
-        line-height: 1.3;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
       .kpi-subtitle {
         font-size: 0.8rem;
         color: #6b7280;
         margin-bottom: 10px;
-        line-height: 1.4;
+        line-height: 1.3;
+        min-height: 32px;
       }
       .kpi-metrics {
         display: flex;
         align-items: baseline;
         gap: 6px;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
       }
       .kpi-value {
-        font-size: 1.6rem;
+        font-size: 1.7rem;
         font-weight: 700;
-        color: #111827;
+        line-height: 1;
       }
       .kpi-unit {
         font-size: 0.85rem;
         color: #6b7280;
+        font-weight: 500;
       }
       .kpi-separator {
-        font-size: 1.2rem;
         color: #d1d5db;
-        margin: 0 4px;
+        font-weight: 300;
+        margin: 0 2px;
       }
       .kpi-national-label {
         color: #6b7280;
@@ -404,6 +296,48 @@ ui <- fluidPage(
       .kpi-chart-container {
         height: 110px;
         margin: 8px -8px 0px -8px;
+      }
+      .kpi-status-indicator {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .kpi-status-indicator.better { background: #10b981; }
+      .kpi-status-indicator.worse { background: #ef4444; }
+      .kpi-status-indicator.nodiff { background: #6b7280; }
+      .kpi-status-indicator.dq { background: #f59e0b; }
+
+      /* Info icon popup */
+      .info-icon {
+        font-size: 1.5rem;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+        position: relative;
+        display: inline-block;
+      }
+      .info-icon:hover {
+        opacity: 1;
+      }
+      .info-popup {
+        display: none;
+        position: absolute;
+        top: 28px;
+        right: 0;
+        background: white;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-width: 500px;
+      }
+      .info-icon:hover .info-popup {
+        display: block;
       }
 
       /* Interpretation legend */
@@ -453,83 +387,58 @@ ui <- fluidPage(
         margin: 0 0 6px 0;
       }
 
-      /* Status colors */
-      .status-better { color: #10b981; }
-      .status-worse { color: #ef4444; }
-      .status-dq { color: #f59e0b; }
+      /* Chart styles for indicator detail pages */
+      .indicator-detail-container {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      }
+      .chart-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 8px;
+      }
+      .chart-period {
+        font-size: 0.95rem;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+      .chart-description {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-bottom: 8px;
+      }
+      .chart-target {
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+        font-weight: 500;
+      }
+      .chart-footnote {
+        font-size: 0.85rem;
+        color: #9ca3af;
+        margin-top: 12px;
+        font-style: italic;
+      }
+
+      /* Responsive grid */
+      @media (max-width: 1024px) {
+        .kpi-grid-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 640px) {
+        .kpi-grid-row {
+          grid-template-columns: 1fr;
+        }
+      }
     "))
   ),
 
-  # Header
-  div(class = "header",
-    h1(textOutput("header_title")),
-    div(class = "subtitle", textOutput("header_subtitle"))
-  ),
-
-  # Row 1: Interpretation Guide + Safety (3 total)
-  div(class = "kpi-grid-row",
-    # Interpretation guide card
-    div(class = "interpretation-kpi",
-      div(class = "kpi-title",
-        span("How to Interpret Observed Performance Charts"),
-        span(class = "info-icon", "\u24D8",  # Info icon (ⓘ)
-          div(class = "info-popup",
-            tags$img(src = "kpi_observed_help.png", alt = "KPI Help Guide",
-                     style = "width: 100%; max-width: 500px;")
-          )
-        )
-      ),
-
-      # Compact legend
-      div(class = "interpretation-legend",
-        # Row 1: Better, Worse, No difference
-        div(class = "interpretation-legend-item",
-          div(class = "interpretation-point better"),
-          span("Better than national")
-        ),
-        div(class = "interpretation-legend-item",
-          div(class = "interpretation-point worse"),
-          span("Worse than national")
-        ),
-        div(class = "interpretation-legend-item",
-          div(class = "interpretation-point nodiff"),
-          span("No difference")
-        ),
-        # Row 2: Data quality, National performance
-        div(class = "interpretation-legend-item",
-          div(class = "interpretation-point dq"),
-          span("Data quality issue")
-        ),
-        div(class = "interpretation-legend-item",
-          div(class = "interpretation-line national"),
-          span("National performance")
-        )
-      ),
-
-      # Notes
-      div(class = "interpretation-notes",
-        p("Observed performance is the percent or rate of children experiencing the outcome, without risk-adjustment."),
-        p("Whether performance is statistically better, worse, or no different than national performance is based on your state's ", tags$strong("risk-adjusted performance"), " (see the RSP page for details) and how it compares to national performance. Those results are shown here for convenience.")
-      )
-    ),
-
-    # Safety KPIs
-    uiOutput("kpi_1"),
-    uiOutput("kpi_2")
-  ),
-
-  # Row 2: Permanency in 12 months (3 KPIs)
-  div(class = "kpi-grid-row",
-    uiOutput("kpi_3"),
-    uiOutput("kpi_4"),
-    uiOutput("kpi_5")
-  ),
-
-  # Row 3: Re-entry and Placement Stability (2 KPIs)
-  div(class = "kpi-grid-row",
-    uiOutput("kpi_6"),
-    uiOutput("kpi_7")
-  )
+  # Main content area - switches based on view parameter
+  uiOutput("main_content")
 )
 
 #####################################
@@ -553,9 +462,20 @@ server <- function(input, output, session) {
     state_codes[[state_code_rv()]]
   })
 
-  # Load observed data
+  # Get view parameter (which page to show)
+  view_rv <- reactive({
+    query <- parseQueryString(session$clientData$url_search)
+    query$view %||% "overview"
+  })
+
+  # Load observed data (uses function from utils.R via global.R)
   observed_data <- reactive({
-    load_observed_data(state_code_rv(), profile_rv())
+    load_cfsr_data(state_code_rv(), profile_rv(), type = "observed")
+  })
+
+  # Load national data (uses function from utils.R via global.R)
+  national_data <- reactive({
+    load_cfsr_data(state_code_rv(), profile_rv(), type = "national")
   })
 
   # Get profile version
@@ -565,15 +485,115 @@ server <- function(input, output, session) {
     unique(data$profile_version)[1]
   })
 
-  # Header outputs
-  output$header_title <- renderText({
-    paste0(state_name_rv(), " - Observed Performance")
+  #####################################
+  # MAIN CONTENT ROUTER ----
+  #####################################
+
+  # Render different content based on view parameter
+  output$main_content <- renderUI({
+    view <- view_rv()
+
+    # Route to appropriate page based on view parameter
+    if (view == "overview") {
+      # ===== OVERVIEW PAGE (7 KPI CARDS) =====
+      tagList(
+        # Header
+        div(class = "header",
+          h1(paste0(state_name_rv(), " - Observed Performance")),
+          div(class = "subtitle", paste0("CFSR Round 4 Data Profile | ", profile_version()))
+        ),
+
+        # Row 1: Interpretation Guide + Safety (3 total)
+        div(class = "kpi-grid-row",
+          # Interpretation guide card
+          div(class = "interpretation-kpi",
+            div(class = "kpi-title",
+              span("How to Interpret Observed Performance Charts"),
+              span(class = "info-icon", "\u24D8",  # Info icon (ⓘ)
+                div(class = "info-popup",
+                  tags$img(src = "kpi_observed_help.png", alt = "KPI Help Guide",
+                           style = "width: 100%; max-width: 500px;")
+                )
+              )
+            ),
+
+            # Compact legend
+            div(class = "interpretation-legend",
+              # Row 1: Better, Worse, No difference
+              div(class = "interpretation-legend-item",
+                div(class = "interpretation-point better"),
+                span("Better than national")
+              ),
+              div(class = "interpretation-legend-item",
+                div(class = "interpretation-point worse"),
+                span("Worse than national")
+              ),
+              div(class = "interpretation-legend-item",
+                div(class = "interpretation-point nodiff"),
+                span("No statistical difference")
+              ),
+              # Row 2: DQ and national standard
+              div(class = "interpretation-legend-item",
+                div(class = "interpretation-point dq"),
+                span("Data quality issue")
+              ),
+              div(class = "interpretation-legend-item",
+                div(class = "interpretation-line national"),
+                span("National standard")
+              ),
+              div(class = "interpretation-legend-item")  # Empty cell for alignment
+            ),
+
+            # Interpretation notes
+            div(class = "interpretation-notes",
+              tags$p("The observed performance chart shows your state's actual performance over time without risk adjustment."),
+              tags$p("Performance is compared to the national standard. Colored points indicate whether your state's ",
+                    tags$b("risk-adjusted performance"), " is statistically better or worse than national. Those results may differ from the observed values shown here.")
+            )
+          ),
+
+          # Maltreatment in Care KPI
+          uiOutput("kpi_1"),
+
+          # Recurrence KPI
+          uiOutput("kpi_2")
+        ),
+
+        # Row 2: Permanency indicators (3 total)
+        div(class = "kpi-grid-row",
+          uiOutput("kpi_3"),  # Perm 12mo - Entries
+          uiOutput("kpi_4"),  # Perm 12mo - 12-23mo
+          uiOutput("kpi_5")   # Perm 12mo - 24+mo
+        ),
+
+        # Row 3: Reentry + Placement Stability (2 total)
+        div(class = "kpi-grid-row",
+          uiOutput("kpi_6"),  # Reentry
+          uiOutput("kpi_7"),  # Placement Stability
+          div()  # Empty cell for alignment
+        )
+      )
+    } else if (view %in% names(view_to_indicator)) {
+      # ===== INDICATOR DETAIL PAGE (NATIONAL BAR CHART) =====
+      div(class = "indicator-detail-container",
+        # Use the indicator_detail module UI
+        indicator_detail_ui(view)
+      )
+    } else {
+      # ===== INVALID VIEW =====
+      div(
+        div(class = "header",
+          h1("Invalid View"),
+          div(class = "subtitle", paste("Unknown view:", view))
+        ),
+        p("Defaulting to Overview page...")
+      )
+    }
   })
 
-  output$header_subtitle <- renderText({
-    profile_ver <- profile_version()
-    paste0("CFSR Round 4 Data Profile | ", profile_ver)
-  })
+  #####################################
+  # OVERVIEW PAGE (KPI CARDS) ----
+  #####################################
 
   # Generate KPI box for each indicator
   build_kpi_output <- function(indicator_sort_val) {
@@ -650,14 +670,33 @@ server <- function(input, output, session) {
     )
   }
 
-  # Render each KPI box
-  output$kpi_1 <- renderUI({ build_kpi_output(observed_indicator_order[1]) })
-  output$kpi_2 <- renderUI({ build_kpi_output(observed_indicator_order[2]) })
-  output$kpi_3 <- renderUI({ build_kpi_output(observed_indicator_order[3]) })
-  output$kpi_4 <- renderUI({ build_kpi_output(observed_indicator_order[4]) })
-  output$kpi_5 <- renderUI({ build_kpi_output(observed_indicator_order[5]) })
-  output$kpi_6 <- renderUI({ build_kpi_output(observed_indicator_order[6]) })
-  output$kpi_7 <- renderUI({ build_kpi_output(observed_indicator_order[7]) })
+  # Render each KPI box (7 total, matching observed_indicator_order from global.R)
+  output$kpi_1 <- renderUI({ build_kpi_output(observed_indicator_sorts[1]) })
+  output$kpi_2 <- renderUI({ build_kpi_output(observed_indicator_sorts[2]) })
+  output$kpi_3 <- renderUI({ build_kpi_output(observed_indicator_sorts[3]) })
+  output$kpi_4 <- renderUI({ build_kpi_output(observed_indicator_sorts[4]) })
+  output$kpi_5 <- renderUI({ build_kpi_output(observed_indicator_sorts[5]) })
+  output$kpi_6 <- renderUI({ build_kpi_output(observed_indicator_sorts[6]) })
+  output$kpi_7 <- renderUI({ build_kpi_output(observed_indicator_sorts[7]) })
+
+  #####################################
+  # INDICATOR DETAIL PAGES (NATIONAL BAR CHARTS) ----
+  #####################################
+
+  # Call indicator detail module server for each of the 8 indicators
+  # These will be rendered when the corresponding view is active
+  indicator_detail_server("entry_rate", view_to_indicator[["entry_rate"]], national_data, state_code_rv)
+  indicator_detail_server("maltreatment", view_to_indicator[["maltreatment"]], national_data, state_code_rv)
+  indicator_detail_server("recurrence", view_to_indicator[["recurrence"]], national_data, state_code_rv)
+  indicator_detail_server("perm12_entries", view_to_indicator[["perm12_entries"]], national_data, state_code_rv)
+  indicator_detail_server("perm12_12_23", view_to_indicator[["perm12_12_23"]], national_data, state_code_rv)
+  indicator_detail_server("perm12_24", view_to_indicator[["perm12_24"]], national_data, state_code_rv)
+  indicator_detail_server("reentry", view_to_indicator[["reentry"]], national_data, state_code_rv)
+  indicator_detail_server("placement", view_to_indicator[["placement"]], national_data, state_code_rv)
 }
 
-shinyApp(ui, server)
+#####################################
+# RUN APP ----
+#####################################
+
+shinyApp(ui = ui, server = server)

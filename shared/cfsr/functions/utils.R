@@ -10,7 +10,7 @@ get_available_profiles <- function(state, type = "national") {
   state <- toupper(state)
 
   # Validate type
-  valid_types <- c("national", "rsp", "state")
+  valid_types <- c("national", "rsp", "observed", "state")
   if (!type %in% valid_types) {
     warning("Invalid profile type '", type, "'. Using 'national'.")
     type <- "national"
@@ -52,7 +52,7 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
   state <- toupper(state)
 
   # Validate type
-  valid_types <- c("national", "rsp", "state")
+  valid_types <- c("national", "rsp", "observed", "state")
   if (!type %in% valid_types) {
     warning("Invalid profile type '", type, "'. Using 'national'.")
     type <- "national"
