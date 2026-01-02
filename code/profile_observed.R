@@ -325,6 +325,22 @@ if (total_na_obs > 0) {
 # Save validation results for orchestrator
 assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 
+# Reorder columns for consistency across all outputs (CSV and RDS)
+observed_data <- observed_data %>%
+  select(
+    # Key columns first
+    state, category, indicator, period, period_meaningful,
+    denominator, numerator, performance,
+    national_standard, status, data_used,
+    as_of_date, profile_version, source,
+    # Dictionary metadata columns
+    indicator_sort, indicator_short, indicator_very_short,
+    description, denominator_def, numerator_def,
+    direction_rule, direction_desired, direction_legend,
+    decimal_precision, scale, format,
+    risk_adjustment, exclusions, notes
+  )
+
 ########################################
 # SAVE CSV ----
 ########################################
@@ -361,23 +377,6 @@ if (!dir.exists(output_dir_prod)) {
 
 output_file_prod_period <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_observed_", profile_period, ".rds"))
-
-# Reorder columns for final output
-observed_data <- observed_data %>%
-  select(
-    # Key columns first
-    state, category, indicator, period, period_meaningful,
-    denominator, numerator, performance,
-    national_standard, status, data_used,
-    as_of_date, profile_version, source,
-    # Dictionary metadata columns
-    indicator_sort, indicator_short, indicator_very_short,
-    description, denominator_def, numerator_def,
-    direction_rule, direction_desired, direction_legend,
-    decimal_precision, scale, format,
-    risk_adjustment, exclusions, notes
-  )
-
 saveRDS(observed_data, output_file_prod_period)
 message("Saved to PROD: ", output_file_prod_period)
 

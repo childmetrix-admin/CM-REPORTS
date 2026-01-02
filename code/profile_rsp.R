@@ -284,6 +284,23 @@ if (total_na > 0) {
 # Save validation results for orchestrator
 assign("validation_results", validation_results, envir = .GlobalEnv)
 
+# Reorder columns for consistency across all outputs (CSV and RDS)
+rsp_data <- rsp_data %>%
+  select(
+    # Key columns first
+    state, category, indicator, period, period_meaningful,
+    rsp, rsp_lower, rsp_upper, national_standard, status,
+    as_of_date, profile_version, source,
+    # Dictionary metadata columns
+    indicator_sort, indicator_short, indicator_very_short,
+    description, denominator_def, numerator_def,
+    direction_rule, direction_desired, direction_legend,
+    decimal_precision, scale, format,
+    risk_adjustment, exclusions, notes,
+    # Any remaining columns (e.g., data_used)
+    everything()
+  )
+
 ########################################
 # SAVE CSV ----
 ########################################
@@ -320,24 +337,6 @@ if (!dir.exists(output_dir_prod)) {
 
 output_file_prod_period <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
-
-# Reorder columns for final output
-rsp_data <- rsp_data %>%
-  select(
-    # Key columns first
-    state, category, indicator, period, period_meaningful,
-    rsp, rsp_lower, rsp_upper, national_standard, status,
-    as_of_date, profile_version, source,
-    # Dictionary metadata columns
-    indicator_sort, indicator_short, indicator_very_short,
-    description, denominator_def, numerator_def,
-    direction_rule, direction_desired, direction_legend,
-    decimal_precision, scale, format,
-    risk_adjustment, exclusions, notes,
-    # Any remaining columns (e.g., data_used)
-    everything()
-  )
-
 saveRDS(rsp_data, output_file_prod_period)
 message("Saved to PROD: ", output_file_prod_period)
 
