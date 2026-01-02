@@ -38,53 +38,8 @@ extract_relevant_rows <- function(data_df) {
   return(data_df[rows_to_keep, ])
 }
 
-# Convert a period string (e.g., 19A19B) to a meaningful period label
-# -------------------------------
-
-make_period_meaningful <- function(period) {
-  if (grepl("^[0-9]{2}A[0-9]{2}B$", period)) {
-    # Case 1: Format "YYAYYB" (e.g., "19A19B") => Oct 'prev_year - Sep 'year
-    year1 <- as.numeric(substr(period, 1, 2))
-    year2 <- as.numeric(substr(period, 4, 5))
-    start_year <- (year1 - 1) + 2000
-    start_label <- paste0("Oct '", substr(as.character(start_year), 3, 4))
-    end_label <- paste0("Sep '", substr(as.character(year2 + 2000), 3, 4))
-    return(paste(start_label, "-", end_label))
-  } else if (grepl("^[0-9]{2}B[0-9]{2}A$", period)) {
-    # Case 2: Format "YYBYYA" (e.g., "19B20A") => Apr 'year - Mar 'next_year
-    year1 <- as.numeric(substr(period, 1, 2))
-    year2 <- as.numeric(substr(period, 4, 5))
-    start_label <- paste0("Apr '", substr(as.character(year1 + 2000), 3, 4))
-    end_label <- paste0("Mar '", substr(as.character(year2 + 2000), 3, 4))
-    return(paste(start_label, "-", end_label))
-  } else if (grepl("^[0-9]{2}AB,FY[0-9]{2}$", period)) {
-    # Case 3: Format "YYAB,FYYY" (e.g., "20AB,FY20") => Oct 'prev_year - Sep 'year, FY year
-    # AFCARS AB (two 6-month submissions) + NCANDS FY
-    # String positions: "20AB,FY20"
-    #                    12345678 9
-    year <- as.numeric(substr(period, 1, 2))
-    fy_year <- as.numeric(substr(period, 8, 9))  # Fixed: was 7,8 should be 8,9
-    start_year <- (year - 1) + 2000
-    end_year <- year + 2000
-    fy_full <- fy_year + 2000
-    return(paste0("Oct '", substr(as.character(start_year), 3, 4),
-                  " - Sep '", substr(as.character(end_year), 3, 4),
-                  ", FY ", fy_full))
-  } else if (grepl("^FY[0-9]{2}-[0-9]{2}$", period)) {
-    # Case 4: Format "FYYY-YY" (e.g., "FY20-21") => FY year1 - year2
-    # Two NCANDS FY submissions
-    year1 <- as.numeric(substr(period, 3, 4))
-    year2 <- as.numeric(substr(period, 6, 7))
-    fy1_full <- year1 + 2000
-    fy2_full <- year2 + 2000
-    return(paste0("FY ", fy1_full, " - ", fy2_full))
-  } else {
-    return(NA_character_)
-  }
-}
-
-# Vectorize the function so that it can be applied over a vector of period values
-make_period_meaningful <- Vectorize(make_period_meaningful)
+# NOTE: make_period_meaningful() is now in functions_cfsr_profile_shared.R
+# The shared version handles more period formats including RSP cohort periods (e.g., "19B-21B")
 
 # Process standard CFSR indicator (den/num/per structure)
 # -------------------------------

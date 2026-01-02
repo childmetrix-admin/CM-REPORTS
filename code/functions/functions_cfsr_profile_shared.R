@@ -146,7 +146,7 @@ setup_cfsr_folders <- function(profile_period,
   }
 
   # Processed and app_data folders will be created as needed during processing
-  # (See cfsr_profile.R where folder_run is created, and prepare_app_data.R)
+  # (See profile_*.R scripts where folder_run and RDS files are created)
 
   # Assign to global environment if requested
   if (assign_globals) {

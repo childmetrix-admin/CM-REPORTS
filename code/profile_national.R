@@ -170,9 +170,73 @@ assign("run_date", run_date, envir = .GlobalEnv)
 save_to_folder_run(ind_data, "csv")
 
 message("\n=== National CSV processing complete ===")
-message("Processed ", nrow(observed_data), " rows for ", pdf_metadata$state)
-message("Profile version: ", pdf_metadata$profile_version)
+message("Processed ", nrow(ind_data), " rows")
+message("Profile version: ", metadata$profile_version)
 message("CSV saved to: ", folder_run)
+
+########################################
+# ADD METADATA AND JOIN DICTIONARY ----
+########################################
+
+# Load dictionary and join all metadata (for both display and calculations)
+dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+if (!file.exists(dict_path)) {
+  stop("Dictionary not found at: ", dict_path)
+}
+
+dict <- read.csv(dict_path, stringsAsFactors = FALSE)
+message("Loaded dictionary with ", nrow(dict), " indicators")
+
+# Join ALL dictionary metadata
+ind_data <- ind_data %>%
+  left_join(
+    dict %>% select(
+      indicator,
+      indicator_sort,
+      indicator_short,
+      indicator_very_short,
+      category,
+      description,
+      denominator_def = denominator,
+      numerator_def = numerator,
+      national_standard,
+      direction_rule,
+      direction_desired,
+      direction_legend,
+      decimal_precision,
+      scale,
+      format,
+      risk_adjustment,
+      exclusions,
+      notes
+    ),
+    by = "indicator"
+  )
+
+message("Joined dictionary metadata")
+
+# Check for missing joins
+missing_joins <- ind_data %>%
+  filter(is.na(category)) %>%
+  distinct(indicator)
+
+if (nrow(missing_joins) > 0) {
+  warning("The following indicators did not match the dictionary:")
+  print(missing_joins[["indicator"]])
+}
+
+########################################
+# PREPARE RDS FOR SHINY APP ----
+########################################
+
+# Filter to most recent period per indicator
+# (App only needs latest data, CSV has all periods)
+app_data <- ind_data %>%
+  group_by(indicator) %>%
+  filter(period == max(period, na.rm = TRUE)) %>%
+  ungroup()
+
+message("Filtered to latest period: ", nrow(app_data), " rows")
 
 ########################################
 # SAVE RDS FOR SHINY APP ----
@@ -180,12 +244,29 @@ message("CSV saved to: ", folder_run)
 
 message("\n--- Saving RDS for Shiny App ---")
 
-# Run prepare_app_data.R with the same profile_period
-prepare_script <- "D:/repo_childmetrix/cfsr-profile/code/prepare_app_data.R"
-if (file.exists(prepare_script)) {
-  source(prepare_script)
-  message("\n=== All done! ===")
-  message("Data ready for Shiny app at profile period: ", profile_period)
-} else {
-  warning("Could not find prepare_app_data.R at: ", prepare_script)
+# PROD: Period-specific file WITHOUT state prefix (shared app location)
+# National data is identical across states, so no state prefix needed
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+if (!dir.exists(output_dir_prod)) {
+  dir.create(output_dir_prod, recursive = TRUE)
 }
+
+output_file_prod_period <- file.path(output_dir_prod,
+  paste0("cfsr_profile_national_", profile_period, ".rds"))
+saveRDS(app_data, output_file_prod_period)
+message("Saved to PROD: ", output_file_prod_period)
+
+########################################
+# SUMMARY ----
+########################################
+
+message("\n=== National Processing Complete ===")
+message("State: ", state_code)
+message("Profile period: ", profile_period)
+message("Total rows (CSV): ", nrow(ind_data))
+message("App rows (RDS): ", nrow(app_data))
+message("Unique indicators: ", length(unique(ind_data$indicator)))
+message("Profile version: ", metadata$profile_version)
+message("\nData ready for Shiny app!")
+message("  - Switch profiles via URL parameter: ?state=", tolower(state_code),
+        "&profile=", profile_period)
