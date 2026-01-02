@@ -156,7 +156,7 @@ bottom_long <- reshape_rsp_wide_to_long(final_bottom)
 rsp_data <- bind_rows(top_long, bottom_long)
 
 ########################################
-# ADD METADATA AND CALCULATE STATUS ----
+# ADD METADATA ----
 ########################################
 
 # Get as_of_date from national file if available, otherwise use profile period
@@ -227,10 +227,14 @@ if (nrow(missing_joins) > 0) {
   print(missing_joins[["indicator"]])
 }
 
-# Calculate RSP status for each row
+########################################
+# CALCULATE RSP STATUS (above, below, no diff) ----
+########################################
+
 # Vectorize function to work with dplyr::mutate()
 calculate_rsp_status <- Vectorize(calculate_rsp_status)
 
+# Calculate RSP status for each row
 rsp_data <- rsp_data %>%
   mutate(
     status = calculate_rsp_status(

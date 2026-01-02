@@ -31,6 +31,10 @@
 # LIBRARIES & CONFIGURATION ----
 #####################################
 
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_observed.R")
+
+# extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
+
 # IMPORTANT: This script expects the following globals to be set by run_profile.R:
 #   - state_code, profile_period (set by setup_profile_env)
 #   - folder_uploads, folder_processed, folder_app_data (set by initialize_common_globals)
@@ -44,121 +48,19 @@ commitment_description <- "observed"
 # EXTRACT OBSERVED PERFORMANCE DATA FROM PDF ----
 ########################################
 
+# Rough extraction
+########################################
+
 # Use pdftools to extract text & coordinates from page 4 of PDF
 raw_data_original <- suppressMessages(pdf_data(pdf_path))[[4]]
 
-# Remove invisible / non-printable characters (zero-width spaces, etc.), 
+# Remove invisible / non-printable characters (zero-width spaces, etc.),
 # empty text elements
 raw_data <- raw_data_original %>%
   mutate(text = str_replace_all(text, "[^[:graph:]]", "")) %>%
   filter(text != "")
 
-########################################
-# EXTRACT PERIOD HEADERS FOR SAFETY INDICATORS (bottom half of page) ----
-########################################
-
-#' Extract bottom table (maltreatment) period headers from PDF page 4
-#'
-#' Handles text fragmentation by concatenating fragments within column boundaries.
-#'
-#' @param raw_data Cleaned PDF text data from page 4
-#' @return Named list with zone_a and zone_b period vectors (length 3 each)
-extract_maltreatment_periods_observed <- function(raw_data) {
-  # Extract period header row (y=403, with ±2 tolerance)
-  period_text <- raw_data %>%
-    filter(y >= 401 & y <= 405) %>%
-    arrange(x)
-
-  # Define column boundaries based on observed x-coordinates
-  # Zone A: Maltreatment in care (##AB.FY##)
-  zone_a_bounds <- list(
-    col1 = c(245, 290),  # 19AB_FY19 at x~253-277
-    col2 = c(310, 355),  # 20AB_FY20 at x~320-344
-    col3 = c(375, 425)   # 21AB_FY21 at x~387-411
-  )
-
-  # Zone B: Recurrence (FY##-##)
-  zone_b_bounds <- list(
-    col1 = c(455, 500),  # FY19-20 at x~464-487
-    col2 = c(520, 565),  # FY20-21 at x~531-554
-    col3 = c(585, 635)   # FY21-22 at x~598-621
-  )
-
-  # Extract Zone A periods
-  zone_a_periods <- sapply(zone_a_bounds, function(bounds) {
-    col_text <- period_text %>%
-      filter(x >= bounds[1] & x <= bounds[2]) %>%
-      pull(text) %>%
-      paste(collapse = "")
-
-    # Clean: remove spaces, commas, ensure dot separator
-    cleaned <- col_text %>%
-      str_remove_all("\\s|,") %>%
-      str_replace("([0-9]{2}AB)(FY)", "\\1.\\2")
-
-    cleaned
-  })
-
-  # Extract Zone B periods
-  zone_b_periods <- sapply(zone_b_bounds, function(bounds) {
-    col_text <- period_text %>%
-      filter(x >= bounds[1] & x <= bounds[2]) %>%
-      pull(text) %>%
-      paste(collapse = "")
-
-    # Clean: remove spaces, normalize hyphen
-    cleaned <- col_text %>%
-      str_remove_all("\\s") %>%
-      str_replace("FY([0-9]{2})-?([0-9]{2})", "FY\\1-\\2")
-
-    cleaned
-  })
-
-  list(
-    zone_a = unname(zone_a_periods),
-    zone_b = unname(zone_b_periods)
-  )
-}
-
-########################################
-# HELPER FUNCTIONS FOR PDF EXTRACTION ----
-########################################
-
-# NOTE: extract_tableau_table() and extract_headers() moved to functions_cfsr_profile_shared.R
-
-process_table_observed <- function(df, column_names) {
-  # Similar to process_table() from RSP but adapted for observed performance structure
-  # Row types: Denominator / Numerator / Observed performance (instead of RSP / RSP interval / Data used)
-  max_index <- length(column_names) - 1
-  for (i in 0:max_index) {
-    col_str <- as.character(i)
-    if (!col_str %in% names(df)) df[[col_str]] <- NA
-  }
-  data_cols <- as.character(0:max_index)
-  df <- df %>%
-    select(y_group, all_of(data_cols)) %>%
-    set_names(c("y_pos", column_names))
-  df_clean <- df %>%
-    mutate(Indicator = ifelse(Indicator == "" | is.na(Indicator), NA, Indicator)) %>%
-    # Filter to keep only rows with Measure_Type data
-    # Measure_Type values contain: "Denomi" (Denominator), "Numer" (Numerator), "Obs" (Observed performance)
-    filter(!is.na(Measure_Type)) %>%
-    filter(str_detect(Measure_Type, "Denomi|Numer|Obs")) %>%
-    # Remove header rows
-    filter(!str_detect(Measure_Type, "^Measure")) %>%
-    select(-y_pos, -Indicator) %>%
-    # Classify Measure_Type based on partial text matches
-    mutate(Measure_Type = case_when(
-      str_detect(Measure_Type, "Denomi") ~ "Denominator",
-      str_detect(Measure_Type, "Numer") ~ "Numerator",
-      str_detect(Measure_Type, "Obs") ~ "Observed performance",
-      TRUE ~ Measure_Type
-    ))
-  df_clean
-}
-
-########################################
-# EXTRACT TOP TABLE ----
+# Extract and clean up top table (non-safety indicators) ----
 ########################################
 
 # Page 4 x coordinates - different structure from page 2
@@ -176,8 +78,8 @@ top_x_cuts <- c(135, 250, 310, 375, 440, 505, 570, 635, 700, 765)
 # Extract headers from page 4 (no National_Perf column)
 # Headers are at y=178 (found via pattern search for ##A##B format)
 top_cols_vec <- extract_headers(raw_data, y_min = 175, y_max = 180,
-                                 x_cuts = top_x_cuts,
-                                 has_national_perf = FALSE)
+                                x_cuts = top_x_cuts,
+                                has_national_perf = FALSE)
 top_cols <- unname(top_cols_vec)
 # Extract table data
 # Page 4 has tighter vertical spacing - adjust y_min and y_max
@@ -185,10 +87,10 @@ top_cols <- unname(top_cols_vec)
 # NOTE: Placement stability has larger vertical span (y=357 to y=385), need balance between
 # grouping Placement Stability rows together while not merging other indicators
 df_top_raw <- extract_tableau_table(raw_data,
-  y_min = 190,
-  y_max = 400,  # Reduced to exclude bottom table rows
-  x_cuts = top_x_cuts,
-  y_tolerance = 10  # Balance: groups most rows correctly, Placement Stability may need special handling
+                                    y_min = 190,
+                                    y_max = 400,  # Reduced to exclude bottom table rows
+                                    x_cuts = top_x_cuts,
+                                    y_tolerance = 10  # Balance: groups most rows correctly, Placement Stability may need special handling
 )
 df_top_processed <- process_table_observed(df_top_raw, top_cols)
 # Check if we got the expected number of rows
@@ -213,8 +115,8 @@ if (nrow(df_top_processed) %% 3 == 0) {
        "Expected 15 rows (5 indicators × 3 measure types). ",
        "Check PDF coordinates and extraction logic.")
 }
-########################################
-# EXTRACT BOTTOM TABLE ----
+
+# Extract and clean up bottom table (safety indicators) ----
 ########################################
 
 # Bottom table period headers are at y=403 in a different format:
@@ -255,67 +157,11 @@ if (nrow(df_bottom_processed) == 6) {
   warning("Bottom table has ", nrow(df_bottom_processed), " rows, expected 6. Using as-is.")
   final_bottom <- df_bottom_processed
 }
+
 ########################################
-# RESHAPE WIDE TO LONG ----
+# RESHAPE WIDE TO LONG & COMBINE ----
 ########################################
 
-reshape_observed_wide_to_long <- function(df) {
-  # Get period columns (everything except Indicator, Measure_Type)
-  # Note: Page 4 doesn't have National_Perf column
-  period_cols <- names(df)[!names(df) %in%
-    c("Indicator", "Measure_Type")]
-  # Pivot to long format
-  df_long <- df %>%
-    pivot_longer(
-      cols = all_of(period_cols),
-      names_to = "period",
-      values_to = "value"
-    ) %>%
-    # Convert period format to match RSP: "20AB.FY20" → "20AB_FY20"
-    mutate(period = str_replace(period, "\\.", "_"))
-  # Pivot wider to get Denominator, Numerator, Observed performance as separate columns
-  # Do this BEFORE filtering so we don't lose rows where only one measure type has data
-  df_wide <- df_long %>%
-    pivot_wider(
-      id_cols = c(Indicator, period),
-      names_from = Measure_Type,
-      values_from = value
-    )
-  # Rename columns to match target structure
-  df_renamed <- df_wide %>%
-    rename(
-      indicator = Indicator,
-      denominator = Denominator,
-      numerator = Numerator,
-      observed_performance = `Observed performance`
-    )
-  # Filter: Keep rows where at least one field has non-empty data
-  # This preserves "DQ" rows (they have text) while dropping truly empty rows
-  df_filtered <- df_renamed %>%
-    filter(
-      (!is.na(denominator) & str_trim(denominator) != "") |
-      (!is.na(numerator) & str_trim(numerator) != "") |
-      (!is.na(observed_performance) & str_trim(observed_performance) != "")
-    )
-  # Convert to numeric, handling special cases
-  df_clean <- df_filtered %>%
-    mutate(
-      # Denominator: remove commas AND spaces, convert to numeric (DQ becomes NA)
-      denominator = as.numeric(str_replace_all(str_replace_all(denominator, ",", ""), " ", "")),
-      # Numerator: remove commas AND spaces, convert to numeric (DQ becomes NA)
-      numerator = as.numeric(str_replace_all(str_replace_all(numerator, ",", ""), " ", "")),
-      # Observed performance: handle percentages like "26. 0%" and decimals like "4. 60"
-      # Remove spaces first, then handle % if present
-      observed_performance = case_when(
-        is.na(observed_performance) ~ NA_real_,
-        str_detect(observed_performance, "%") ~
-          as.numeric(str_replace_all(str_replace_all(observed_performance, " ", ""), "%", "")) / 100,
-        TRUE ~ as.numeric(str_replace_all(observed_performance, " ", ""))
-      )
-    )
-  # Return filtered data (DQ-flagged rows preserved, empty rows dropped)
-  df_clean
-}
 # Reshape both tables
 top_long <- reshape_observed_wide_to_long(final_top)
 # Skip bottom table if empty (deferred for future implementation)
@@ -324,59 +170,38 @@ if (nrow(final_bottom) > 0) {
 } else {
   bottom_long <- data.frame()
 }
-########################################
-# COMBINE AND ADD METADATA ----
-########################################
-
 # Combine top and bottom
 observed_data <- bind_rows(top_long, bottom_long)
 
 ########################################
-# JOIN DATA_USED FROM RSP ----
-########################################
-
-# Build path to RSP CSV file (should exist since RSP runs before observed)
-rsp_file_pattern <- paste0(
-  folder_date,
-  " - cfsr profile - rsp - ",
-  format(Sys.Date(), "%Y-%m-%d"),
-  ".csv"
-)
-rsp_csv_path <- file.path(
-  base_data_dir,
-  "processed",
-  state_code,
-  profile_period,
-  format(Sys.Date(), "%Y-%m-%d"),
-  "rsp",
-  rsp_file_pattern
-)
-########################################
-# JOIN STATUS AND DATA_USED FROM RSP ----
+# ADD METADATA AND JOIN DICTIONARY ----
 ########################################
 
 # Load RSP RDS file to get pre-calculated status and data_used
-# RDS is more reliable than CSV path construction
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 rsp_rds_path <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
+
 # Try to load RSP data
 if (file.exists(rsp_rds_path)) {
   rsp_data <- readRDS(rsp_rds_path)
   message("Loading RSP data from: ", rsp_rds_path)
   message("RSP data has ", nrow(rsp_data), " rows")
+
   # Join on indicator and period to get status and data_used
   observed_data <- observed_data %>%
     left_join(
       rsp_data %>% select(indicator, period, status, data_used),
       by = c("indicator", "period")
     )
+
   # Report join results for transparency
   n_matched <- sum(!is.na(observed_data$status))
   n_unmatched <- sum(is.na(observed_data$status))
   message("  ✓ Joined status and data_used from RSP RDS")
   message("    Matched: ", n_matched, " rows")
   message("    Unmatched (status=NA): ", n_unmatched, " rows")
+
   # Show which indicator-period combinations have no RSP match
   # (Expected for some periods, e.g., FY periods in Maltreatment indicators)
   if (n_unmatched > 0) {
@@ -394,22 +219,22 @@ if (file.exists(rsp_rds_path)) {
   warning("RSP RDS file not found: ", rsp_rds_path)
   warning("Status and data_used set to NA. Run profile_rsp.R first.")
 }
+
 # Get as_of_date from national file if available, otherwise use profile period
 as_of_date <- tryCatch({
   # Try to extract from national file (requires profile_national.R to have run)
-  # This function is defined in functions_cfsr_profile_rsp.R
   metadata <- cfsr_profile_extract_asof_date(
     find_cfsr_file("National", file_type = "excel", sheet_name = 1)
   )
   metadata$as_of_date
 }, error = function(e) {
-  # Fallback: derive from profile period
-  # Profile period format: YYYY_MM
+  # Fallback: derive from profile period (format: YYYY_MM)
   year <- as.numeric(substr(profile_period, 1, 4))
   month <- as.numeric(substr(profile_period, 6, 7))
   as.Date(paste(year, month, "15", sep = "-"))
 })
-# Add metadata columns
+
+# Add basic metadata columns
 observed_data <- observed_data %>%
   mutate(
     state = pdf_metadata$state,
@@ -417,37 +242,54 @@ observed_data <- observed_data %>%
     as_of_date = as_of_date,
     profile_version = pdf_metadata$profile_version,
     source = pdf_metadata$source
-  ) %>%
-  # Reorder columns to match target structure
-  select(
-    state,
-    indicator,
-    period,
-    period_meaningful,
-    denominator,
-    numerator,
-    observed_performance,
-    status,        # Added: RSP status (better/worse/nodiff/dq)
-    data_used,
-    as_of_date,
-    profile_version,
-    source
   )
 
-########################################
-# SAVE PROCESSED DATA ----
-########################################
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/observed/
-run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "observed")
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
-  message("Created run folder: ", folder_run)
+# Load dictionary and join all metadata (for both display and calculations)
+dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+if (!file.exists(dict_path)) {
+  stop("Dictionary not found at: ", dict_path)
 }
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
 
-# Save using save_to_folder_run pattern
+dict <- read.csv(dict_path, stringsAsFactors = FALSE)
+message("Loaded dictionary with ", nrow(dict), " indicators")
+
+# Join ALL dictionary metadata in single operation
+observed_data <- observed_data %>%
+  left_join(
+    dict %>% select(
+      indicator,
+      indicator_sort,
+      indicator_short,
+      indicator_very_short,
+      category,
+      description,
+      denominator_def = denominator,
+      numerator_def = numerator,
+      national_standard,
+      direction_rule,
+      direction_desired,
+      direction_legend,
+      decimal_precision,
+      scale,
+      format,
+      risk_adjustment,
+      exclusions,
+      notes
+    ),
+    by = "indicator"
+  )
+
+message("Joined dictionary metadata")
+
+# Check for missing joins
+missing_joins <- observed_data %>%
+  filter(is.na(category)) %>%
+  distinct(indicator)
+
+if (nrow(missing_joins) > 0) {
+  warning("The following indicators did not match the dictionary:")
+  print(missing_joins[["indicator"]])
+}
 
 ########################################
 # VALIDATION ----
@@ -484,74 +326,50 @@ if (total_na_obs > 0) {
 # Save validation results for orchestrator
 assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 
+########################################
+# SAVE CSV ----
+########################################
+
+# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/observed/
+run_date <- Sys.Date()
+folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "observed")
+if (!dir.exists(folder_run)) {
+  dir.create(folder_run, recursive = TRUE)
+  message("Created run folder: ", folder_run)
+}
+assign("folder_run", folder_run, envir = .GlobalEnv)
+assign("run_date", run_date, envir = .GlobalEnv)
+
 # Save using save_to_folder_run pattern
 save_to_folder_run(observed_data, "csv")
+
+message("\n=== Observed CSV processing complete ===")
 message("Processed ", nrow(observed_data), " rows for ", pdf_metadata$state)
 message("Profile version: ", pdf_metadata$profile_version)
 message("CSV saved to: ", folder_run)
 
 ########################################
-# PREPARE RDS FOR SHINY APP ----
+# SAVE RDS FOR SHINY APP ----
 ########################################
 
-message("\n--- Preparing RDS for Shiny App ---")
-# Load dictionary for metadata joins
-dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
-if (!file.exists(dict_path)) {
-  warning("Dictionary not found at: ", dict_path, " - skipping RDS preparation")
-} else {
-  dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-  message("Loaded dictionary with ", nrow(dict), " indicators")
-  # Join dictionary metadata to observed data
-  observed_app_data <- observed_data %>%
-    left_join(
-      dict %>% select(
-        indicator,
-        indicator_sort,
-        indicator_short,
-        indicator_very_short,
-        category,
-        description,
-        denominator_def = denominator,
-        numerator_def = numerator,
-        national_standard,
-        direction_rule,
-        direction_desired,
-        direction_legend,
-        decimal_precision,
-        scale,
-        format,
-        risk_adjustment,
-        exclusions,
-        notes
-      ),
-      by = "indicator"
-    )
-  message("Joined dictionary metadata")
-  # Check for missing joins
-  missing_joins <- observed_app_data %>%
-    filter(is.na(category)) %>%
-    distinct(indicator)
-  if (nrow(missing_joins) > 0) {
-    warning("The following indicators did not match the dictionary:")
-    print(missing_joins$indicator)
-  }
-  # --- Save RDS Files ---
-  message("\n--- Saving RDS Files ---")
-  # PROD: Period-specific file with state prefix (shared app location)
-  output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
-  if (!dir.exists(output_dir_prod)) {
-    dir.create(output_dir_prod, recursive = TRUE)
-  }
-  output_file_prod_period <- file.path(output_dir_prod,
-    paste0(toupper(state_code), "_cfsr_profile_observed_", profile_period, ".rds"))
-  saveRDS(observed_app_data, output_file_prod_period)
-  message("Saved to PROD: ", output_file_prod_period)
+message("\n--- Saving RDS for Shiny App ---")
+
+# PROD: Period-specific file with state prefix (shared app location)
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+if (!dir.exists(output_dir_prod)) {
+  dir.create(output_dir_prod, recursive = TRUE)
 }
+
+output_file_prod_period <- file.path(output_dir_prod,
+  paste0(toupper(state_code), "_cfsr_profile_observed_", profile_period, ".rds"))
+saveRDS(observed_data, output_file_prod_period)
+message("Saved to PROD: ", output_file_prod_period)
+
 ########################################
 # SUMMARY ----
 ########################################
 
+message("\n=== Observed Processing Complete ===")
 message("State: ", state_code)
 message("Profile period: ", profile_period)
 message("Total rows: ", nrow(observed_data))
