@@ -330,7 +330,7 @@ observed_data <- observed_data %>%
   select(
     # Key columns first
     state, category, indicator, period, period_meaningful,
-    denominator, numerator, performance,
+    denominator, numerator, observed_performance,
     national_standard, status, data_used,
     as_of_date, profile_version, source,
     # Dictionary metadata columns
