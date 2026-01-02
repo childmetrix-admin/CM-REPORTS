@@ -31,15 +31,14 @@
 # LIBRARIES & CONFIGURATION ----
 #####################################
 
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_observed.R")
-
-# extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
-
 # IMPORTANT: This script expects the following globals to be set by run_profile.R:
 #   - state_code, profile_period (set by setup_profile_env)
 #   - folder_uploads, folder_processed, folder_app_data (set by initialize_common_globals)
 #   - folder_date, commitment, my_setup (set by initialize_common_globals)
 #   - pdf_path, pdf_metadata (set by initialize_common_globals)
+
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_observed.R")
+# extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
 
 # Set source-specific configuration
 commitment_description <- "observed"
@@ -182,7 +181,7 @@ output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 rsp_rds_path <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
 
-# Try to load RSP data
+# Load RSP data
 if (file.exists(rsp_rds_path)) {
   rsp_data <- readRDS(rsp_rds_path)
   message("Loading RSP data from: ", rsp_rds_path)
@@ -195,7 +194,7 @@ if (file.exists(rsp_rds_path)) {
       by = c("indicator", "period")
     )
 
-  # Report join results for transparency
+  # Report join results
   n_matched <- sum(!is.na(observed_data$status))
   n_unmatched <- sum(is.na(observed_data$status))
   message("  ✓ Joined status and data_used from RSP RDS")
@@ -253,7 +252,7 @@ if (!file.exists(dict_path)) {
 dict <- read.csv(dict_path, stringsAsFactors = FALSE)
 message("Loaded dictionary with ", nrow(dict), " indicators")
 
-# Join ALL dictionary metadata in single operation
+# Join ALL dictionary metadata
 observed_data <- observed_data %>%
   left_join(
     dict %>% select(

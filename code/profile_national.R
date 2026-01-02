@@ -1,8 +1,15 @@
-# Title:          CFSR Profile - National Data Processing
-#                 Process National Supplemental Context Data
+#####################################
+#####################################
+# CFSR Profile - National Supplemental Context Data (excel) ----
+#####################################
+#####################################
 
-# Purpose:        Extract and process national-level CFSR data showing
-#                 state-by-state performance on all indicators
+# Extract and process national-level CFSR data from excel file 
+# This file is identical for all states and shows data for all states
+
+# Create csv (for FYI) and .rds file of data (for national shiny app) 
+# (rds file cfsr_profile_national ...) doesn't have state prefix since it's 
+# identical for all states. rds is limited to most recent period, csv has all periods.
 
 #####################################
 # NOTES ----
@@ -17,7 +24,7 @@
 # by the orchestrator (run_profile.R) or manually before sourcing.
 
 #####################################
-# INITIALIZATION ----
+# LIBRARIES & CONFIGURATION ----
 #####################################
 
 # IMPORTANT: This script expects the following globals to be set by run_profile.R:
@@ -43,9 +50,8 @@ metadata <- extract_shared_metadata()
 # PROCESS INDICATORS ----
 ########################################
 
-# --------------------------------------
 # Entry Rate (special case - has years/census_year)
-# --------------------------------------
+########################################
 
 ind_entrate_df <- process_entry_rate_indicator(
   list(profile_version = metadata$profile_version,
@@ -55,9 +61,8 @@ ind_entrate_df <- process_entry_rate_indicator(
   metadata$as_of_date
 )
 
-# --------------------------------------
 # Re-Entry
-# --------------------------------------
+########################################
 
 ind_reentry_df <- process_standard_indicator(
   sheet_name = "Reentry to FC",
@@ -68,9 +73,8 @@ ind_reentry_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Perm in 12 (entries)
-# --------------------------------------
+########################################
 
 ind_perm12_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (entries)",
@@ -81,9 +85,8 @@ ind_perm12_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Perm in 12 (12-23)
-# --------------------------------------
+########################################
 
 ind_perm1223_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (12-23 mos)",
@@ -94,9 +97,8 @@ ind_perm1223_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Perm in 12 (24+ mos)
-# --------------------------------------
+########################################
 
 ind_perm24_df <- process_standard_indicator(
   sheet_name = "Perm in 12 (24+ mos)",
@@ -107,9 +109,8 @@ ind_perm24_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Placement Stability
-# --------------------------------------
+########################################
 
 ind_ps_df <- process_standard_indicator(
   sheet_name = "Placement stability",
@@ -120,9 +121,8 @@ ind_ps_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Maltreatment in Care
-# --------------------------------------
+########################################
 
 ind_maltreatment_df <- process_standard_indicator(
   sheet_name = "Maltreatment in care",
@@ -133,9 +133,8 @@ ind_maltreatment_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Recurrence of Maltreatment
-# --------------------------------------
+########################################
 
 ind_recurrence_df <- process_standard_indicator(
   sheet_name = "Recurrence of maltreatment",
@@ -146,15 +145,18 @@ ind_recurrence_df <- process_standard_indicator(
   as_of_date = metadata$as_of_date
 )
 
-# --------------------------------------
 # Append ind_data together and save
-# --------------------------------------
+########################################
 
 ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
                       ind_perm1223_df, ind_perm24_df, ind_ps_df,
                       ind_maltreatment_df, ind_recurrence_df)
 
-# Create run folder in new processed structure: data/processed/STATE/PERIOD/YYYY-MM-DD/national/
+########################################
+# SAVE CSV ----
+########################################
+
+# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/observed/
 run_date <- Sys.Date()
 folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "national")
 if (!dir.exists(folder_run)) {
@@ -164,14 +166,19 @@ if (!dir.exists(folder_run)) {
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
 
+# Save using save_to_folder_run pattern
 save_to_folder_run(ind_data, "csv")
 
+message("\n=== National CSV processing complete ===")
+message("Processed ", nrow(observed_data), " rows for ", pdf_metadata$state)
+message("Profile version: ", pdf_metadata$profile_version)
+message("CSV saved to: ", folder_run)
+
 ########################################
-# AUTO-RUN PREPARE_APP_DATA ----
+# SAVE RDS FOR SHINY APP ----
 ########################################
 
-message("\n=== Data processing complete ===")
-message("Now preparing data for Shiny app...\n")
+message("\n--- Saving RDS for Shiny App ---")
 
 # Run prepare_app_data.R with the same profile_period
 prepare_script <- "D:/repo_childmetrix/cfsr-profile/code/prepare_app_data.R"

@@ -31,15 +31,14 @@
 # LIBRARIES & CONFIGURATION ----
 #####################################
 
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
-
-# extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
-
 # IMPORTANT: This script expects the following globals to be set by run_profile.R:
 #   - state_code, profile_period (set by setup_profile_env)
 #   - folder_uploads, folder_processed, folder_app_data (set by initialize_common_globals)
 #   - folder_date, commitment, my_setup (set by initialize_common_globals)
 #   - pdf_path, pdf_metadata (set by initialize_common_globals)
+
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
+# extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
 
 # Set source-specific configuration
 commitment_description <- "rsp"
@@ -189,7 +188,7 @@ if (!file.exists(dict_path)) {
 dict <- read.csv(dict_path, stringsAsFactors = FALSE)
 message("Loaded dictionary with ", nrow(dict), " indicators")
 
-# Join ALL dictionary metadata in single operation
+# Join ALL dictionary metadata
 rsp_data <- rsp_data %>%
   left_join(
     dict %>% select(
@@ -313,7 +312,7 @@ message("CSV saved to: ", folder_run)
 
 message("\n--- Saving RDS for Shiny App ---")
 
-# PROD: Period-specific file with state prefix
+# PROD: Period-specific file with state prefix (shared app location)
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)

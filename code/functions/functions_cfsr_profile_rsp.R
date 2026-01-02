@@ -211,7 +211,10 @@ convert_percentages <- function(df) {
     ))
 }
 
-# Create separate rsp lower and upper rows
+########################################
+# CREATE SEPARATE ROWS FOR RSP UPPER & LOWER
+########################################
+
 expand_rsp_intervals <- function(df) {
   pct_indicators <- c(
     "Permanency in 12 months for children entering care",
@@ -262,53 +265,6 @@ expand_rsp_intervals <- function(df) {
       }
     ) %>%
     arrange(Indicator, Measure_Type)
-}
-
-########################################
-# RESHAPE FRAME WIDE TO LONG ----
-########################################
-
-reshape_rsp_wide_to_long <- function(df) {
-  # Get period columns (everything except Indicator, National_Perf, Measure_Type)
-  period_cols <- names(df)[!names(df) %in%
-                             c("Indicator", "National_Perf", "Measure_Type")]
-  
-  # Pivot to long format
-  df_long <- df %>%
-    pivot_longer(
-      cols = all_of(period_cols),
-      names_to = "period",
-      values_to = "value"
-    ) %>%
-    filter(!is.na(value) & value != "")
-  
-  # Pivot wider to get RSP, RSP Lower, RSP Upper, Data used as separate columns
-  df_wide <- df_long %>%
-    pivot_wider(
-      id_cols = c(Indicator, period),
-      names_from = Measure_Type,
-      values_from = value
-    )
-  
-  # Handle case where Data used column might not exist
-  if (!"Data used" %in% names(df_wide)) {
-    df_wide$`Data used` <- NA_character_
-  }
-  
-  # Rename columns to match target structure
-  df_wide %>%
-    rename(
-      indicator = Indicator,
-      rsp = RSP,
-      rsp_lower = `RSP Lower`,
-      rsp_upper = `RSP Upper`,
-      data_used = `Data used`
-    ) %>%
-    mutate(
-      rsp = as.numeric(rsp),
-      rsp_lower = as.numeric(rsp_lower),
-      rsp_upper = as.numeric(rsp_upper)
-    )
 }
 
 ########################################
@@ -431,4 +387,51 @@ calculate_rsp_status <- function(rsp_lower, rsp_upper, national_standard, direct
       return("worse")
     }
   }
+}
+
+########################################
+# RESHAPE FRAME WIDE TO LONG ----
+########################################
+
+reshape_rsp_wide_to_long <- function(df) {
+  # Get period columns (everything except Indicator, National_Perf, Measure_Type)
+  period_cols <- names(df)[!names(df) %in%
+                             c("Indicator", "National_Perf", "Measure_Type")]
+  
+  # Pivot to long format
+  df_long <- df %>%
+    pivot_longer(
+      cols = all_of(period_cols),
+      names_to = "period",
+      values_to = "value"
+    ) %>%
+    filter(!is.na(value) & value != "")
+  
+  # Pivot wider to get RSP, RSP Lower, RSP Upper, Data used as separate columns
+  df_wide <- df_long %>%
+    pivot_wider(
+      id_cols = c(Indicator, period),
+      names_from = Measure_Type,
+      values_from = value
+    )
+  
+  # Handle case where Data used column might not exist
+  if (!"Data used" %in% names(df_wide)) {
+    df_wide$`Data used` <- NA_character_
+  }
+  
+  # Rename columns to match target structure
+  df_wide %>%
+    rename(
+      indicator = Indicator,
+      rsp = RSP,
+      rsp_lower = `RSP Lower`,
+      rsp_upper = `RSP Upper`,
+      data_used = `Data used`
+    ) %>%
+    mutate(
+      rsp = as.numeric(rsp),
+      rsp_lower = as.numeric(rsp_lower),
+      rsp_upper = as.numeric(rsp_upper)
+    )
 }
