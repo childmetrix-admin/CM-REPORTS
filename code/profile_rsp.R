@@ -54,7 +54,7 @@ commitment_description <- "rsp"
 # Use pdftools to extract text & coordinates from page 2 of PDF
 raw_data_original <- suppressMessages(pdf_data(pdf_path))[[2]]
 
-# Remove invisible / non-printable characters (zero-width spaces, etc.), 
+# Remove invisible / non-printable characters (zero-width spaces, etc.),
 # empty text elements
 raw_data <- raw_data_original %>%
   mutate(text = str_replace_all(text, "[^[:graph:]]", "")) %>%
@@ -156,24 +156,21 @@ bottom_long <- reshape_rsp_wide_to_long(final_bottom)
 rsp_data <- bind_rows(top_long, bottom_long)
 
 ########################################
-# ADD METADATA ----
+# ADD METADATA AND CALCULATE STATUS ----
 ########################################
 
 # Get as_of_date from national file if available, otherwise use profile period
-# Try to use extract_shared_metadata() if national file exists
-
 as_of_date <- tryCatch({
   metadata <- extract_shared_metadata()
   metadata$as_of_date
 }, error = function(e) {
-  # Fallback: derive from profile period
-  # Profile period format: YYYY_MM
+  # Fallback: derive from profile period (format: YYYY_MM)
   year <- as.numeric(substr(profile_period, 1, 4))
   month <- as.numeric(substr(profile_period, 6, 7))
   as.Date(paste(year, month, "15", sep = "-"))
 })
 
-# Add metadata columns
+# Add basic metadata columns
 rsp_data <- rsp_data %>%
   mutate(
     state = pdf_metadata$state,
@@ -181,42 +178,9 @@ rsp_data <- rsp_data %>%
     as_of_date = as_of_date,
     profile_version = pdf_metadata$profile_version,
     source = pdf_metadata$source
-  ) %>%
-  # Reorder columns to match target structure
-  # Column order: rsp, rsp_lower, rsp_upper, data_used
-  select(
-    state,
-    indicator,
-    period,
-    period_meaningful,
-    rsp,
-    rsp_lower,
-    rsp_upper,
-    data_used,
-    as_of_date,
-    profile_version,
-    source
   )
 
-########################################
-# SAVE AS CSV ----
-########################################
-
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/rsp/
-run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "rsp")
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
-  message("Created run folder: ", folder_run)
-}
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
-
-########################################
-# ADD STATUS BEFORE CSV SAVE ----
-########################################
-
-# Load dictionary for metadata joins (needed for status calculation)
+# Load dictionary and join all metadata (for both status calculation and display)
 dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
 if (!file.exists(dict_path)) {
   stop("Dictionary not found at: ", dict_path)
@@ -225,22 +189,46 @@ if (!file.exists(dict_path)) {
 dict <- read.csv(dict_path, stringsAsFactors = FALSE)
 message("Loaded dictionary with ", nrow(dict), " indicators")
 
-# Join dictionary metadata to get fields needed for status calculation
+# Join ALL dictionary metadata in single operation
 rsp_data <- rsp_data %>%
   left_join(
     dict %>% select(
       indicator,
+      indicator_sort,
+      indicator_short,
+      indicator_very_short,
+      category,
+      description,
+      denominator_def = denominator,
+      numerator_def = numerator,
       national_standard,
       direction_rule,
-      format
+      direction_desired,
+      direction_legend,
+      decimal_precision,
+      scale,
+      format,
+      risk_adjustment,
+      exclusions,
+      notes
     ),
     by = "indicator"
   )
 
-# Calculate RSP status for each row
-#####################################
+message("Joined dictionary metadata")
 
-# Wrap the rsp status function (above, below, no diff) to make it work with vectors 
+# Check for missing joins
+missing_joins <- rsp_data %>%
+  filter(is.na(category)) %>%
+  distinct(indicator)
+
+if (nrow(missing_joins) > 0) {
+  warning("The following indicators did not match the dictionary:")
+  print(missing_joins[["indicator"]])
+}
+
+# Calculate RSP status for each row
+# Vectorize function to work with dplyr::mutate()
 calculate_rsp_status <- Vectorize(calculate_rsp_status)
 
 rsp_data <- rsp_data %>%
@@ -252,20 +240,6 @@ rsp_data <- rsp_data %>%
       direction_rule = direction_rule,
       format_type = format
     )
-  ) %>%
-  select(
-    state,
-    indicator,
-    period,
-    period_meaningful,
-    rsp,
-    rsp_lower,
-    rsp_upper,
-    status,           # Positioned after rsp_upper (was at end)
-    data_used,
-    as_of_date,
-    profile_version,
-    source
   )
 
 # Verify status distribution
@@ -307,6 +281,19 @@ if (total_na > 0) {
 # Save validation results for orchestrator
 assign("validation_results", validation_results, envir = .GlobalEnv)
 
+########################################
+# SAVE CSV ----
+########################################
+
+# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/rsp/
+run_date <- Sys.Date()
+folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "rsp")
+if (!dir.exists(folder_run)) {
+  dir.create(folder_run, recursive = TRUE)
+  message("Created run folder: ", folder_run)
+}
+assign("folder_run", folder_run, envir = .GlobalEnv)
+assign("run_date", run_date, envir = .GlobalEnv)
 
 # Save using save_to_folder_run pattern
 save_to_folder_run(rsp_data, "csv")
@@ -317,72 +304,21 @@ message("Profile version: ", pdf_metadata$profile_version)
 message("CSV saved to: ", folder_run)
 
 ########################################
-# PREPARE RDS FOR SHINY APP ----
+# SAVE RDS FOR SHINY APP ----
 ########################################
 
-message("\n--- Preparing RDS for Shiny App ---")
+message("\n--- Saving RDS for Shiny App ---")
 
-# Load dictionary for ADDITIONAL metadata (status already calculated above)
-dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
-
-if (!file.exists(dict_path)) {
-  warning("Dictionary not found at: ", dict_path, " - skipping additional metadata join")
-} else {
-  dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-  message("Loaded dictionary with ", nrow(dict), " indicators")
-  
-  # Join additional dictionary metadata (status already added above)
-  rsp_data <- rsp_data %>%
-    left_join(
-      dict %>% select(
-        indicator,
-        indicator_sort,
-        indicator_short,
-        indicator_very_short,
-        category,
-        description,
-        denominator_def = denominator,
-        numerator_def = numerator,
-        national_standard,
-        direction_rule,
-        direction_desired,
-        direction_legend,
-        decimal_precision,
-        scale,
-        format,
-        risk_adjustment,
-        exclusions,
-        notes
-      ),
-      by = "indicator"
-    )
-  
-  message("Joined additional dictionary metadata")
-  
-  # Check for missing joins
-  missing_joins <- rsp_data %>%
-    filter(is.na(category)) %>%
-    distinct(indicator)
-  
-  if (nrow(missing_joins) > 0) {
-    warning("The following indicators did not match the dictionary:")
-    print(missing_joins[["indicator"]])
-  }
-  
-  # --- Save RDS Files ---
-  message("\n--- Saving RDS Files ---")
-  
-  # PROD: Period-specific file with state prefix
-  output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
-  if (!dir.exists(output_dir_prod)) {
-    dir.create(output_dir_prod, recursive = TRUE)
-  }
-  
-  output_file_prod_period <- file.path(output_dir_prod,
-    paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
-  saveRDS(rsp_data, output_file_prod_period)
-  message("Saved to PROD: ", output_file_prod_period)
+# PROD: Period-specific file with state prefix
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+if (!dir.exists(output_dir_prod)) {
+  dir.create(output_dir_prod, recursive = TRUE)
 }
+
+output_file_prod_period <- file.path(output_dir_prod,
+  paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
+saveRDS(rsp_data, output_file_prod_period)
+message("Saved to PROD: ", output_file_prod_period)
 
 ########################################
 # SUMMARY ----
