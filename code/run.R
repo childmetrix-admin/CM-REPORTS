@@ -35,10 +35,10 @@ source("D:/repo_childmetrix/cfsr-profile/code/run_profile.R")
 # print_available_data()
 
 # Workflow 1: Process everything found (all files for all states and periods in S: drive)
-# run_profile(source = "all")
+run_profile(source = "all")
 
 # Workflow 2: Specific state + period + all 3 files
-run_profile(state = "md", period = "2025_02", source = "all")
+# run_profile(state = "md", period = "2025_02", source = "all")
 
 # Workflow 3: Specific state + period + specific file
 # run_profile(state = "md", period = "2025_02", source = "national")

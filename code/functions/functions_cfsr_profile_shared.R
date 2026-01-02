@@ -1,13 +1,88 @@
-# ============================================================================
-# CFSR SHARED FUNCTIONS - PDF Extraction Helpers
-# ============================================================================
+########################################
+########################################
+# CFSR SHARED FUNCTIONS
+########################################
+########################################
+
+# Shared functions used across CFSR profile processing:
+# - config.R (orchestration and setup)
+# - profile_rsp.R (Risk-Standardized Performance extraction)
+# - profile_observed.R (Observed Performance extraction)
+# - profile_national.R (National Comparison Data extraction)
 #
-# Shared functions used across multiple CFSR extraction scripts:
-# - profile_rsp.R (Risk-Standardized Performance)
-# - profile_observed.R (Observed Performance)
-# - profile_national.R (National Comparison Data)
-#
-# These functions handle PDF coordinate-based text extraction using pdftools.
+# Organization:
+# 1. CONFIG-ONLY FUNCTIONS - Called only by config.R
+# 2. SHARED FUNCTIONS - Used by both config.R and profile scripts
+
+########################################
+# CONFIG-ONLY FUNCTIONS ----
+########################################
+
+# These functions are called only by config.R during initialization
+
+#' Extract metadata from PDF filename
+#'
+#' Parses state code and profile version from PDF filename
+#' Called by config.R's initialize_common_globals() to set pdf_metadata global
+#'
+#' @param pdf_path Path to PDF file
+#' @return List with file_path, state, profile_version, month, year, source
+#' @examples
+#' # Example: "MD - CFSR 4 Data Profile - August 2024.pdf"
+#' extract_pdf_metadata(pdf_path)
+extract_pdf_metadata <- function(pdf_path) {
+  fname <- basename(pdf_path)
+
+  # Extract state code (first 2 characters before " - ")
+  state <- toupper(substr(fname, 1, 2))
+
+  # Extract Month YYYY from filename
+  month_year <- sub(
+    ".*\\b((January|February|March|April|May|June|July|August|September|October|November|December)\\s+[0-9]{4})\\b.*",
+    "\\1",
+    fname
+  )
+
+  if (identical(month_year, fname)) {
+    stop("Couldn't find 'Month YYYY' in PDF file name: ", fname)
+  }
+
+  parts <- strsplit(month_year, " ")[[1]]
+  month <- parts[1]
+  year <- parts[2]
+
+  # Build source citation for PDF
+  # Format: Children's Bureau. (YYYY, MMM). [STATE] - CFSR 4 Data Profile - MMM YYYY [pdf file]. ...
+  month_abbrev <- substr(month, 1, 3)
+  source <- paste0(
+    "Children's Bureau. (", year, ", ", month_abbrev, "). ",
+    state, " - CFSR 4 Data Profile - ", month_abbrev, " ", year, " [pdf file]. ",
+    "U.S. Department of Health & Human Services, Administration for Children and Families, ",
+    "Administration on Children, Youth and Families."
+  )
+
+  list(
+    file_path = pdf_path,
+    state = state,
+    profile_version = month_year,
+    month = month,
+    year = year,
+    source = source
+  )
+}
+
+########################################
+# SHARED FUNCTIONS ----
+########################################
+
+# These functions are used by both config.R and profile extraction scripts
+
+########################################
+# PDF EXTRACTION HELPERS ----
+########################################
+
+# Coordinate-based text extraction using pdftools
+# Used by profile_rsp.R and profile_observed.R
 
 #' Extract tableau-style table from PDF coordinate data
 #'
@@ -82,95 +157,12 @@ extract_headers <- function(data, y_min, y_max, x_cuts, has_national_perf = TRUE
   extracted_cols
 }
 
-# ============================================================================
-# CFSR-SPECIFIC FOLDER SETUP AND FILE FINDING
-# ============================================================================
-#
-# These functions provide CFSR project-specific utilities:
-# - Multi-state support (MD, KY, etc.)
-# - Folder structure: data/uploads/{STATE}/{PERIOD}/
-# - Indicator dictionary lookup and metadata extraction
-# - State ranking and performance comparison
+########################################
+# FILE OPERATIONS ----
+########################################
 
-#' Setup CFSR folders for a specific state and profile period
-#'
-#' @param profile_period Character string in format "YYYY_MM" (e.g., "2025_02")
-#' @param state_code Character string with 2-letter state code (e.g., "MD", "KY")
-#' @param assign_globals Logical - assign folder paths to global environment
-#' @param base_data_dir Base data directory (default: "D:/repo_childmetrix/cfsr-profile/data")
-#' @return List with folder paths
-#' @examples
-#' setup_cfsr_folders("2025_02", "MD")
-#' setup_cfsr_folders("2024_08", "KY", assign_globals = TRUE)
-setup_cfsr_folders <- function(profile_period,
-                                state_code,
-                                assign_globals = TRUE,
-                                base_data_dir = "D:/repo_childmetrix/cfsr-profile/data") {
-
-  # Validate inputs
-  if (missing(profile_period) || is.null(profile_period)) {
-    stop("profile_period is required (e.g., '2025_02')")
-  }
-  if (missing(state_code) || is.null(state_code)) {
-    stop("state_code is required (e.g., 'MD')")
-  }
-
-  # Normalize
-  profile_period <- toupper(profile_period)
-  state_code <- tolower(state_code)  # Use lowercase for consistency with ShareFile
-
-  # Build folder paths (but don't create them yet!)
-  # Read uploads directly from ShareFile
-  folder_uploads <- file.path("S:/Shared Folders", state_code, "cfsr/uploads", profile_period)
-  folder_processed <- file.path(base_data_dir, "processed", state_code, profile_period)
-  folder_app_data <- file.path(base_data_dir, "app_data", state_code)
-
-  # Check if uploads folder exists on ShareFile
-  if (!dir.exists(folder_uploads)) {
-    stop("Uploads folder does not exist: ", folder_uploads,
-         "\n\nPlease upload files to ShareFile at:",
-         "\n  S:/Shared Folders/", state_code, "/cfsr/uploads/", profile_period, "/",
-         "\n\nOr check your state_code and profile_period values.",
-         call. = FALSE)
-  }
-
-  # Check if folder has CFSR files
-  files_in_uploads <- list.files(folder_uploads, pattern = "\\.(xlsx?|pdf)$")
-  if (length(files_in_uploads) == 0) {
-    stop("Uploads folder exists but contains no CFSR files: ", folder_uploads,
-         "\n\nExpected to find files like:",
-         "\n  - National - Supplemental Context Data - [Month Year].xlsx",
-         "\n  - ", state_code, " - CFSR 4 Data Profile - [Month Year].pdf",
-         "\n\nPlease check that files are organized correctly.",
-         call. = FALSE)
-  }
-
-  # Processed and app_data folders will be created as needed during processing
-  # (See profile_*.R scripts where folder_run and RDS files are created)
-
-  # Assign to global environment if requested
-  if (assign_globals) {
-    assign("state_code", state_code, envir = .GlobalEnv)
-    assign("profile_period", profile_period, envir = .GlobalEnv)
-    assign("folder_uploads", folder_uploads, envir = .GlobalEnv)
-    assign("folder_processed", folder_processed, envir = .GlobalEnv)
-    assign("folder_app_data", folder_app_data, envir = .GlobalEnv)
-    assign("base_data_dir", base_data_dir, envir = .GlobalEnv)
-
-    # Also set folder_raw for backward compatibility with generic find_file
-    assign("folder_raw", folder_uploads, envir = .GlobalEnv)
-  }
-
-  # Return list of paths
-  list(
-    state_code = state_code,
-    profile_period = profile_period,
-    folder_uploads = folder_uploads,
-    folder_processed = folder_processed,
-    folder_app_data = folder_app_data,
-    base_data_dir = base_data_dir
-  )
-}
+# File discovery and loading functions
+# Used by config.R and profile extraction scripts
 
 #' Find CFSR file in uploads folder
 #'
@@ -261,9 +253,12 @@ find_cfsr_file <- function(keyword,
   return(data_df)
 }
 
-# ============================================================================
-# INDICATOR DICTIONARY FUNCTIONS
-# ============================================================================
+########################################
+# INDICATOR DICTIONARY FUNCTIONS ----
+########################################
+
+# Dictionary loading and lookup
+# Used by functions_cfsr_profile_nat.R
 
 #' Load indicator dictionary
 #'
@@ -345,9 +340,12 @@ get_indicator_name <- function(sheet_name, fallback_name = NULL) {
   return(sheet_name)
 }
 
-# ============================================================================
-# METADATA EXTRACTION FUNCTIONS
-# ============================================================================
+########################################
+# METADATA EXTRACTION FUNCTIONS ----
+########################################
+
+# Profile version and date extraction
+# Used by config.R and profile extraction scripts
 
 #' Extract profile month/year from file name
 #'
@@ -432,59 +430,12 @@ cfsr_profile_extract_asof_date <- function(data_df) {
   )
 }
 
-#' Extract metadata from PDF filename
-#'
-#' Parses state code and profile version from PDF filename
-#'
-#' @param pdf_path Path to PDF file
-#' @return List with file_path, state, profile_version, month, year, source
-#' @examples
-#' # Example: "MD - CFSR 4 Data Profile - August 2024.pdf"
-#' extract_pdf_metadata(pdf_path)
-extract_pdf_metadata <- function(pdf_path) {
-  fname <- basename(pdf_path)
+########################################
+# STATE RANKING FUNCTIONS ----
+########################################
 
-  # Extract state code (first 2 characters before " - ")
-  state <- toupper(substr(fname, 1, 2))
-
-  # Extract Month YYYY from filename
-  month_year <- sub(
-    ".*\\b((January|February|March|April|May|June|July|August|September|October|November|December)\\s+[0-9]{4})\\b.*",
-    "\\1",
-    fname
-  )
-
-  if (identical(month_year, fname)) {
-    stop("Couldn't find 'Month YYYY' in PDF file name: ", fname)
-  }
-
-  parts <- strsplit(month_year, " ")[[1]]
-  month <- parts[1]
-  year <- parts[2]
-
-  # Build source citation for PDF
-  # Format: Children's Bureau. (YYYY, MMM). [STATE] - CFSR 4 Data Profile - MMM YYYY [pdf file]. ...
-  month_abbrev <- substr(month, 1, 3)
-  source <- paste0(
-    "Children's Bureau. (", year, ", ", month_abbrev, "). ",
-    state, " - CFSR 4 Data Profile - ", month_abbrev, " ", year, " [pdf file]. ",
-    "U.S. Department of Health & Human Services, Administration for Children and Families, ",
-    "Administration on Children, Youth and Families."
-  )
-
-  list(
-    file_path = pdf_path,
-    state = state,
-    profile_version = month_year,
-    month = month,
-    year = year,
-    source = source
-  )
-}
-
-# ============================================================================
-# STATE RANKING FUNCTIONS
-# ============================================================================
+# State performance ranking
+# Used by functions_cfsr_profile_nat.R
 
 #' Rank states by performance for all periods
 #'
@@ -551,9 +502,12 @@ rank_states_by_performance <- function(df) {
     ungroup()
 }
 
-# ============================================================================
-# PERIOD FORMATTING
-# ============================================================================
+########################################
+# PERIOD FORMATTING ----
+########################################
+
+# Period string conversion to human-readable labels
+# Used by all profile extraction scripts
 
 #' Convert CFSR period strings to meaningful date labels
 #'

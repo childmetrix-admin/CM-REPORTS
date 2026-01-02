@@ -1,15 +1,20 @@
+########################################
+########################################
+# CFSR NATIONAL PERFORMANCE-SPECIFIC FUNCTIONS
+########################################
+########################################
 
-# ============================================================================
-# CFSR NATIONAL DATA-SPECIFIC FUNCTIONS
-# ============================================================================
-#
-# National comparison data extraction functions.
+# National performance-specific functions to extract data from national excel file.
 # Shared functions have been moved to functions_cfsr_profile_shared.R
-#
+
 # NOTE: This file now sources shared CFSR functions from functions_cfsr_profile_shared.R
 # Shared functions include: setup_cfsr_folders, find_cfsr_file, load_indicator_dictionary,
 # get_indicator_name, cfsr_profile_version, cfsr_profile_extract_asof_date,
 # rank_states_by_performance
+
+########################################
+# PROCESS EXCEL DATA ----
+########################################
 
 # Extract relevant rows from the data frame
 # -----------------------------------
@@ -38,12 +43,9 @@ extract_relevant_rows <- function(data_df) {
   return(data_df[rows_to_keep, ])
 }
 
-# NOTE: make_period_meaningful() is now in functions_cfsr_profile_shared.R
-# The shared version handles more period formats including RSP cohort periods (e.g., "19B-21B")
-
 # Process standard CFSR indicator (den/num/per structure)
-# -------------------------------
-#
+########################################
+
 # Handles 5 of 6 indicators: Re-Entry, Perm in 12 (entries),
 # Perm in 12 (12-23 mos), Perm in 12 (24+ mos), Placement Stability
 #
@@ -179,8 +181,8 @@ process_standard_indicator <- function(sheet_name,
 }
 
 # Process Entry Rate indicator (special case with years)
-# -------------------------------
-#
+########################################
+
 # Entry Rate is unique: has both years (for denominator) and periods (for num/per)
 # Output includes census_year column
 #
