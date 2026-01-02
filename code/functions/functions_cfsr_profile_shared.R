@@ -520,7 +520,7 @@ rank_states_by_performance <- function(df) {
 #' @return Character vector of formatted period labels
 #'
 #' @details
-#' Handles 5 distinct period format patterns:
+#' Handles 6 distinct period format patterns:
 #'
 #' **Case 1: YYAYYB** (e.g., "20A20B")
 #' - Oct 'prev_year - Sep 'year
@@ -533,8 +533,14 @@ rank_states_by_performance <- function(df) {
 #' **Case 3: YYAB_FYYY** (e.g., "20AB_FY20")
 #' - Oct 'prev_year - Sep 'year, FYYY
 #' - AFCARS AB (two 6-month submissions) + NCANDS FY
-#' - RSP/Observed use underscore separator (differs from National comma separator)
+#' - RSP/Observed use underscore separator
 #' - Example: "20AB_FY20" → "Oct '19 - Sep '20, FY20"
+#'
+#' **Case 3a: YYAB,FYYY** (e.g., "20AB,FY20")
+#' - Oct 'prev_year - Sep 'year, FYYY
+#' - AFCARS AB (two 6-month submissions) + NCANDS FY
+#' - National data uses comma separator
+#' - Example: "20AB,FY20" → "Oct '19 - Sep '20, FY20"
 #'
 #' **Case 4: FYYY-YY** (e.g., "FY20-21")
 #' - Fiscal year spans (kept as-is)
@@ -547,9 +553,9 @@ rank_states_by_performance <- function(df) {
 #' - Example: "19B-21B" → "Apr '19 - Sep '21"
 #'
 #' @examples
-#' make_period_meaningful(c("20A20B", "19B20A", "20AB_FY20", "FY20-21", "19B-21B"))
+#' make_period_meaningful(c("20A20B", "19B20A", "20AB_FY20", "20AB,FY20", "FY20-21", "19B-21B"))
 #' # Returns: "Oct '19 - Sep '20", "Apr '19 - Mar '20", "Oct '19 - Sep '20, FY20",
-#' #          "FY20-21", "Apr '19 - Sep '21"
+#' #          "Oct '19 - Sep '20, FY20", "FY20-21", "Apr '19 - Sep '21"
 #'
 #' @note This function is vectorized for element-wise application over character vectors
 make_period_meaningful <- function(period) {
@@ -581,6 +587,20 @@ make_period_meaningful <- function(period) {
   # String positions: "20AB_FY20"
   #                    123456789
   if (grepl("^[0-9]{2}AB_FY[0-9]{2}$", period)) {
+    year <- as.numeric(substr(period, 1, 2))
+    fy_year <- substr(period, 8, 9)  # Keep as 2-digit string
+    start_year <- (year - 1) + 2000
+    end_year <- year + 2000
+    return(paste0("Oct '", substr(as.character(start_year), 3, 4),
+                  " - Sep '", substr(as.character(end_year), 3, 4),
+                  ", FY", fy_year))
+  }
+
+  # Case 3a: Format "YYAB,FYYY" (e.g., "20AB,FY20") => Oct 'prev_year - Sep 'year, FY20
+  # National data uses comma separator (different from RSP/Observed which use underscore)
+  # String positions: "20AB,FY20"
+  #                    123456789
+  if (grepl("^[0-9]{2}AB,FY[0-9]{2}$", period)) {
     year <- as.numeric(substr(period, 1, 2))
     fy_year <- substr(period, 8, 9)  # Keep as 2-digit string
     start_year <- (year - 1) + 2000

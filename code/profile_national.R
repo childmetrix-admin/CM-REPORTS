@@ -153,28 +153,6 @@ ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
                       ind_maltreatment_df, ind_recurrence_df)
 
 ########################################
-# SAVE CSV ----
-########################################
-
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/observed/
-run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "national")
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
-  message("Created run folder: ", folder_run)
-}
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
-
-# Save using save_to_folder_run pattern
-save_to_folder_run(ind_data, "csv")
-
-message("\n=== National CSV processing complete ===")
-message("Processed ", nrow(ind_data), " rows")
-message("Profile version: ", metadata$profile_version)
-message("CSV saved to: ", folder_run)
-
-########################################
 # ADD METADATA AND JOIN DICTIONARY ----
 ########################################
 
@@ -224,6 +202,46 @@ if (nrow(missing_joins) > 0) {
   warning("The following indicators did not match the dictionary:")
   print(missing_joins[["indicator"]])
 }
+
+# Reorder columns for consistency across all outputs
+ind_data <- ind_data %>%
+  select(
+    # Key columns first
+    state, category, indicator, period, period_meaningful,
+    denominator, numerator, performance, state_rank, reporting_states,
+    # Add census_year if it exists (only for entry rate indicator)
+    any_of("census_year"),
+    national_standard,
+    as_of_date, profile_version, source,
+    # Dictionary metadata columns
+    indicator_sort, indicator_short, indicator_very_short,
+    description, denominator_def, numerator_def,
+    direction_rule, direction_desired, direction_legend,
+    decimal_precision, scale, format,
+    risk_adjustment, exclusions, notes
+  )
+
+########################################
+# SAVE CSV ----
+########################################
+
+# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/national/
+run_date <- Sys.Date()
+folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "national")
+if (!dir.exists(folder_run)) {
+  dir.create(folder_run, recursive = TRUE)
+  message("Created run folder: ", folder_run)
+}
+assign("folder_run", folder_run, envir = .GlobalEnv)
+assign("run_date", run_date, envir = .GlobalEnv)
+
+# Save using save_to_folder_run pattern
+save_to_folder_run(ind_data, "csv")
+
+message("\n=== National CSV processing complete ===")
+message("Processed ", nrow(ind_data), " rows")
+message("Profile version: ", metadata$profile_version)
+message("CSV saved to: ", folder_run)
 
 ########################################
 # PREPARE RDS FOR SHINY APP ----
