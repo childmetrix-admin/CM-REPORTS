@@ -1,7 +1,12 @@
-# Title:          CFSR Profile Configuration
-#                 Central configuration and discovery for all profile processing
+#####################################
+#####################################
+# CFSR Profile Configuration
+#####################################
+#####################################
 
-# Purpose:        Define paths, discover available data, validate combinations
+# Sourced from run_profile.R
+# Central configuration and discovery for all profile processing
+# Define paths, discover available data, validate combinations
 
 #####################################
 # LIBRARIES & UTILITIES ----

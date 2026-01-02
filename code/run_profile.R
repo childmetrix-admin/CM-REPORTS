@@ -1,13 +1,9 @@
-# Title:          CFSR Profile - Main Orchestrator
-#                 Run CFSR profile processing for any combination of state/period/source
-
-# Purpose:        Entry point for all CFSR profile processing workflows
-
 #####################################
-# USAGE ----
+# CFSR Profile - Main Orchestrator ----
 #####################################
 
 # Sourced from run.R
+# Run CFSR profile processing for any combination of state/period/source
 
 #####################################
 # LIBRARIES & CONFIGURATION ----

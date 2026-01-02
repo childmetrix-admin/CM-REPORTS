@@ -1,27 +1,34 @@
-# Title:          CFSR Profile - Observed Performance Data
-#                 Process observed performance data from state-specific CFSR Data Profile PDFs
-#
-# Purpose:        Extract observed performance metrics (denominator, numerator, observed%)
-#                 from state-specific CFSR 4 Data Profile PDFs using pdftools
-#
+#####################################
+#####################################
+# CFSR Profile - Observed Performance Data ----
+#####################################
+#####################################
+
+# Process observed performance (pg. 4) from state CFSR Data Profile PDF
+# Create csv (for FYI) and .rds file of data (for observed shiny app)
+
 #####################################
 # NOTES ----
 #####################################
-# This file is provided to every state about every 6 months (usually February
-# & August). Page 4 shows observed performance trends (without risk adjustment).
-# Observed performance shows raw state performance on CFSR indicators,
-# complementing the risk-standardized performance (RSP) on page 2.
+
+# This PDF file is provided to every state about every 6 months (usually February
+# & August). It shows the state's performance and trends on the CFSR
+# statewide data indicators, both observed (pg 4) and risk-standardized (pg 2).
+# Also shows data quality (DQ) checks the state failed.
+
 # INPUT: State-specific CFSR Data Profile PDF
 # - Located in ShareFile: S:/Shared Folders/{state}/cfsr/uploads/{period}/
 # - Filename pattern: "{STATE} - CFSR 4 Data Profile - {Month} {Year}.pdf"
+
 # OUTPUT: Processed CSV with observed performance data by indicator and period
 # - Columns: state, indicator, period, period_meaningful, denominator, numerator,
 #            observed_performance, as_of_date, profile_version, source
+
 # IMPORTANT: This script expects state_code and profile_period to be set
 # by the orchestrator (run_profile.R) or manually before sourcing.
 
 #####################################
-# INITIALIZATION ----
+# LIBRARIES & CONFIGURATION ----
 #####################################
 
 # IMPORTANT: This script expects the following globals to be set by run_profile.R:
@@ -30,9 +37,6 @@
 #   - folder_date, commitment, my_setup (set by initialize_common_globals)
 #   - pdf_path, pdf_metadata (set by initialize_common_globals)
 
-# Source RSP-specific functions (used for period extraction helpers)
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_rsp.R")
-
 # Set source-specific configuration
 commitment_description <- "observed"
 
@@ -40,25 +44,26 @@ commitment_description <- "observed"
 # EXTRACT OBSERVED PERFORMANCE DATA FROM PDF ----
 ########################################
 
-library(pdftools)
-library(tidyverse)
-library(stringr)
-# Read PDF page 4 (contains observed performance tables)
+# Use pdftools to extract text & coordinates from page 4 of PDF
 raw_data_original <- suppressMessages(pdf_data(pdf_path))[[4]]
-# Pre-process: clean text
+
+# Remove invisible / non-printable characters (zero-width spaces, etc.), 
+# empty text elements
 raw_data <- raw_data_original %>%
   mutate(text = str_replace_all(text, "[^[:graph:]]", "")) %>%
   filter(text != "")
 
 ########################################
-# BOTTOM TABLE PERIOD EXTRACTION ----
+# EXTRACT PERIOD HEADERS FOR SAFETY INDICATORS (bottom half of page) ----
 ########################################
 
 #' Extract bottom table (maltreatment) period headers from PDF page 4
 #'
+#' Handles text fragmentation by concatenating fragments within column boundaries.
+#'
 #' @param raw_data Cleaned PDF text data from page 4
 #' @return Named list with zone_a and zone_b period vectors (length 3 each)
-extract_observed_bottom_periods <- function(raw_data) {
+extract_maltreatment_periods_observed <- function(raw_data) {
   # Extract period header row (y=403, with ±2 tolerance)
   period_text <- raw_data %>%
     filter(y >= 401 & y <= 405) %>%
@@ -114,9 +119,6 @@ extract_observed_bottom_periods <- function(raw_data) {
     zone_b = unname(zone_b_periods)
   )
 }
-
-# Show sample of data around expected table area
-# Find period headers - search for text matching period patterns (e.g., "19B20A", "20A20B")
 
 ########################################
 # HELPER FUNCTIONS FOR PDF EXTRACTION ----
@@ -227,7 +229,7 @@ if (nrow(df_top_processed) %% 3 == 0) {
 
 bottom_x_cuts <- c(135, 240, 298, 365, 437, 508, 576)
 # Extract period headers from PDF (replaces hardcoded values)
-observed_bottom_periods <- extract_observed_bottom_periods(raw_data)
+observed_bottom_periods <- extract_maltreatment_periods_observed(raw_data)
 
 # Build column names from extracted periods
 bottom_cols <- c("Indicator", "Measure_Type",
