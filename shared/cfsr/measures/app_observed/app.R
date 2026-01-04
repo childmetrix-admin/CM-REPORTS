@@ -149,7 +149,7 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
       panel.grid.minor = element_blank(),
       axis.text.x = element_text(angle = 0, hjust = 0.5, size = 9, color = "#374151"),
       axis.text.y = element_text(size = 9, color = "#374151"),
-      plot.margin = margin(5, 5, 5, 5)
+      plot.margin = margin(5, 10, 1, 5)
     )
 
   return(p)
