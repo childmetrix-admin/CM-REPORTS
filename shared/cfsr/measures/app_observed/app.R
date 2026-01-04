@@ -422,18 +422,6 @@ ui <- fluidPage(
         margin-top: 12px;
         font-style: italic;
       }
-
-      /* Responsive grid */
-      @media (max-width: 1024px) {
-        .kpi-grid-row {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-      @media (max-width: 640px) {
-        .kpi-grid-row {
-          grid-template-columns: 1fr;
-        }
-      }
     "))
   ),
 
