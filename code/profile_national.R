@@ -244,19 +244,6 @@ message("Profile version: ", metadata$profile_version)
 message("CSV saved to: ", folder_run)
 
 ########################################
-# PREPARE RDS FOR SHINY APP ----
-########################################
-
-# Filter to most recent period per indicator
-# (App only needs latest data, CSV has all periods)
-app_data <- ind_data %>%
-  group_by(indicator) %>%
-  filter(period == max(period, na.rm = TRUE)) %>%
-  ungroup()
-
-message("Filtered to latest period: ", nrow(app_data), " rows")
-
-########################################
 # SAVE RDS FOR SHINY APP ----
 ########################################
 
@@ -264,6 +251,8 @@ message("\n--- Saving RDS for Shiny App ---")
 
 # PROD: Period-specific file WITHOUT state prefix (shared app location)
 # National data is identical across states, so no state prefix needed
+# RDS contains same data as CSV (all periods, not filtered)
+# Apps can filter to most recent period as needed
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
@@ -271,7 +260,7 @@ if (!dir.exists(output_dir_prod)) {
 
 output_file_prod_period <- file.path(output_dir_prod,
   paste0("cfsr_profile_national_", profile_period, ".rds"))
-saveRDS(app_data, output_file_prod_period)
+saveRDS(ind_data, output_file_prod_period)
 message("Saved to PROD: ", output_file_prod_period)
 
 ########################################
@@ -281,8 +270,7 @@ message("Saved to PROD: ", output_file_prod_period)
 message("\n=== National Processing Complete ===")
 message("State: ", state_code)
 message("Profile period: ", profile_period)
-message("Total rows (CSV): ", nrow(ind_data))
-message("App rows (RDS): ", nrow(app_data))
+message("Total rows (CSV and RDS): ", nrow(ind_data))
 message("Unique indicators: ", length(unique(ind_data$indicator)))
 message("Profile version: ", metadata$profile_version)
 message("\nData ready for Shiny app!")
