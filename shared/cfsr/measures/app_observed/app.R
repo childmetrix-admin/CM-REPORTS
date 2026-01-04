@@ -462,8 +462,13 @@ server <- function(input, output, session) {
   })
 
   # Load national data (uses function from utils.R via global.R)
+  # Filter to most recent period per indicator for bar chart displays
   national_data <- reactive({
-    load_cfsr_data(state_code_rv(), profile_rv(), type = "national")
+    data <- load_cfsr_data(state_code_rv(), profile_rv(), type = "national")
+    data %>%
+      group_by(indicator) %>%
+      filter(period == max(period, na.rm = TRUE)) %>%
+      ungroup()
   })
 
   # Get profile version
