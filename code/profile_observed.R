@@ -236,7 +236,8 @@ as_of_date <- tryCatch({
 # Add basic metadata columns
 observed_data <- observed_data %>%
   mutate(
-    state = pdf_metadata$state,
+    state_abb = pdf_metadata$state,  # 2-letter code from PDF filename (MD, KY, etc.)
+    state = convert_state_code_to_name(state_abb),  # Full name (Maryland, Kentucky, etc.)
     period_meaningful = make_period_meaningful(period),
     as_of_date = as_of_date,
     profile_version = pdf_metadata$profile_version,
@@ -329,7 +330,7 @@ assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 observed_data <- observed_data %>%
   select(
     # Key columns first
-    state, category, indicator, period, period_meaningful,
+    state, state_abb, category, indicator, period, period_meaningful,
     denominator, numerator, observed_performance,
     national_standard, status, data_used,
     as_of_date, profile_version, source,

@@ -172,7 +172,8 @@ as_of_date <- tryCatch({
 # Add basic metadata columns
 rsp_data <- rsp_data %>%
   mutate(
-    state = pdf_metadata$state,
+    state_abb = pdf_metadata$state,  # 2-letter code from PDF filename (MD, KY, etc.)
+    state = convert_state_code_to_name(state_abb),  # Full name (Maryland, Kentucky, etc.)
     period_meaningful = make_period_meaningful(period),
     as_of_date = as_of_date,
     profile_version = pdf_metadata$profile_version,
@@ -288,7 +289,7 @@ assign("validation_results", validation_results, envir = .GlobalEnv)
 rsp_data <- rsp_data %>%
   select(
     # Key columns first
-    state, category, indicator, period, period_meaningful,
+    state, state_abb, category, indicator, period, period_meaningful,
     rsp, rsp_lower, rsp_upper, national_standard, status, data_used,
     as_of_date, profile_version, source,
     # Dictionary metadata columns

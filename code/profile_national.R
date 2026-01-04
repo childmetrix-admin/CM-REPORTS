@@ -205,9 +205,13 @@ if (nrow(missing_joins) > 0) {
 
 # Reorder columns for consistency across all outputs
 ind_data <- ind_data %>%
+  mutate(
+    # Add state abbreviation column using reverse mapping
+    state_abb = convert_state_name_to_code(state)
+  ) %>%
   select(
     # Key columns first
-    state, category, indicator, period, period_meaningful,
+    state, state_abb, category, indicator, period, period_meaningful,
     denominator, numerator, performance, state_rank, reporting_states,
     # Add census_year if it exists (only for entry rate indicator)
     any_of("census_year"),
