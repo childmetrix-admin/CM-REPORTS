@@ -72,8 +72,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         mutate(rank = state_rank)
 
       # Add highlight flag for selected state
+      current_state <- state  # Store the state parameter value
       ind_df <- ind_df %>%
-        mutate(is_selected = (state == state))
+        mutate(is_selected = (state == current_state))
 
       return(ind_df)
     })
