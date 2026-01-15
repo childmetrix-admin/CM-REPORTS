@@ -348,7 +348,7 @@ ui <- fluidPage(
     tags$style(HTML("
       body {
         background-color: #f9fafb;
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         margin: 0;
         padding: 0;
       }
@@ -359,21 +359,23 @@ ui <- fluidPage(
         margin-right: auto;
       }
       .header {
-        background: linear-gradient(135deg, #0f4c75 0%, #0e9ba4 100%);
-        color: white;
-        padding: 16px 20px;
-        margin-bottom: 16px;
-        border-radius: 4px;
+        margin-bottom: 32px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e5e7eb;
       }
       .header h1 {
-        margin: 0;
-        font-size: 1.6rem;
-        font-weight: 600;
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #4472C4;
+        letter-spacing: -0.5px;
       }
       .header .subtitle {
-        margin-top: 4px;
-        font-size: 0.95rem;
-        opacity: 0.95;
+        margin: 0;
+        font-size: 16px;
+        color: #6b7280;
+        line-height: 1.6;
+        font-weight: 400;
       }
       .kpi-grid-row {
         display: grid;
@@ -694,7 +696,7 @@ ui <- fluidPage(
   # Header
   div(class = "header",
     h1(textOutput("header_title")),
-    div(class = "subtitle", textOutput("header_subtitle"))
+    p(class = "subtitle", textOutput("header_subtitle"))
   ),
   # Row 1: Interpretation Guide + Safety (3 KPIs total)
   div(class = "kpi-grid-row",
@@ -786,7 +788,7 @@ server <- function(input, output, session) {
   })
   # Header outputs
   output$header_title <- renderText({
-    paste0(state_name_rv(), " - Risk-Standardized Performance")
+    paste("Risk-Standardized Performance —", state_name_rv())
   })
   output$header_subtitle <- renderText({
     data <- rsp_data()

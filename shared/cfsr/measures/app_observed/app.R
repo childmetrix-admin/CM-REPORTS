@@ -155,6 +155,115 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
   return(p)
 }
 
+#' Build observed performance trend chart using BAR CHART (test version)
+build_observed_chart_bars <- function(data, national_std, format_type, direction_rule) {
+  if (nrow(data) == 0) return(NULL)
+
+  # Prepare data - convert percentages for display
+  # NOTE: observed_performance is stored as proportion (0.125)
+  #       national_std is stored as percentage (12.5)
+  is_pct <- (format_type == "percent")
+  multiplier <- if (is_pct) 100 else 1
+
+  # Preserve period order from the data as it comes in (already chronologically sorted)
+  period_order <- unique(data$period)
+
+  plot_data <- data %>%
+    mutate(
+      observed_display = observed_performance * multiplier,
+      period = factor(period, levels = period_order)
+    )
+
+  # Get value range for y-axis
+  # NOTE: Don't multiply national_std - it's already a percentage
+  y_vals <- c(plot_data$observed_display, national_std)
+  y_vals <- y_vals[!is.na(y_vals)]
+
+  if (length(y_vals) == 0) {
+    y_max <- if (is_pct) 100 else 10
+  } else {
+    y_max <- max(y_vals, na.rm = TRUE) * 1.25  # Increased from 1.15 to prevent label cutoff
+  }
+
+  # Split data into valid and DQ
+  plot_data_valid <- plot_data %>% filter(!is.na(observed_display))
+  plot_data_dq <- plot_data %>% filter(is.na(observed_display))
+
+  # Create base plot
+  p <- ggplot()
+
+  # Add bars for valid data (colored by status)
+  if (nrow(plot_data_valid) > 0) {
+    p <- p + geom_col(data = plot_data_valid,
+                      aes(x = period, y = observed_display, fill = status),
+                      width = 0.6, alpha = 0.85)
+  }
+
+  # Add national standard dashed line
+  # NOTE: Don't multiply national_std - it's already a percentage
+  p <- p + geom_hline(yintercept = national_std,
+                     linetype = "dashed", color = "#3b82f6", linewidth = 0.8)
+
+  # Add value labels on top of bars
+  if (nrow(plot_data_valid) > 0) {
+    label_data <- plot_data_valid %>%
+      mutate(
+        label_text = if (is_pct) {
+          paste0(round(observed_display, 1), "%")
+        } else {
+          as.character(round(observed_display, 2))
+        }
+      )
+
+    p <- p +
+      geom_text(data = label_data,
+                aes(x = period, y = observed_display, label = label_text),
+                color = "#374151", fontface = "bold", size = 3, vjust = -0.5)
+  }
+
+  # Add "DQ" labels for missing data periods
+  if (nrow(plot_data_dq) > 0) {
+    # Position DQ labels at bottom of chart
+    dq_y <- y_max * 0.05
+    p <- p + geom_text(data = plot_data_dq,
+                      aes(x = period, y = dq_y),
+                      label = "DQ", color = "#f59e0b", fontface = "bold", size = 3)
+  }
+
+  # Color scale for status (fill instead of color)
+  p <- p + scale_fill_manual(
+    values = c(
+      "better" = "#10b981",   # Green
+      "worse" = "#ef4444",    # Red
+      "nodiff" = "#6b7280",   # Gray
+      "dq" = "#f59e0b"        # Amber
+    ),
+    guide = "none"  # Hide legend
+  )
+
+  # Format and theme
+  p <- p +
+    scale_y_continuous(
+      limits = c(0, y_max),
+      labels = if (is_pct) {
+        function(x) paste0(x, "%")
+      } else {
+        scales::comma_format()
+      }
+    ) +
+    labs(x = NULL, y = NULL) +
+    theme_minimal(base_size = 10) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = 0, hjust = 0.5, size = 9, color = "#374151"),
+      axis.text.y = element_text(size = 9, color = "#374151"),
+      plot.margin = margin(5, 10, 1, 5)
+    )
+
+  return(p)
+}
+
 #####################################
 # UI ----
 #####################################
@@ -179,21 +288,23 @@ ui <- fluidPage(
 
       /* KPI Card Styles (from original app_observed) */
       .header {
-        background: linear-gradient(135deg, #0f4c75 0%, #0e9ba4 100%);
-        color: white;
-        padding: 16px 20px;
-        margin-bottom: 16px;
-        border-radius: 4px;
+        margin-bottom: 32px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e5e7eb;
       }
       .header h1 {
-        margin: 0;
-        font-size: 1.6rem;
-        font-weight: 600;
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #4472C4;
+        letter-spacing: -0.5px;
       }
-      .subtitle {
-        margin-top: 4px;
-        font-size: 0.95rem;
-        opacity: 0.95;
+      .header .subtitle {
+        margin: 0;
+        font-size: 16px;
+        color: #6b7280;
+        line-height: 1.6;
+        font-weight: 400;
       }
       .kpi-grid-row {
         display: grid;
@@ -325,19 +436,36 @@ ui <- fluidPage(
       }
       .info-popup {
         display: none;
-        position: absolute;
-        top: 28px;
-        right: 0;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
         background: white;
-        border: 2px solid #3b82f6;
-        border-radius: 8px;
-        padding: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 1000;
-        max-width: 500px;
+        padding: 0;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: hidden;
+      }
+      .info-popup img {
+        display: block;
+        background: white;
+        border-radius: 12px;
       }
       .info-icon:hover .info-popup {
         display: block;
+      }
+      .info-popup::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: -1;
       }
 
       /* Interpretation legend */
@@ -478,6 +606,15 @@ server <- function(input, output, session) {
     unique(data$profile_version)[1]
   })
 
+  # Header outputs
+  output$header_title <- renderText({
+    paste("Observed Performance —", state_name_rv())
+  })
+
+  output$header_subtitle <- renderText({
+    paste0("CFSR Round 4 Data Profile | ", profile_version())
+  })
+
   #####################################
   # MAIN CONTENT ROUTER ----
   #####################################
@@ -492,8 +629,8 @@ server <- function(input, output, session) {
       tagList(
         # Header
         div(class = "header",
-          h1(paste0(state_name_rv(), " - Observed Performance")),
-          div(class = "subtitle", paste0("CFSR Round 4 Data Profile | ", profile_version()))
+          h1(textOutput("header_title")),
+          p(class = "subtitle", textOutput("header_subtitle"))
         ),
 
         # Row 1: Interpretation Guide + Safety (3 total)
@@ -577,7 +714,7 @@ server <- function(input, output, session) {
       div(
         div(class = "header",
           h1("Invalid View"),
-          div(class = "subtitle", paste("Unknown view:", view))
+          p(class = "subtitle", paste("Unknown view:", view))
         ),
         p("Defaulting to Overview page...")
       )
@@ -657,6 +794,8 @@ server <- function(input, output, session) {
       div(class = "kpi-direction", paste(arrow, direction_legend)),
       div(class = "kpi-chart-container",
         renderPlot({
+          # TEST: Using bar chart version - change back to build_observed_chart() for line charts
+          # build_observed_chart_bars(ind_data, national_std, format_type, direction_rule)
           build_observed_chart(ind_data, national_std, format_type, direction_rule)
         }, height = 100, bg = "transparent")
       )
