@@ -202,14 +202,46 @@ if (nrow(missing_joins) > 0) {
 }
 
 # Reorder columns for consistency across all outputs
+# Add state_abb column (initialize as NA for all rows)
 ind_data <- ind_data %>%
-  mutate(
-    # Add state abbreviation column using reverse mapping
-    state_abb = convert_state_name_to_code(state)
-  ) %>%
+  mutate(state_abb = NA_character_)
+
+# Only convert for non-"National" rows to avoid warnings
+non_national_mask <- ind_data$state != "National"
+if (any(non_national_mask)) {
+  ind_data$state_abb[non_national_mask] <- convert_state_name_to_code(ind_data$state[non_national_mask])
+}
+
+# Standardize demographic dimension values for consistency across profile versions
+# 1. Fix dimension name typo
+ind_data <- ind_data %>%
+  mutate(dimension = case_when(
+    dimension == "Age entry" ~ "Age at entry",
+    TRUE ~ dimension
+  ))
+
+# 2. Standardize race/ethnicity values (remove "-Non Hispanic" suffix from old format)
+ind_data <- ind_data %>%
+  mutate(dimension_value = case_when(
+    # Only apply to race/ethnicity dimension
+    grepl("Race", dimension, ignore.case = TRUE) ~ case_when(
+      dimension_value == "Asian-Non Hispanic" ~ "Asian",
+      dimension_value == "Black or African American-Non Hispanic" ~ "Black or African American",
+      dimension_value == "Hispanic" ~ "Hispanic (of any race)",
+      dimension_value == "Native Hawaiian/Other Pacific Islander-Non Hispanic" ~ "Native Hawaiian/Other Pacific Islander",
+      dimension_value == "Two or More-Non Hispanic" ~ "Two or More",
+      dimension_value == "White-Non Hispanic" ~ "White",
+      TRUE ~ dimension_value  # Keep unchanged (Unknown/Unable to Determine, Missing Race/Ethnicity Data)
+    ),
+    TRUE ~ dimension_value  # Not race/ethnicity, keep unchanged
+  ))
+
+# Reorder columns
+ind_data <- ind_data %>%
   select(
     # Key columns first
-    state, state_abb, category, indicator, period, period_meaningful,
+    state, state_abb, category, indicator, dimension, dimension_value,
+    period, period_meaningful,
     denominator, numerator, performance, state_rank, reporting_states,
     # Add census_year if it exists (only for entry rate indicator)
     any_of("census_year"),
