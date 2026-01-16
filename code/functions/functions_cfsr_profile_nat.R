@@ -30,11 +30,83 @@ extract_relevant_rows <- function(data_df) {
   period_row_index <- which(grepl(period_pattern, data_df[[2]]))[1]
 
   # Identify the block of state rows (should always be 52 rows: 50 states, D.C., and PR)
-  # Find the first row with "Alabama" in the first column...
-  state_start_index <- which(data_df[[1]] == "Alabama")[1]
-  # ...and then the first row (after Alabama) with "Wyoming"
-  state_end_index <- which(data_df[[1]] == "Wyoming")
-  state_end_index <- state_end_index[state_end_index > state_start_index][1]
+  # Find the row with "52 Jurisdictions" header (more robust than hard-coded state names)
+  # Try multiple variations of the header text
+  jurisdictions_patterns <- c(
+    "52 Jurisdictions",
+    "52  Jurisdictions",  # Extra space
+    "52 States",
+    "52 jurisdictions"   # Lowercase
+  )
+
+  jurisdictions_row_index <- NA
+  for (pattern in jurisdictions_patterns) {
+    idx <- which(trimws(as.character(data_df[[1]])) == pattern)[1]
+    if (!is.na(idx)) {
+      jurisdictions_row_index <- idx
+      break
+    }
+  }
+
+  # If still not found, try pattern matching for "52" followed by any text
+  if (is.na(jurisdictions_row_index)) {
+    idx <- which(grepl("^52\\s+", trimws(as.character(data_df[[1]]))))[1]
+    if (!is.na(idx)) {
+      jurisdictions_row_index <- idx
+    }
+  }
+
+  if (is.na(jurisdictions_row_index)) {
+    # Fallback to old method: look for Alabama and Wyoming
+    warning("Could not find '52 Jurisdictions' header. Falling back to Alabama/Wyoming detection.")
+    state_start_index <- which(data_df[[1]] == "Alabama")[1]
+    state_end_candidates <- which(data_df[[1]] == "Wyoming")
+    state_end_index <- state_end_candidates[state_end_candidates > state_start_index][1]
+
+    if (is.na(state_start_index) || is.na(state_end_index)) {
+      # Show what's actually in column 1 to help debug
+      col1_values <- head(unique(data_df[[1]]), 30)
+      stop("Could not find state rows using either '52 Jurisdictions' header or Alabama/Wyoming.\n",
+           "First 30 unique values in column 1:\n",
+           paste(col1_values, collapse = "\n"))
+    }
+  } else {
+    # First state row is the next row after "52 Jurisdictions" (or similar header)
+    state_start_index <- jurisdictions_row_index + 1
+
+    # Find where state list ends by looking for first footnote row
+    # (openxlsx doesn't preserve blank rows, so we detect footnotes instead)
+    # All footnotes start with "Note" followed by a number (e.g., "Note 1:", "Note 2:")
+    candidate_rows <- (state_start_index + 1):nrow(data_df)
+
+    footnote_row_index <- NA
+    for (row_idx in candidate_rows) {
+      col1_value <- as.character(data_df[[1]][row_idx])
+
+      # Skip if NA or empty
+      if (is.na(col1_value) || trimws(col1_value) == "") {
+        next
+      }
+
+      # Check if this row starts with "Note" followed by a number
+      # Pattern: "Note 1:", "Note 2:", etc.
+      is_footnote <- grepl("^Note\\s+\\d+:", trimws(col1_value), ignore.case = TRUE)
+
+      if (is_footnote) {
+        footnote_row_index <- row_idx
+        break
+      }
+    }
+
+    if (is.na(footnote_row_index)) {
+      # No footnotes found - state list extends to end of dataframe
+      state_end_index <- nrow(data_df)
+    } else {
+      # Last state row is one before the first footnote
+      # (In the dataframe, openxlsx skips the blank row that's in Excel between states and footnotes)
+      state_end_index <- footnote_row_index - 1
+    }
+  }
 
   # Combine the row indices: the period row and the block of state rows
   rows_to_keep <- c(period_row_index, seq(from = state_start_index, to = state_end_index))
