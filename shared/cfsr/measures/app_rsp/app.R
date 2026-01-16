@@ -359,9 +359,8 @@ ui <- fluidPage(
         margin-right: auto;
       }
       .header {
-        margin-bottom: 32px;
-        padding-bottom: 16px;
-        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 24px;
+        padding-bottom: 0;
       }
       .header h1 {
         margin: 0 0 12px 0;

@@ -13,9 +13,8 @@ indicator_detail_ui <- function(id) {
     tags$head(
       tags$style(HTML("
         .indicator-header {
-          margin-bottom: 32px;
-          padding-bottom: 16px;
-          border-bottom: 2px solid #e5e7eb;
+          margin-bottom: 24px;
+          padding-bottom: 0;
         }
         .indicator-header .indicator-title {
           font-size: 16px;

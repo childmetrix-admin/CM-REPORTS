@@ -20,16 +20,15 @@ ui <- fluidPage(
       }
       .container-fluid {
         padding: 24px;
-        max-width: 1400px;
+        max-width: 1000px;
         margin-left: 0;
         margin-right: auto;
       }
 
       /* Header */
       .summary-header {
-        margin-bottom: 32px;
-        padding-bottom: 16px;
-        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 24px;
+        padding-bottom: 0;
       }
       .summary-title {
         font-size: 16px;
@@ -46,75 +45,51 @@ ui <- fluidPage(
         font-weight: 400;
       }
 
-      /* Card grid */
-      .card-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 20px;
-      }
-
-      /* Status card */
-      .status-card {
+      /* Summary table card */
+      .summary-card {
         background: white;
         padding: 20px 24px;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border-left: 4px solid #e5e7eb;
-        min-height: 200px;
-      }
-      .status-card.better {
-        border-left-color: #16a34a;
-      }
-      .status-card.worse {
-        border-left-color: #dc2626;
-      }
-      .status-card.nodiff {
-        border-left-color: #6b7280;
-      }
-      .status-card.dq {
-        border-left-color: #f59e0b;
+        margin-bottom: 20px;
       }
 
-      .status-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .status-icon {
-        font-size: 20px;
-        margin-right: 10px;
-        flex-shrink: 0;
-      }
-      .status-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1f2937;
-        margin: 0;
-      }
-      .status-count {
-        font-size: 16px;
-        font-weight: 700;
-        margin-left: 8px;
-        padding: 2px 10px;
-        border-radius: 12px;
+      /* Status pill badges */
+      .status-pill {
         display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
       }
-      .status-count.better {
+      .status-pill.better {
         color: #16a34a;
         background-color: #dcfce7;
       }
-      .status-count.worse {
+      .status-pill.worse {
         color: #dc2626;
         background-color: #fee2e2;
       }
-      .status-count.nodiff {
+      .status-pill.nodiff {
         color: #6b7280;
         background-color: #f3f4f6;
       }
-      .status-count.dq {
+      .status-pill.dq {
         color: #f59e0b;
         background-color: #fef3c7;
+      }
+
+      /* Rank pill badge */
+      .rank-pill {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        color: white;
+        background-color: #4472C4;
       }
 
       .indicator-table {
@@ -122,7 +97,7 @@ ui <- fluidPage(
       }
       .indicator-header {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-columns: 2fr 1fr 1fr 140px 80px;
         gap: 12px;
         padding: 8px 0;
         font-size: 13px;
@@ -138,7 +113,7 @@ ui <- fluidPage(
       }
       .indicator-row {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-columns: 2fr 1fr 1fr 140px 80px;
         gap: 12px;
         padding: 8px 0;
         font-size: 15px;
@@ -156,31 +131,18 @@ ui <- fluidPage(
 
       .indicator-value {
         font-weight: 600;
-        margin-left: 4px;
-      }
-      .indicator-value.better {
-        color: #16a34a;
-      }
-      .indicator-value.worse {
-        color: #dc2626;
-      }
-      .indicator-value.nodiff {
-        color: #6b7280;
-      }
-      .indicator-value.dq {
-        color: #f59e0b;
       }
 
       .national-standard {
-        color: #3b82f6;
         font-weight: 600;
       }
 
-      .empty-message {
-        font-size: 14px;
-        color: #9ca3af;
+      /* Table footnote */
+      .table-footnote {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #6b7280;
         font-style: italic;
-        margin-left: 8px;
       }
 
       /* Footer */
@@ -223,10 +185,7 @@ ui <- fluidPage(
   ),
 
   # Status sections
-  uiOutput("status_sections"),
-
-  # Footer
-  div(class = "footer-note", textOutput("footer_text"))
+  uiOutput("status_sections")
 )
 
 #####################################
@@ -287,10 +246,9 @@ server <- function(input, output, session) {
     data <- observed_data()
     if (!is.null(data) && nrow(data) > 0) {
       profile_ver <- unique(data$profile_version)[1]
-      state_name <- state_name_rv()
+
       tags$span(
-        "According to the ", tags$strong(profile_ver),
-        " CFSR Data Profile, ", state_name, "'s most recent performance was:"
+        "CFSR Round 4 Data Profile | ", profile_ver
       )
     } else {
       tags$span("Loading...")
@@ -348,175 +306,69 @@ server <- function(input, output, session) {
     list(value = value, unit = unit, national = national)
   }
 
-  # Status sections
+  # Status sections - consolidated table
   output$status_sections <- renderUI({
     req(latest_data())
-    data <- latest_data()
-
-    # Group by status (keep full data frames)
-    better_indicators <- data %>%
-      filter(status == "better") %>%
+    data <- latest_data() %>%
       arrange(indicator_sort)
 
-    worse_indicators <- data %>%
-      filter(status == "worse") %>%
-      arrange(indicator_sort)
+    # Helper function to create status pill
+    status_pill <- function(status_val) {
+      pill_text <- case_when(
+        status_val == "better" ~ "Better",
+        status_val == "worse" ~ "Worse",
+        status_val == "nodiff" ~ "No Difference",
+        TRUE ~ "Data Quality"
+      )
 
-    nodiff_indicators <- data %>%
-      filter(status == "nodiff") %>%
-      arrange(indicator_sort)
+      span(class = paste("status-pill", status_val), pill_text)
+    }
 
-    dq_indicators <- data %>%
-      filter(is.na(observed_performance) | status == "dq") %>%
-      arrange(indicator_sort)
+    # Helper function to format rank
+    format_rank <- function(ind_data) {
+      if (!is.null(ind_data$state_rank) && !is.null(ind_data$reporting_states) &&
+          !is.na(ind_data$state_rank) && !is.na(ind_data$reporting_states)) {
+        span(class = "rank-pill",
+          paste0(ind_data$state_rank, " of ", ind_data$reporting_states)
+        )
+      } else {
+        span("—")
+      }
+    }
 
-    # Build card grid
-    div(class = "card-grid",
-      # Better card
-      div(class = "status-card better",
-        div(class = "status-header",
-          span(class = "status-icon", "\u2713"),  # ✓ checkmark
-          h2(class = "status-title", "Better than national standard"),
-          span(class = paste("status-count better"), nrow(better_indicators))
+    # Build single consolidated table
+    div(class = "summary-card",
+      div(class = "indicator-table",
+        div(class = "indicator-header",
+          span("Indicator"),
+          span("State's Performance"),
+          span("National Performance"),
+          span("Compared to National*"),
+          span("Rank**")
         ),
-        if (nrow(better_indicators) > 0) {
-          div(class = "indicator-table",
-            div(class = "indicator-header",
-              span("Indicator"),
-              span("State's Performance"),
-              span("National Performance")
-            ),
-            tags$ul(class = "indicator-list",
-              lapply(1:nrow(better_indicators), function(i) {
-                ind <- better_indicators[i, ]
-                formatted <- format_indicator_value(ind)
-                tags$li(class = "indicator-row",
-                  span(class = "indicator-name", ind$indicator_short),
-                  span(class = "indicator-value better",
-                    paste0(formatted$value, formatted$unit)
-                  ),
-                  span(class = "national-standard",
-                    gsub("^\\s*\\(|\\)$", "", formatted$national)
-                  )
-                )
-              })
+        tags$ul(class = "indicator-list",
+          lapply(1:nrow(data), function(i) {
+            ind <- data[i, ]
+            formatted <- format_indicator_value(ind)
+            tags$li(class = "indicator-row",
+              span(class = "indicator-name", ind$indicator_short),
+              span(class = "indicator-value",
+                paste0(formatted$value, formatted$unit)
+              ),
+              span(class = "national-standard",
+                gsub("^\\s*\\(|\\)$", "", formatted$national)
+              ),
+              status_pill(ind$status),
+              format_rank(ind)
             )
-          )
-        } else {
-          div(class = "empty-message", "None")
-        }
+          })
+        )
       ),
-
-      # Worse card
-      div(class = "status-card worse",
-        div(class = "status-header",
-          span(class = "status-icon", "\u2717"),  # ✗ x mark
-          h2(class = "status-title", "Worse than national standard"),
-          span(class = paste("status-count worse"), nrow(worse_indicators))
-        ),
-        if (nrow(worse_indicators) > 0) {
-          div(class = "indicator-table",
-            div(class = "indicator-header",
-              span("Indicator"),
-              span("State's Performance"),
-              span("National Performance")
-            ),
-            tags$ul(class = "indicator-list",
-              lapply(1:nrow(worse_indicators), function(i) {
-                ind <- worse_indicators[i, ]
-                formatted <- format_indicator_value(ind)
-                tags$li(class = "indicator-row",
-                  span(class = "indicator-name", ind$indicator_short),
-                  span(class = "indicator-value worse",
-                    paste0(formatted$value, formatted$unit)
-                  ),
-                  span(class = "national-standard",
-                    gsub("^\\s*\\(|\\)$", "", formatted$national)
-                  )
-                )
-              })
-            )
-          )
-        } else {
-          div(class = "empty-message", "None")
-        }
-      ),
-
-      # No difference card
-      div(class = "status-card nodiff",
-        div(class = "status-header",
-          span(class = "status-icon", "\u2014"),  # — dash
-          h2(class = "status-title", "No statistical difference from national standard"),
-          span(class = paste("status-count nodiff"), nrow(nodiff_indicators))
-        ),
-        if (nrow(nodiff_indicators) > 0) {
-          div(class = "indicator-table",
-            div(class = "indicator-header",
-              span("Indicator"),
-              span("State's Performance"),
-              span("National Performance")
-            ),
-            tags$ul(class = "indicator-list",
-              lapply(1:nrow(nodiff_indicators), function(i) {
-                ind <- nodiff_indicators[i, ]
-                formatted <- format_indicator_value(ind)
-                tags$li(class = "indicator-row",
-                  span(class = "indicator-name", ind$indicator_short),
-                  span(class = "indicator-value nodiff",
-                    paste0(formatted$value, formatted$unit)
-                  ),
-                  span(class = "national-standard",
-                    gsub("^\\s*\\(|\\)$", "", formatted$national)
-                  )
-                )
-              })
-            )
-          )
-        } else {
-          div(class = "empty-message", "None")
-        }
-      ),
-
-      # Data quality card
-      div(class = "status-card dq",
-        div(class = "status-header",
-          span(class = "status-icon", "\u26A0"),  # ⚠ warning
-          h2(class = "status-title", "Unable to calculate (data quality issues)"),
-          span(class = paste("status-count dq"), nrow(dq_indicators))
-        ),
-        if (nrow(dq_indicators) > 0) {
-          div(class = "indicator-table",
-            div(class = "indicator-header",
-              span("Indicator"),
-              span("State's Performance"),
-              span("National Performance")
-            ),
-            tags$ul(class = "indicator-list",
-              lapply(1:nrow(dq_indicators), function(i) {
-                ind <- dq_indicators[i, ]
-                formatted <- format_indicator_value(ind)
-                tags$li(class = "indicator-row",
-                  span(class = "indicator-name", ind$indicator_short),
-                  span(class = "indicator-value dq",
-                    paste0(formatted$value, formatted$unit)
-                  ),
-                  span(class = "national-standard",
-                    gsub("^\\s*\\(|\\)$", "", formatted$national)
-                  )
-                )
-              })
-            )
-          )
-        } else {
-          div(class = "empty-message", "None")
-        }
+      div(class = "table-footnote",
+        div("* Based on the state's risk-standardized performance, which is its observed performance after risk-adjustment."),
+        div("** Based on the state's observed performance among states whose performance could be calculated.")
       )
     )
-  })
-
-  # Footer
-  output$footer_text <- renderText({
-    "Based on CFSR Round 4 Data Profile | Risk-Standardized Performance comparison"
   })
 }
 
