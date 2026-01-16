@@ -326,13 +326,52 @@ if (total_na_obs > 0) {
 # Save validation results for orchestrator
 assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 
+########################################
+# ADD RANK COLUMNS FROM NATIONAL DATA ----
+########################################
+
+# Load national data to add state_rank and reporting_states columns
+output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+national_file <- file.path(output_dir_prod,
+  paste0("cfsr_profile_national_", profile_period, ".rds"))
+
+if (file.exists(national_file)) {
+  message("\n--- Adding rank columns from national data ---")
+  national_data <- readRDS(national_file)
+
+  # Join national data to add state_rank and reporting_states
+  # Join on: indicator, period, state_abb
+  observed_data <- observed_data %>%
+    left_join(
+      national_data %>%
+        select(indicator, period, state_abb, state_rank, reporting_states),
+      by = c("indicator", "period", "state_abb")
+    )
+
+  # Report join results
+  n_matched <- sum(!is.na(observed_data$state_rank))
+  n_unmatched <- sum(is.na(observed_data$state_rank))
+  message("  \u2713 Added state_rank and reporting_states columns from national data")
+  message("    Matched: ", n_matched, " rows")
+  message("    Unmatched (rank=NA): ", n_unmatched, " rows")
+} else {
+  warning("National data file not found: ", national_file)
+  warning("Continuing without rank columns. Run profile_national.R first to add ranks.")
+  # Add placeholder columns so column structure is consistent
+  observed_data$state_rank <- NA_integer_
+  observed_data$reporting_states <- NA_integer_
+}
+
 # Reorder columns for consistency across all outputs (CSV and RDS)
 observed_data <- observed_data %>%
   select(
     # Key columns first
     state, state_abb, category, indicator, period, period_meaningful,
     denominator, numerator, observed_performance,
-    national_standard, status, data_used,
+    national_standard, status,
+    # Rank columns from national data (after status)
+    state_rank, reporting_states,
+    data_used,
     as_of_date, profile_version, source,
     # Dictionary metadata columns
     indicator_sort, indicator_short, indicator_very_short,
@@ -371,6 +410,7 @@ message("CSV saved to: ", folder_run)
 message("\n--- Saving RDS for Shiny App ---")
 
 # PROD: Period-specific file with state prefix (shared app location)
+# RDS is a snapshot of the CSV data (includes rank columns from earlier join)
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)

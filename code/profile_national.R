@@ -8,8 +8,6 @@
 # This file is identical for all states and shows data for all states
 
 # Create csv (for FYI) and .rds file of data (for national shiny app) 
-# (rds file cfsr_profile_national ...) doesn't have state prefix since it's 
-# identical for all states. rds is limited to most recent period, csv has all periods.
 
 #####################################
 # NOTES ----

@@ -165,6 +165,9 @@ process_standard_indicator <- function(sheet_name,
       numerator = as.numeric(numerator),
       performance = as.numeric(performance),
       indicator = indicator_name,
+      # Fix period format: replace comma with underscore (e.g., "20AB,FY20" => "20AB_FY20")
+      # This ensures period matches the format used in observed/RSP data for proper joins
+      period = gsub(",", "_", period),
       as_of_date = as_of_date,
       source = ver$source,
       period_meaningful = make_period_meaningful(period),
@@ -265,6 +268,9 @@ process_entry_rate_indicator <- function(ver = NULL, as_of_date = NULL) {
       state = ifelse(state == "District of Columbia", "D.C.", state),
       census_year = as.numeric(year),
       indicator = indicator_name,
+      # Fix period format: replace comma with underscore (e.g., "20AB,FY20" => "20AB_FY20")
+      # This ensures period matches the format used in observed/RSP data for proper joins
+      period = gsub(",", "_", period),
       as_of_date = as_of_date,
       source = ver$source,
       period_meaningful = make_period_meaningful(period),
