@@ -9,19 +9,91 @@ indicator_detail_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
+    # Add CSS for header styling
+    tags$head(
+      tags$style(HTML("
+        .indicator-header {
+          margin-bottom: 32px;
+          padding-bottom: 16px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        .indicator-header .indicator-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #4472C4;
+          margin: 0 0 12px 0;
+          letter-spacing: -0.5px;
+        }
+        .indicator-header .indicator-subtitle {
+          font-size: 16px;
+          color: #6b7280;
+          margin: 0 0 8px 0;
+          line-height: 1.6;
+          font-weight: 400;
+        }
+        .indicator-header .indicator-subtitle:last-child {
+          margin-bottom: 0;
+        }
+      "))
+    ),
+
     fluidRow(
       column(12,
-        # Chart title and metadata
-        div(class = "chart-title", textOutput(ns("title"))),
-        div(class = "chart-period", textOutput(ns("period"))),
-        div(class = "chart-description", textOutput(ns("description"))),
-        div(class = "chart-target", uiOutput(ns("target"))),
+        # Header
+        div(class = "indicator-header",
+          div(class = "indicator-title", textOutput(ns("title"))),
+          htmlOutput(ns("description")),
+          htmlOutput(ns("metadata")),
+          div(style = "margin-top: 12px;", uiOutput(ns("target")))
+        ),
 
-        # National comparison bar chart
-        plotlyOutput(ns("chart"), height = "auto"),
+        # Tabbed content
+        tabsetPanel(
+          id = ns("breakdown_tabs"),
+          type = "tabs",
 
-        # Footnote
-        div(class = "chart-footnote", textOutput(ns("source")))
+          # By State tab
+          tabPanel(
+            "By State",
+            value = "state",
+            div(style = "margin-top: 20px;",
+              plotlyOutput(ns("chart"), height = "auto")
+            )
+          ),
+
+          # By County tab (placeholder)
+          tabPanel(
+            "By County",
+            value = "county",
+            div(style = "margin-top: 20px; padding: 40px; text-align: center; color: #6b7280;",
+              p(style = "font-size: 18px; margin-bottom: 10px;", "County-level data coming soon"),
+              p(style = "font-size: 14px;", "This will show performance broken down by county within the state.")
+            )
+          ),
+
+          # By Age tab (placeholder)
+          tabPanel(
+            "By Age",
+            value = "age",
+            div(style = "margin-top: 20px; padding: 40px; text-align: center; color: #6b7280;",
+              p(style = "font-size: 18px; margin-bottom: 10px;", "Age breakdown coming soon"),
+              p(style = "font-size: 14px;", "This will show performance broken down by age groups.")
+            )
+          ),
+
+          # By Race & Ethnicity tab (placeholder)
+          tabPanel(
+            "By Race & Ethnicity",
+            value = "race",
+            div(style = "margin-top: 20px; padding: 40px; text-align: center; color: #6b7280;",
+              p(style = "font-size: 18px; margin-bottom: 10px;", "Race & ethnicity breakdown coming soon"),
+              p(style = "font-size: 14px;", "This will show performance broken down by race and ethnicity.")
+            )
+          )
+        ),
+
+        # Footnote (appears below all tabs)
+        div(class = "chart-footnote", style = "margin-top: 20px;", textOutput(ns("source")))
       )
     )
   )
@@ -83,30 +155,38 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       return(ind_df)
     })
 
-    # Title
+    # Title (indicator name — state name)
     output$title <- renderText({
       if (!is.null(ind_data())) {
-        ind_data()$indicator[1]
+        selected_state_code <- get_state()
+        state_name <- state_codes[selected_state_code]
+        paste(ind_data()$indicator[1], "—", state_name)
       } else {
         indicator_name
       }
     })
 
-    # Period
-    output$period <- renderText({
+    # Description
+    output$description <- renderUI({
       if (!is.null(ind_data())) {
-        paste("Period:", ind_data()$period_meaningful[1])
+        HTML(paste0('<div class="indicator-subtitle" style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif !important; font-size: 14px !important; color: #333 !important; font-weight: 400 !important; line-height: 1.6 !important; margin: 0 0 8px 0 !important;">',
+                    ind_data()$description[1],
+                    '</div>'))
       } else {
-        ""
+        HTML("")
       }
     })
 
-    # Description
-    output$description <- renderText({
+    # Metadata (CFSR Round 4 Data Profile | profile_version | period)
+    output$metadata <- renderUI({
       if (!is.null(ind_data())) {
-        ind_data()$description[1]
+        profile_ver <- ind_data()$profile_version[1]
+        period <- ind_data()$period_meaningful[1]
+        HTML(paste0('<div class="indicator-subtitle" style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif !important; font-size: 14px !important; color: #333 !important; font-weight: 400 !important; line-height: 1.6 !important; margin: 0 !important;">',
+                    "CFSR Round 4 Data Profile | ", profile_ver, " | ", period,
+                    '</div>'))
       } else {
-        ""
+        HTML("")
       }
     })
 
