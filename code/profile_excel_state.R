@@ -177,7 +177,6 @@ if (!file.exists(dict_path)) {
 }
 
 dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-message("Loaded dictionary with ", nrow(dict), " indicators")
 
 # Join ALL dictionary metadata
 ind_data <- ind_data %>%
@@ -204,8 +203,6 @@ ind_data <- ind_data %>%
     ),
     by = "indicator"
   )
-
-message("Joined dictionary metadata")
 
 # Check for missing joins
 missing_joins <- ind_data %>%
@@ -252,7 +249,6 @@ run_date <- Sys.Date()
 folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "state")
 if (!dir.exists(folder_run)) {
   dir.create(folder_run, recursive = TRUE)
-  message("Created run folder: ", folder_run)
 }
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
@@ -260,16 +256,9 @@ assign("run_date", run_date, envir = .GlobalEnv)
 # Save using save_to_folder_run pattern
 save_to_folder_run(ind_data, "csv")
 
-message("\n=== State CSV processing complete ===")
-message("Processed ", nrow(ind_data), " rows")
-message("Profile version: ", metadata$profile_version)
-message("CSV saved to: ", folder_run)
-
 ########################################
 # SAVE RDS FOR SHINY APP ----
 ########################################
-
-message("\n--- Saving RDS for Shiny App ---")
 
 # PROD: Period-specific file with state prefix (shared app location)
 # RDS is a snapshot of the CSV data (includes rank columns from earlier join)
@@ -281,18 +270,3 @@ if (!dir.exists(output_dir_prod)) {
 output_file_prod_period <- file.path(output_dir_prod,
                                      paste0(toupper(state_code), "_cfsr_profile_state_", profile_period, ".rds"))
 saveRDS(ind_data, output_file_prod_period)
-message("Saved to PROD: ", output_file_prod_period)
-
-########################################
-# SUMMARY ----
-########################################
-
-message("\n=== State Processing Complete ===")
-message("State: ", state_code)
-message("Profile period: ", profile_period)
-message("Total rows (CSV and RDS): ", nrow(ind_data))
-message("Unique indicators: ", length(unique(ind_data$indicator)))
-message("Profile version: ", metadata$profile_version)
-message("\nData ready for Shiny app!")
-message("  - Switch profiles via URL parameter: ?state=", tolower(state_code),
-        "&profile=", profile_period)

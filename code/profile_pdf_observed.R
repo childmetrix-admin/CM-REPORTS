@@ -184,8 +184,6 @@ rsp_rds_path <- file.path(output_dir_prod,
 # Load RSP data
 if (file.exists(rsp_rds_path)) {
   rsp_data <- readRDS(rsp_rds_path)
-  message("Loading RSP data from: ", rsp_rds_path)
-  message("RSP data has ", nrow(rsp_data), " rows")
 
   # Join on indicator and period to get status and data_used
   observed_data <- observed_data %>%
@@ -193,24 +191,6 @@ if (file.exists(rsp_rds_path)) {
       rsp_data %>% select(indicator, period, status, data_used),
       by = c("indicator", "period")
     )
-
-  # Report join results
-  n_matched <- sum(!is.na(observed_data$status))
-  n_unmatched <- sum(is.na(observed_data$status))
-  message("  ✓ Joined status and data_used from RSP RDS")
-  message("    Matched: ", n_matched, " rows")
-  message("    Unmatched (status=NA): ", n_unmatched, " rows")
-
-  # Show which indicator-period combinations have no RSP match
-  # (Expected for some periods, e.g., FY periods in Maltreatment indicators)
-  if (n_unmatched > 0) {
-    unmatched_summary <- observed_data %>%
-      filter(is.na(status)) %>%
-      distinct(indicator, period) %>%
-      arrange(indicator, period)
-    message("    Unmatched indicator-period combinations:")
-    print(unmatched_summary)
-  }
 } else {
   # Graceful fallback if RSP RDS not found
   observed_data$status <- NA_character_
@@ -251,7 +231,6 @@ if (!file.exists(dict_path)) {
 }
 
 dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-message("Loaded dictionary with ", nrow(dict), " indicators")
 
 # Join ALL dictionary metadata
 observed_data <- observed_data %>%
@@ -278,8 +257,6 @@ observed_data <- observed_data %>%
     ),
     by = "indicator"
   )
-
-message("Joined dictionary metadata")
 
 # Check for missing joins
 missing_joins <- observed_data %>%
@@ -336,7 +313,6 @@ national_file <- file.path(output_dir_prod,
   paste0("cfsr_profile_national_", profile_period, ".rds"))
 
 if (file.exists(national_file)) {
-  message("\n--- Adding rank columns from national data ---")
   national_data <- readRDS(national_file)
 
   # Join national data to add state_rank and reporting_states
@@ -348,12 +324,6 @@ if (file.exists(national_file)) {
       by = c("indicator", "period", "state_abb")
     )
 
-  # Report join results
-  n_matched <- sum(!is.na(observed_data$state_rank))
-  n_unmatched <- sum(is.na(observed_data$state_rank))
-  message("  \u2713 Added state_rank and reporting_states columns from national data")
-  message("    Matched: ", n_matched, " rows")
-  message("    Unmatched (rank=NA): ", n_unmatched, " rows")
 } else {
   warning("National data file not found: ", national_file)
   warning("Continuing without rank columns. Run profile_excel_national.R first to add ranks.")
@@ -390,7 +360,6 @@ run_date <- Sys.Date()
 folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "observed")
 if (!dir.exists(folder_run)) {
   dir.create(folder_run, recursive = TRUE)
-  message("Created run folder: ", folder_run)
 }
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
@@ -398,16 +367,9 @@ assign("run_date", run_date, envir = .GlobalEnv)
 # Save using save_to_folder_run pattern
 save_to_folder_run(observed_data, "csv")
 
-message("\n=== Observed CSV processing complete ===")
-message("Processed ", nrow(observed_data), " rows for ", pdf_metadata$state)
-message("Profile version: ", pdf_metadata$profile_version)
-message("CSV saved to: ", folder_run)
-
 ########################################
 # SAVE RDS FOR SHINY APP ----
 ########################################
-
-message("\n--- Saving RDS for Shiny App ---")
 
 # PROD: Period-specific file with state prefix (shared app location)
 # RDS is a snapshot of the CSV data (includes rank columns from earlier join)
@@ -419,18 +381,3 @@ if (!dir.exists(output_dir_prod)) {
 output_file_prod_period <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_observed_", profile_period, ".rds"))
 saveRDS(observed_data, output_file_prod_period)
-message("Saved to PROD: ", output_file_prod_period)
-
-########################################
-# SUMMARY ----
-########################################
-
-message("\n=== Observed Processing Complete ===")
-message("State: ", state_code)
-message("Profile period: ", profile_period)
-message("Total rows: ", nrow(observed_data))
-message("Unique indicators: ", length(unique(observed_data$indicator)))
-message("Profile version: ", pdf_metadata$profile_version)
-message("\nData ready for Shiny app!")
-message("  - Switch profiles via URL parameter: ?state=", tolower(state_code),
-        "&profile=", profile_period)

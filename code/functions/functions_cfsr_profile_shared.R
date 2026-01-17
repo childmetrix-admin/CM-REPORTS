@@ -297,8 +297,6 @@ find_cfsr_file <- function(keyword = NULL,
     master_file <- master_file[1]
   }
 
-  message("Reading file: ", basename(master_file))
-
   # Read file
   if (tolower(file_type) == "excel") {
     data_df <- openxlsx::read.xlsx(

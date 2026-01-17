@@ -187,7 +187,6 @@ if (!file.exists(dict_path)) {
 }
 
 dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-message("Loaded dictionary with ", nrow(dict), " indicators")
 
 # Join ALL dictionary metadata
 rsp_data <- rsp_data %>%
@@ -214,8 +213,6 @@ rsp_data <- rsp_data %>%
     ),
     by = "indicator"
   )
-
-message("Joined dictionary metadata")
 
 # Check for missing joins
 missing_joins <- rsp_data %>%
@@ -245,10 +242,6 @@ rsp_data <- rsp_data %>%
       format_type = format
     )
   )
-
-# Verify status distribution
-status_counts <- table(rsp_data[['status']], useNA = "ifany")
-message("Status distribution: ", paste(names(status_counts), "=", status_counts, collapse = ", "))
 
 ########################################
 # VALIDATION ----
@@ -309,7 +302,6 @@ run_date <- Sys.Date()
 folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "rsp")
 if (!dir.exists(folder_run)) {
   dir.create(folder_run, recursive = TRUE)
-  message("Created run folder: ", folder_run)
 }
 assign("folder_run", folder_run, envir = .GlobalEnv)
 assign("run_date", run_date, envir = .GlobalEnv)
@@ -317,16 +309,9 @@ assign("run_date", run_date, envir = .GlobalEnv)
 # Save using save_to_folder_run pattern
 save_to_folder_run(rsp_data, "csv")
 
-message("\n=== RSP CSV processing complete ===")
-message("Processed ", nrow(rsp_data), " rows for ", pdf_metadata$state)
-message("Profile version: ", pdf_metadata$profile_version)
-message("CSV saved to: ", folder_run)
-
 ########################################
 # SAVE RDS FOR SHINY APP ----
 ########################################
-
-message("\n--- Saving RDS for Shiny App ---")
 
 # PROD: Period-specific file with state prefix (shared app location)
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
@@ -337,18 +322,3 @@ if (!dir.exists(output_dir_prod)) {
 output_file_prod_period <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
 saveRDS(rsp_data, output_file_prod_period)
-message("Saved to PROD: ", output_file_prod_period)
-
-########################################
-# SUMMARY ----
-########################################
-
-message("\n=== RSP Processing Complete ===")
-message("State: ", state_code)
-message("Profile period: ", profile_period)
-message("Total rows: ", nrow(rsp_data))
-message("Unique indicators: ", length(unique(rsp_data$indicator)))
-message("Profile version: ", pdf_metadata$profile_version)
-message("\nData ready for Shiny app!")
-message("  - Switch profiles via URL parameter: ?state=", tolower(state_code),
-        "&profile=", profile_period)
