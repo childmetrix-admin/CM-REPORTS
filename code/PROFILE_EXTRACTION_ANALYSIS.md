@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document analyzes the similarities and differences between `profile_rsp.R` (page 2 extraction) and `profile_observed.R` (page 4 extraction), and recommends code organization strategies.
+This document analyzes the similarities and differences between `profile_pdf_rsp.R` (page 2 extraction) and `profile_pdf_observed.R` (page 4 extraction), and recommends code organization strategies.
 
 ## Comparison: Page 2 (RSP) vs Page 4 (Observed)
 
@@ -49,17 +49,17 @@ These functions are identical or nearly identical between scripts and should be 
 1. **`extract_tableau_table()`** ✅
    - Core table extraction function
    - Used by both RSP and Observed
-   - Currently duplicated in profile_rsp.R (lines 101-113)
+   - Currently duplicated in profile_pdf_rsp.R (lines 101-113)
 
 2. **`extract_headers()`** ✅
    - Header extraction from coordinate ranges
    - Used by both RSP and Observed
-   - Currently in profile_rsp.R (lines 342-362)
+   - Currently in profile_pdf_rsp.R (lines 342-362)
 
 3. **`generate_bottom_cols()`** ✅
    - Generates column names for bottom table based on top table periods
    - Used by both RSP and Observed
-   - Currently in profile_rsp.R (lines 399-406)
+   - Currently in profile_pdf_rsp.R (lines 399-406)
 
 4. **Basic text cleaning** (partial)
    - `str_replace_all(text, "[^[:graph:]]", "")` - used by both
@@ -67,7 +67,7 @@ These functions are identical or nearly identical between scripts and should be 
 
 ### Functions That Are SCRIPT-SPECIFIC
 
-#### RSP-Specific (`profile_rsp.R`)
+#### RSP-Specific (`profile_pdf_rsp.R`)
 
 1. **`process_table()`** - Filters for RSP/RSP interval/Data used rows
 2. **`fix_shadow_text()`** - Cleans OCR artifacts specific to page 2
@@ -79,13 +79,13 @@ These functions are identical or nearly identical between scripts and should be 
 8. **`reshape_rsp_wide_to_long()`** - Reshapes with RSP columns
 9. **`fix_maltreatment_data_used()`** - Repairs maltreatment "Data used" values
 
-#### Observed-Specific (`profile_observed.R`)
+#### Observed-Specific (`profile_pdf_observed.R`)
 
 1. **`process_table_observed()`** - Filters for Denominator/Numerator/Observed performance rows
 2. **`reshape_observed_wide_to_long()`** - Reshapes with observed performance columns
 3. **Simpler numeric extraction** - No interval parsing needed
 
-### Functions Already in `functions_cfsr_profile_rsp.R` That Are SHARED
+### Functions Already in `functions_cfsr_profile_pdf_rsp.R` That Are SHARED
 
 These are currently in the RSP functions file but are actually shared:
 
@@ -115,11 +115,11 @@ Could be consolidated into a single function with better logic, or kept separate
 code/
 ├── functions/
 │   ├── functions_cfsr_profile_shared.R  (NEW - shared extraction functions)
-│   ├── functions_cfsr_profile_rsp.R     (RSP-specific functions only)
-│   └── functions_cfsr_profile_observed.R (NEW - Observed-specific functions)
-├── profile_rsp.R
-├── profile_observed.R
-└── profile_national.R
+│   ├── functions_cfsr_profile_pdf_rsp.R     (RSP-specific functions only)
+│   └── functions_cfsr_profile_pdf_observed.R (NEW - Observed-specific functions)
+├── profile_pdf_rsp.R
+├── profile_pdf_observed.R
+└── profile_excel_national.R
 ```
 
 **`functions_cfsr_profile_shared.R` would contain:**
@@ -129,14 +129,14 @@ code/
 - Table extraction: `extract_tableau_table()`, `extract_headers()`, `generate_bottom_cols()`
 - State ranking: `rank_states_by_performance()`
 
-**`functions_cfsr_profile_rsp.R` would contain:**
+**`functions_cfsr_profile_pdf_rsp.R` would contain:**
 - `process_table()` (RSP version)
 - `fix_shadow_text()`, `repair_maltreatment_row()`, `fix_rsp_interval_bleed()`
 - `fix_recurrence_shift()`, `convert_percentages()`, `expand_rsp_intervals()`
 - `reshape_rsp_wide_to_long()`
 - `make_period_meaningful_rsp()`
 
-**`functions_cfsr_profile_observed.R` (NEW) would contain:**
+**`functions_cfsr_profile_pdf_observed.R` (NEW) would contain:**
 - `process_table_observed()` (Observed version)
 - `reshape_observed_wide_to_long()`
 - `make_period_meaningful_observed()`
@@ -153,10 +153,10 @@ code/
 ```
 code/
 ├── functions/
-│   ├── functions_cfsr_profile_rsp.R     (keep as-is, includes shared functions)
+│   ├── functions_cfsr_profile_pdf_rsp.R     (keep as-is, includes shared functions)
 │   └── functions_cfsr_profile_nat.R
-├── profile_rsp.R                        (includes extraction helpers inline)
-└── profile_observed.R                   (includes extraction helpers inline)
+├── profile_pdf_rsp.R                        (includes extraction helpers inline)
+└── profile_pdf_observed.R                   (includes extraction helpers inline)
 ```
 
 **Benefits:**
@@ -199,7 +199,7 @@ Page 4 has tighter vertical spacing. User noted:
 
 ### Phase 1: Test Extraction
 
-1. Run `profile_observed.R` with a sample Maryland PDF
+1. Run `profile_pdf_observed.R` with a sample Maryland PDF
 2. Inspect `df_top_raw` and `df_zone_a/b` for correct cell alignment
 3. Adjust x_cuts and y coordinates as needed
 4. Verify all 7 indicators extract correctly
@@ -214,16 +214,16 @@ Page 4 has tighter vertical spacing. User noted:
 ### Phase 3: Refactor (if Option A chosen)
 
 1. Create `functions_cfsr_profile_shared.R`
-2. Move shared functions from `functions_cfsr_profile_rsp.R` and `profile_rsp.R`
-3. Create `functions_cfsr_profile_observed.R` with observed-specific functions
-4. Update `profile_rsp.R` to source shared functions file
-5. Update `profile_observed.R` to source shared + observed functions files
+2. Move shared functions from `functions_cfsr_profile_pdf_rsp.R` and `profile_pdf_rsp.R`
+3. Create `functions_cfsr_profile_pdf_observed.R` with observed-specific functions
+4. Update `profile_pdf_rsp.R` to source shared functions file
+5. Update `profile_pdf_observed.R` to source shared + observed functions files
 6. Re-test both scripts to ensure no regressions
 
 ## Next Steps
 
 1. **User approval on code organization** (Option A or B)
-2. **Test profile_observed.R** with real PDF
+2. **Test profile_pdf_observed.R** with real PDF
 3. **Refactor if Option A chosen**
 4. **Document any coordinate adjustments needed**
 5. **Integrate into run_profile.R orchestrator**

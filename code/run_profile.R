@@ -230,10 +230,10 @@ process_combination <- function(state, period, source, verbose) {
 process_source <- function(source, state, period, verbose) {
 
   script_path <- switch(source,
-    national = file.path(CFSR_CODE_DIR, "profile_national.R"),
-    rsp = file.path(CFSR_CODE_DIR, "profile_rsp.R"),
-    observed = file.path(CFSR_CODE_DIR, "profile_observed.R"),
-    state = file.path(CFSR_CODE_DIR, "profile_state.R"),
+    national = file.path(CFSR_CODE_DIR, "profile_excel_national.R"),
+    rsp = file.path(CFSR_CODE_DIR, "profile_pdf_rsp.R"),
+    observed = file.path(CFSR_CODE_DIR, "profile_pdf_observed.R"),
+    state = file.path(CFSR_CODE_DIR, "profile_excel_state.R"),
     stop("Unknown source: ", source)
   )
 

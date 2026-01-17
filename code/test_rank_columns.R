@@ -43,7 +43,7 @@ if (file.exists(test_file)) {
     }
   } else {
     cat("\n\u2717 FAILED: Rank columns are missing!\n")
-    cat("This file needs to be regenerated after updating profile_observed.R\n")
+    cat("This file needs to be regenerated after updating profile_pdf_observed.R\n")
   }
 
   # Show all column names

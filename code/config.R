@@ -222,8 +222,8 @@ setup_profile_env <- function(state, period) {
 
 #' Initialize common global variables for CFSR extraction scripts
 #'
-#' Centralizes common setup logic shared across profile_rsp.R, profile_observed.R,
-#' and profile_national.R. This function handles:
+#' Centralizes common setup logic shared across profile_pdf_rsp.R, profile_pdf_observed.R,
+#' and profile_excel_national.R. This function handles:
 #' - Library loading (utilities-core, shared CFSR functions)
 #' - Folder setup (via setup_cfsr_folders)
 #' - Global variable assignment (folder_date, commitment, my_setup)

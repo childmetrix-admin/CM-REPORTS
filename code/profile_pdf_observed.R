@@ -216,12 +216,12 @@ if (file.exists(rsp_rds_path)) {
   observed_data$status <- NA_character_
   observed_data$data_used <- NA_character_
   warning("RSP RDS file not found: ", rsp_rds_path)
-  warning("Status and data_used set to NA. Run profile_rsp.R first.")
+  warning("Status and data_used set to NA. Run profile_pdf_rsp.R first.")
 }
 
 # Get as_of_date from national file if available, otherwise use profile period
 as_of_date <- tryCatch({
-  # Try to extract from national file (requires profile_national.R to have run)
+  # Try to extract from national file (requires profile_excel_national.R to have run)
   metadata <- cfsr_profile_extract_asof_date(
     find_cfsr_file("National", file_type = "excel", sheet_name = 1)
   )
@@ -356,7 +356,7 @@ if (file.exists(national_file)) {
   message("    Unmatched (rank=NA): ", n_unmatched, " rows")
 } else {
   warning("National data file not found: ", national_file)
-  warning("Continuing without rank columns. Run profile_national.R first to add ranks.")
+  warning("Continuing without rank columns. Run profile_excel_national.R first to add ranks.")
   # Add placeholder columns so column structure is consistent
   observed_data$state_rank <- NA_integer_
   observed_data$reporting_states <- NA_integer_

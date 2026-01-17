@@ -6,9 +6,9 @@
 
 # Shared functions used across CFSR profile processing:
 # - config.R (orchestration and setup)
-# - profile_rsp.R (Risk-Standardized Performance extraction)
-# - profile_observed.R (Observed Performance extraction)
-# - profile_national.R (National Comparison Data extraction)
+# - profile_pdf_rsp.R (Risk-Standardized Performance extraction)
+# - profile_pdf_observed.R (Observed Performance extraction)
+# - profile_excel_national.R (National Comparison Data extraction)
 #
 # Organization:
 # 1. CONFIG-ONLY FUNCTIONS - Called only by config.R
@@ -153,7 +153,7 @@ convert_state_name_to_code <- function(state_name) {
 ########################################
 
 # Coordinate-based text extraction using pdftools
-# Used by profile_rsp.R and profile_observed.R
+# Used by profile_pdf_rsp.R and profile_pdf_observed.R
 
 #' Extract tableau-style table from PDF coordinate data
 #'
