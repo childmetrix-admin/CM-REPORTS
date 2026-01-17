@@ -1,22 +1,19 @@
 #####################################
 #####################################
-# CFSR Profile - National Supplemental Context Data (excel) ----
+# CFSR Profile - State Supplemental Context Data (excel) ----
 #####################################
 #####################################
 
-# Extract and process national-level CFSR data from excel file 
-# This file is identical for all states and shows data for all states
-
-# Create csv (for FYI) and .rds file of data (for national shiny app) 
+# Extract and process state-level CFSR data from excel file 
+# Create csv (for FYI) and .rds file of data (for shiny app) 
 
 #####################################
 # NOTES ----
 #####################################
 
-# This script processes the National Supplemental Context Data file provided
-# to states every 6 months (February & August). It shows state-by-state
-# performance and trends on the CFSR statewide data indicators and entry rates.
-# Also shows national performance by age, race/ethnicity.
+# This script processes the [State] Supplemental Context Data file provided
+# to states every 6 months (February & August). It shows the state's observed 
+# performance by period, age, race, and locality. 
 
 # IMPORTANT: This script expects state_code and profile_period to be set
 # by the orchestrator (run_profile.R) or manually before sourcing.
@@ -35,14 +32,17 @@
 source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_excel.R")
 
 # Set source-specific configuration
-commitment_description <- "national"
+commitment_description <- "state"
 
 ########################################
 # EXTRACT SHARED METADATA (ONCE) ----
 ########################################
 
 # Extract metadata common to all indicators (profile version and as_of_date)
-metadata <- extract_shared_metadata()
+metadata <- extract_shared_metadata(
+  state_code = state_code,
+  jurisdiction_header = "Locality"
+)
 
 ########################################
 # PROCESS INDICATORS ----
@@ -56,7 +56,9 @@ ind_entrate_df <- process_entry_rate_indicator(
        month = metadata$profile_month,
        year = metadata$profile_year,
        source = metadata$source),
-  metadata$as_of_date
+  metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Re-Entry
@@ -68,7 +70,9 @@ ind_reentry_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Perm in 12 (entries)
@@ -80,7 +84,9 @@ ind_perm12_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Perm in 12 (12-23)
@@ -92,7 +98,9 @@ ind_perm1223_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Perm in 12 (24+ mos)
@@ -104,7 +112,9 @@ ind_perm24_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Placement Stability
@@ -116,7 +126,9 @@ ind_ps_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Maltreatment in Care
@@ -128,7 +140,9 @@ ind_maltreatment_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Recurrence of Maltreatment
@@ -140,7 +154,9 @@ ind_recurrence_df <- process_standard_indicator(
              month = metadata$profile_month,
              year = metadata$profile_year,
              source = metadata$source),
-  as_of_date = metadata$as_of_date
+  as_of_date = metadata$as_of_date,
+  jurisdiction_header = "Locality",
+  state_code = state_code
 )
 
 # Append ind_data together and save
@@ -201,30 +217,15 @@ if (nrow(missing_joins) > 0) {
   print(missing_joins[["indicator"]])
 }
 
-# Reorder columns for consistency across all outputs
-# Add state_abb column (initialize as NA for all rows)
-ind_data <- ind_data %>%
-  mutate(state_abb = NA_character_)
-
-# Only convert for non-"National" rows to avoid warnings
-non_national_mask <- ind_data$state != "National"
-if (any(non_national_mask)) {
-  ind_data$state_abb[non_national_mask] <- convert_state_name_to_code(ind_data$state[non_national_mask])
-}
-
-# Standardize demographic dimension values for consistency across profile versions
-# 1. Fix dimension name typo
-ind_data <- ind_data %>%
-  mutate(dimension = case_when(
-    dimension == "Age entry" ~ "Age at entry",
-    TRUE ~ dimension
-  ))
-
-# 2. Standardize race/ethnicity values (remove "-Non Hispanic" suffix from old format)
+# Standardize dimension values (race/ethnicity recoding)
 ind_data <- standardize_dimension_values(ind_data)
 
-# Reorder columns
+# Reorder columns for consistency across all outputs
 ind_data <- ind_data %>%
+  mutate(
+    # Add state abbreviation column using reverse mapping
+    state_abb = convert_state_name_to_code(state)
+  ) %>%
   select(
     # Key columns first
     state, state_abb, category, indicator, dimension, dimension_value,
@@ -246,9 +247,9 @@ ind_data <- ind_data %>%
 # SAVE CSV ----
 ########################################
 
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/national/
+# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/state/
 run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "national")
+folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "state")
 if (!dir.exists(folder_run)) {
   dir.create(folder_run, recursive = TRUE)
   message("Created run folder: ", folder_run)
@@ -259,7 +260,7 @@ assign("run_date", run_date, envir = .GlobalEnv)
 # Save using save_to_folder_run pattern
 save_to_folder_run(ind_data, "csv")
 
-message("\n=== National CSV processing complete ===")
+message("\n=== State CSV processing complete ===")
 message("Processed ", nrow(ind_data), " rows")
 message("Profile version: ", metadata$profile_version)
 message("CSV saved to: ", folder_run)
@@ -270,17 +271,15 @@ message("CSV saved to: ", folder_run)
 
 message("\n--- Saving RDS for Shiny App ---")
 
-# PROD: Period-specific file WITHOUT state prefix (shared app location)
-# National data is identical across states, so no state prefix needed
-# RDS contains same data as CSV (all periods, not filtered)
-# Apps can filter to most recent period as needed
+# PROD: Period-specific file with state prefix (shared app location)
+# RDS is a snapshot of the CSV data (includes rank columns from earlier join)
 output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }
 
 output_file_prod_period <- file.path(output_dir_prod,
-  paste0("cfsr_profile_national_", profile_period, ".rds"))
+                                     paste0(toupper(state_code), "_cfsr_profile_state_", profile_period, ".rds"))
 saveRDS(ind_data, output_file_prod_period)
 message("Saved to PROD: ", output_file_prod_period)
 
@@ -288,7 +287,7 @@ message("Saved to PROD: ", output_file_prod_period)
 # SUMMARY ----
 ########################################
 
-message("\n=== National Processing Complete ===")
+message("\n=== State Processing Complete ===")
 message("State: ", state_code)
 message("Profile period: ", profile_period)
 message("Total rows (CSV and RDS): ", nrow(ind_data))

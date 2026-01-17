@@ -246,11 +246,12 @@ extract_headers <- function(data, y_min, y_max, x_cuts, has_national_perf = TRUE
 #' @param col_types Column types for CSV reading
 #' @param skip Number of rows to skip
 #' @return Data frame with file contents
-find_cfsr_file <- function(keyword,
+find_cfsr_file <- function(keyword = NULL,
                             file_type = "excel",
                             sheet_name = NULL,
                             col_types = NULL,
-                            skip = 0) {
+                            skip = 0,
+                            state_code = NULL) {
 
   # Check that CFSR folders are set up
   if (!exists("folder_uploads", envir = .GlobalEnv)) {
@@ -262,6 +263,13 @@ find_cfsr_file <- function(keyword,
 
   if (!dir.exists(folder_uploads)) {
     stop("Uploads folder does not exist: ", folder_uploads)
+  }
+
+  # Build keyword dynamically if state_code provided
+  if (is.null(keyword) && !is.null(state_code)) {
+    keyword <- convert_state_code_to_name(toupper(state_code))
+  } else if (is.null(keyword)) {
+    keyword <- "National"  # Default to National if neither keyword nor state_code provided
   }
 
   # Build file pattern
@@ -429,14 +437,23 @@ get_indicator_name <- function(sheet_name, fallback_name = NULL) {
 #' @examples
 #' # Example file name: "National - Supplemental Context Data - February 2025.xlsx"
 #' cfsr_profile_version()
-cfsr_profile_version <- function(file_path = NULL, data_df = NULL) {
+cfsr_profile_version <- function(file_path = NULL, data_df = NULL, state_code = NULL) {
   if (!is.null(file_path)) {
     f <- file_path
   } else {
     if (!exists("folder_raw")) stop("folder_raw is not defined.")
     if (!dir.exists(folder_raw)) stop("folder_raw does not exist: ", folder_raw)
-    files <- list.files(folder_raw, pattern = "National.*\\.xlsx$", full.names = TRUE)
-    if (length(files) == 0) stop("No 'National*.xlsx' file found in: ", folder_raw)
+
+    # Build pattern based on state_code
+    if (!is.null(state_code)) {
+      state_name <- convert_state_code_to_name(toupper(state_code))
+      pattern <- paste0(state_name, ".*\\.xlsx$")
+    } else {
+      pattern <- "National.*\\.xlsx$"
+    }
+
+    files <- list.files(folder_raw, pattern = pattern, full.names = TRUE)
+    if (length(files) == 0) stop("No file matching pattern '", pattern, "' found in: ", folder_raw)
     f <- files[1]
   }
 
@@ -634,6 +651,11 @@ make_period_meaningful <- function(period) {
     return(NA_character_)
   }
 
+  # Clean period: trim whitespace and remove internal spaces
+  # Handles cases like "23AB_ FY23" (space after underscore) from Excel extraction
+  period <- trimws(period)
+  period <- gsub("\\s+", "", period)  # Remove all whitespace
+
   # Case 1: Format "YYAYYB" (e.g., "20A20B") => Oct 'prev_year - Sep 'year
   if (grepl("^[0-9]{2}A[0-9]{2}B$", period)) {
     year1 <- as.numeric(substr(period, 1, 2))
@@ -715,3 +737,28 @@ make_period_meaningful <- function(period) {
 
 # Vectorize the function for element-wise application
 make_period_meaningful <- Vectorize(make_period_meaningful)
+
+#' Standardize dimension values for national and state data
+#'
+#' Applies consistent recoding to dimension_value column:
+#' - Standardizes race/ethnicity dimension names
+#' - Can be extended for other dimension value cleaning
+#'
+#' @param data Data frame with dimension and dimension_value columns
+#' @return Data frame with standardized dimension_value column
+standardize_dimension_values <- function(data) {
+  data %>%
+    mutate(dimension_value = case_when(
+      # Only apply to race/ethnicity dimension
+      grepl("Race", dimension, ignore.case = TRUE) ~ case_when(
+        dimension_value == "Asian-Non Hispanic" ~ "Asian",
+        dimension_value == "Black or African American-Non Hispanic" ~ "Black or African American",
+        dimension_value == "Hispanic" ~ "Hispanic (of any race)",
+        dimension_value == "Native Hawaiian/Other Pacific Islander-Non Hispanic" ~ "Native Hawaiian/Other Pacific Islander",
+        dimension_value == "Two or More-Non Hispanic" ~ "Two or More",
+        dimension_value == "White-Non Hispanic" ~ "White",
+        TRUE ~ dimension_value  # Keep unchanged (Unknown/Unable to Determine, Missing Race/Ethnicity Data)
+      ),
+      TRUE ~ dimension_value  # Not race/ethnicity, keep unchanged
+    ))
+}

@@ -37,7 +37,7 @@
 #   - folder_date, commitment, my_setup (set by initialize_common_globals)
 #   - pdf_path, pdf_metadata (set by initialize_common_globals)
 
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_observed.R")
+source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_pdf_observed.R")
 # extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
 
 # Set source-specific configuration

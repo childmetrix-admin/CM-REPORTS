@@ -19,7 +19,7 @@
 # Extract relevant rows from the data frame
 # -----------------------------------
 
-extract_relevant_rows <- function(data_df) {
+extract_relevant_rows <- function(data_df, jurisdiction_header = "52 Jurisdictions") {
   # Identify the first row whose second column matches one of the period patterns.
   # The pattern matches:
   # - A 4-digit year (e.g., "2024")
@@ -29,14 +29,13 @@ extract_relevant_rows <- function(data_df) {
   period_pattern <- "^(?:[0-9]{4}|[0-9]{2}[AB][0-9]{2}[AB]|[0-9]{2}AB,FY[0-9]{2}|FY[0-9]{2}-[0-9]{2})$"
   period_row_index <- which(grepl(period_pattern, data_df[[2]]))[1]
 
-  # Identify the block of state rows (should always be 52 rows: 50 states, D.C., and PR)
-  # Find the row with "52 Jurisdictions" header (more robust than hard-coded state names)
+  # Identify the block of jurisdiction rows (states for national, localities for state files)
+  # Find the row with jurisdiction header (e.g., "52 Jurisdictions" or "Locality")
   # Try multiple variations of the header text
   jurisdictions_patterns <- c(
-    "52 Jurisdictions",
-    "52  Jurisdictions",  # Extra space
-    "52 States",
-    "52 jurisdictions"   # Lowercase
+    jurisdiction_header,
+    paste0(jurisdiction_header, "  "),  # Extra space
+    tolower(jurisdiction_header)   # Lowercase
   )
 
   jurisdictions_row_index <- NA
@@ -208,7 +207,9 @@ process_standard_indicator <- function(sheet_name,
                                        keep_cols = c(1:10),
                                        period_cols = 2:4,
                                        ver = NULL,
-                                       as_of_date = NULL) {
+                                       as_of_date = NULL,
+                                       jurisdiction_header = "52 Jurisdictions",
+                                       state_code = NULL) {
 
   # Get indicator name from dictionary if not provided
   if (is.null(indicator_name)) {
@@ -221,24 +222,25 @@ process_standard_indicator <- function(sheet_name,
 
   # 1. Load sheet
   data_df_full <- find_cfsr_file(
-    keyword = "National",
+    keyword = NULL,
     file_type = "excel",
-    sheet_name = sheet_name
+    sheet_name = sheet_name,
+    state_code = state_code
   )
 
   # Keep only needed columns
   data_df_full <- data_df_full[, keep_cols, drop = FALSE]
 
-  # 2. Extract state rows
-  data_df_states <- extract_relevant_rows(data_df_full)
+  # 2. Extract jurisdiction rows (states for national, localities for state files)
+  data_df_states <- extract_relevant_rows(data_df_full, jurisdiction_header)
 
   # 3. Extract age rows (if available)
   # Age section ends when Race section begins
   age_data <- extract_dimension_rows(data_df_full, "Age", "Race")
 
   # 4. Extract race/ethnicity rows (if available)
-  # Race section ends when state section begins (marked by "52 Jurisdictions" or "Locality")
-  race_data <- extract_dimension_rows(data_df_full, "Race", "52 Jurisdictions|Locality")
+  # Race section ends when jurisdiction section begins
+  race_data <- extract_dimension_rows(data_df_full, "Race", jurisdiction_header)
 
   # 5. Extract metadata from state rows
   metadata <- data_df_states[1, ]
@@ -256,7 +258,7 @@ process_standard_indicator <- function(sheet_name,
          ". Check that the Excel sheet has period labels in the expected columns.")
   }
 
-  # Helper function to process rows (works for both state and age data)
+  # Helper function to process rows (works for both jurisdiction and demographic data)
   process_rows <- function(data_rows, dimension_name = NULL, dimension_header = NULL) {
     # Skip metadata row (first row)
     data_clean <- data_rows[-1, ]
@@ -303,20 +305,46 @@ process_standard_indicator <- function(sheet_name,
 
     # Add dimension columns
     if (is.null(dimension_name)) {
-      # State rows
-      data_long <- data_long %>%
-        mutate(
-          dimension = "State",
-          dimension_value = NA_character_
-        )
+      # Jurisdiction rows (states for national files, localities for state files)
+      if (jurisdiction_header == "52 Jurisdictions") {
+        # National file - state rows
+        data_long <- data_long %>%
+          mutate(
+            dimension = "State",
+            dimension_value = NA_character_
+            # state column already has state names from Excel
+          )
+      } else {
+        # State file - locality rows
+        # Excel has locality names in 'state' column, need to swap
+        state_name <- convert_state_code_to_name(toupper(state_code))
+        data_long <- data_long %>%
+          mutate(
+            dimension = "Locality",
+            dimension_value = state,  # Excel had locality names
+            state = state_name  # Replace with actual state name
+          )
+      }
     } else {
-      # Age rows (or other demographic breakdowns)
-      data_long <- data_long %>%
-        mutate(
-          dimension = dimension_header,
-          dimension_value = state,
-          state = "National"
-        )
+      # Demographic rows (age, race, etc.)
+      if (jurisdiction_header == "52 Jurisdictions") {
+        # National file - demographics are at national level
+        data_long <- data_long %>%
+          mutate(
+            dimension = dimension_header,
+            dimension_value = state,
+            state = "National"
+          )
+      } else {
+        # State file - demographics are at state level
+        state_name <- convert_state_code_to_name(toupper(state_code))
+        data_long <- data_long %>%
+          mutate(
+            dimension = dimension_header,
+            dimension_value = state,
+            state = state_name
+          )
+      }
     }
 
     return(data_long)
@@ -348,9 +376,10 @@ process_standard_indicator <- function(sheet_name,
       numerator = as.numeric(numerator),
       performance = as.numeric(performance),
       indicator = indicator_name,
-      # Fix period format: replace comma with underscore (e.g., "20AB,FY20" => "20AB_FY20")
+      # Fix period format: replace comma with underscore, remove whitespace
+      # Handles "20AB,FY20" => "20AB_FY20" and "23AB_ FY23" => "23AB_FY23"
       # This ensures period matches the format used in observed/RSP data for proper joins
-      period = gsub(",", "_", period),
+      period = gsub("\\s+", "", gsub(",", "_", period)),
       as_of_date = as_of_date,
       source = ver$source,
       period_meaningful = make_period_meaningful(period),
@@ -404,7 +433,10 @@ process_standard_indicator <- function(sheet_name,
 #   - state_rank and reporting_states are only populated for state rows (NA for age rows)
 #   - Includes census_year column
 
-process_entry_rate_indicator <- function(ver = NULL, as_of_date = NULL) {
+process_entry_rate_indicator <- function(ver = NULL,
+                                          as_of_date = NULL,
+                                          jurisdiction_header = "52 Jurisdictions",
+                                          state_code = NULL) {
 
   # Get from global env if not provided
   if (is.null(ver)) ver <- get("ver", envir = .GlobalEnv)
@@ -412,32 +444,33 @@ process_entry_rate_indicator <- function(ver = NULL, as_of_date = NULL) {
 
   # 1. Load sheet
   data_df_full <- find_cfsr_file(
-    keyword = "National",
+    keyword = NULL,
     file_type = "excel",
-    sheet_name = "Entry rates"
+    sheet_name = "Entry rates",
+    state_code = state_code
   )
 
   # Keep only needed columns
   keep_cols <- c(1:16)
   data_df_full <- data_df_full[, keep_cols, drop = FALSE]
 
-  # 2. Extract state rows
-  data_df_states <- extract_relevant_rows(data_df_full)
+  # 2. Extract jurisdiction rows (states for national, localities for state files)
+  data_df_states <- extract_relevant_rows(data_df_full, jurisdiction_header)
 
   # 3. Extract age rows (if available)
   # Age section ends when Race section begins
   age_data <- extract_dimension_rows(data_df_full, "Age", "Race")
 
   # 4. Extract race/ethnicity rows (if available)
-  # Race section ends when state section begins (marked by "52 Jurisdictions" or "Locality")
-  race_data <- extract_dimension_rows(data_df_full, "Race", "52 Jurisdictions|Locality")
+  # Race section ends when jurisdiction section begins
+  race_data <- extract_dimension_rows(data_df_full, "Race", jurisdiction_header)
 
   # 5. Extract metadata from state rows
   metadata <- data_df_states[1, ]
   years <- metadata[2:6] %>% as.numeric()
   periods <- metadata[7:11] %>% as.character()
 
-  # Helper function to process rows (works for both state and age data)
+  # Helper function to process rows (works for both jurisdiction and demographic data)
   process_rows <- function(data_rows, dimension_name = NULL, dimension_header = NULL) {
     # Skip metadata row (first row)
     data_clean <- data_rows[-1, ]
@@ -483,20 +516,46 @@ process_entry_rate_indicator <- function(ver = NULL, as_of_date = NULL) {
 
     # Add dimension columns
     if (is.null(dimension_name)) {
-      # State rows
-      data_long <- data_long %>%
-        mutate(
-          dimension = "State",
-          dimension_value = NA_character_
-        )
+      # Jurisdiction rows (states for national files, localities for state files)
+      if (jurisdiction_header == "52 Jurisdictions") {
+        # National file - state rows
+        data_long <- data_long %>%
+          mutate(
+            dimension = "State",
+            dimension_value = NA_character_
+            # state column already has state names from Excel
+          )
+      } else {
+        # State file - locality rows
+        # Excel has locality names in 'state' column, need to swap
+        state_name <- convert_state_code_to_name(toupper(state_code))
+        data_long <- data_long %>%
+          mutate(
+            dimension = "Locality",
+            dimension_value = state,  # Excel had locality names
+            state = state_name  # Replace with actual state name
+          )
+      }
     } else {
-      # Age rows (or other demographic breakdowns)
-      data_long <- data_long %>%
-        mutate(
-          dimension = dimension_header,
-          dimension_value = state,
-          state = "National"
-        )
+      # Demographic rows (age, race, etc.)
+      if (jurisdiction_header == "52 Jurisdictions") {
+        # National file - demographics are at national level
+        data_long <- data_long %>%
+          mutate(
+            dimension = dimension_header,
+            dimension_value = state,
+            state = "National"
+          )
+      } else {
+        # State file - demographics are at state level
+        state_name <- convert_state_code_to_name(toupper(state_code))
+        data_long <- data_long %>%
+          mutate(
+            dimension = dimension_header,
+            dimension_value = state,
+            state = state_name
+          )
+      }
     }
 
     return(data_long)
@@ -528,9 +587,10 @@ process_entry_rate_indicator <- function(ver = NULL, as_of_date = NULL) {
       state = ifelse(state == "District of Columbia", "D.C.", state),
       census_year = as.numeric(year),
       indicator = indicator_name,
-      # Fix period format: replace comma with underscore (e.g., "20AB,FY20" => "20AB_FY20")
+      # Fix period format: replace comma with underscore, remove whitespace
+      # Handles "20AB,FY20" => "20AB_FY20" and "23AB_ FY23" => "23AB_FY23"
       # This ensures period matches the format used in observed/RSP data for proper joins
-      period = gsub(",", "_", period),
+      period = gsub("\\s+", "", gsub(",", "_", period)),
       as_of_date = as_of_date,
       source = ver$source,
       period_meaningful = make_period_meaningful(period),

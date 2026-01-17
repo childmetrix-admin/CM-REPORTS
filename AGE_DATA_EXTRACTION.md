@@ -54,7 +54,7 @@ All national data now includes two new columns positioned after `indicator`:
 
 ### 1. New Helper Function: `extract_dimension_rows()`
 
-**File:** `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_nat.R` (lines 118-178)
+**File:** `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_excel.R` (lines 118-178)
 
 Extracts demographic breakdown sections from Excel data using pattern matching.
 
@@ -73,7 +73,7 @@ Extracts demographic breakdown sections from Excel data using pattern matching.
 
 ### 2. Updated `process_standard_indicator()`
 
-**File:** `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_nat.R` (lines 197-367)
+**File:** `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_excel.R` (lines 197-367)
 
 **Changes:**
 - Extract both state rows and age rows from full sheet
@@ -85,7 +85,7 @@ Extracts demographic breakdown sections from Excel data using pattern matching.
 
 ### 3. Updated `process_entry_rate_indicator()`
 
-**File:** `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_nat.R` (lines 393-545)
+**File:** `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_excel.R` (lines 393-545)
 
 **Changes:**
 - Same pattern as `process_standard_indicator()`
@@ -185,7 +185,7 @@ stopifnot(all(app_data$state != "National"))
 
 ## Files Changed
 
-1. `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_nat.R`
+1. `D:\repo_childmetrix\cfsr-profile\code\functions\functions_cfsr_profile_excel.R`
    - Added `extract_dimension_rows()` helper function
    - Updated `process_standard_indicator()` to extract age data
    - Updated `process_entry_rate_indicator()` to extract age data

@@ -113,7 +113,9 @@ discover_sources <- function(state, period) {
           any(grepl("\\.pdf$", files, ignore.case = TRUE)),
     # Observed: Check for PDF (same source as RSP, page 4)
     observed = any(grepl("\\.pdf$", files, ignore.case = TRUE)),
-    state = any(grepl("State.*\\.xlsx?$", files, ignore.case = TRUE))
+    # State: Check for Supplemental Context Data files excluding National
+    state = any(grepl("Supplemental Context Data.*\\.xlsx?$", files, ignore.case = TRUE) &
+                !grepl("^National", files, ignore.case = TRUE))
   )
 
   return(sources)
@@ -383,20 +385,23 @@ setup_cfsr_folders <- function(profile_period,
 #'
 #' @return List with profile version info and as_of_date
 #' @export
-extract_shared_metadata <- function() {
+extract_shared_metadata <- function(state_code = NULL, jurisdiction_header = "52 Jurisdictions") {
   # Load CFSR profile functions if not already loaded
   nat_functions <- file.path(CFSR_FUNCTIONS_DIR, "functions_cfsr_profile_nat.R")
   if (!exists("cfsr_profile_version")) {
     source(nat_functions)
   }
 
-  # Profile version from National Excel file
-  ver <- cfsr_profile_version()
+  # Profile version from Excel file (National or State depending on state_code)
+  ver <- cfsr_profile_version(state_code = state_code)
 
-  # AFCARS/NCANDS submission date - extract from National file
-  data_df_temp <- find_cfsr_file(keyword = "National",
-                                 file_type = "excel",
-                                 sheet_name = "Entry rates")
+  # AFCARS/NCANDS submission date - extract from file
+  data_df_temp <- find_cfsr_file(
+    keyword = NULL,
+    file_type = "excel",
+    sheet_name = "Entry rates",
+    state_code = state_code
+  )
   asof <- cfsr_profile_extract_asof_date(data_df_temp)
 
   # Combine into single metadata object
