@@ -12,25 +12,11 @@
 # LIBRARIES & UTILITIES ----
 #####################################
 
+# Load centralized path configuration
+source(file.path(dirname(sys.frame(1)$ofile), "paths.R"))
+
 # Load packages and generic functions
 source("D:/repo_childmetrix/utilities-core/loader.R")
-
-#####################################
-# PATH CONFIGURATION ----
-#####################################
-
-# Base paths
-CFSR_BASE_DIR <- "D:/repo_childmetrix/cfsr-profile"
-CFSR_CODE_DIR <- file.path(CFSR_BASE_DIR, "code")
-CFSR_DATA_DIR <- file.path(CFSR_BASE_DIR, "data")
-CFSR_SHAREFILE_BASE <- "S:/Shared Folders"
-
-# Function paths
-CFSR_FUNCTIONS_DIR <- file.path(CFSR_CODE_DIR, "functions")
-
-# Output paths
-CFSR_PROCESSED_DIR <- file.path(CFSR_DATA_DIR, "processed")
-CFSR_APP_DATA_DIR <- file.path(CFSR_DATA_DIR, "app_data")
 
 #####################################
 # DISCOVERY FUNCTIONS ----
@@ -43,12 +29,12 @@ CFSR_APP_DATA_DIR <- file.path(CFSR_DATA_DIR, "app_data")
 #' @return Character vector of lowercase state codes
 #' @export
 discover_states <- function() {
-  if (!dir.exists(CFSR_SHAREFILE_BASE)) {
-    warning("ShareFile not accessible: ", CFSR_SHAREFILE_BASE)
+  if (!dir.exists(SHAREFILE_BASE)) {
+    warning("ShareFile not accessible: ", SHAREFILE_BASE)
     return(character(0))
   }
 
-  state_dirs <- list.dirs(CFSR_SHAREFILE_BASE, recursive = FALSE, full.names = FALSE)
+  state_dirs <- list.dirs(SHAREFILE_BASE, recursive = FALSE, full.names = FALSE)
 
   # Filter for 2-letter state codes
   states <- state_dirs[nchar(state_dirs) == 2]
@@ -56,7 +42,7 @@ discover_states <- function() {
   # Only return states that have cfsr/uploads folder
   states_with_cfsr <- character(0)
   for (state in states) {
-    cfsr_path <- file.path(CFSR_SHAREFILE_BASE, state, "cfsr/uploads")
+    cfsr_path <- file.path(SHAREFILE_BASE, state, "cfsr/uploads")
     if (dir.exists(cfsr_path)) {
       states_with_cfsr <- c(states_with_cfsr, state)
     }
@@ -73,7 +59,7 @@ discover_states <- function() {
 #' @return Character vector of periods in YYYY_MM format
 #' @export
 discover_periods <- function(state) {
-  uploads_path <- file.path(CFSR_SHAREFILE_BASE, state, "cfsr/uploads")
+  uploads_path <- file.path(SHAREFILE_BASE, state, "cfsr/uploads")
 
   if (!dir.exists(uploads_path)) {
     warning("No uploads folder for state: ", state)
@@ -97,7 +83,7 @@ discover_periods <- function(state) {
 #' @return Named logical vector (national, rsp, observed, state)
 #' @export
 discover_sources <- function(state, period) {
-  uploads_path <- file.path(CFSR_SHAREFILE_BASE, state, "cfsr/uploads", period)
+  uploads_path <- file.path(SHAREFILE_BASE, state, "cfsr/uploads", period)
 
   if (!dir.exists(uploads_path)) {
     return(c(national = FALSE, rsp = FALSE, observed = FALSE, state = FALSE))
@@ -203,7 +189,7 @@ setup_profile_env <- function(state, period) {
   config <- list(
     state = tolower(state),
     period = period,
-    sharefile_base = file.path(CFSR_SHAREFILE_BASE, state, "cfsr/uploads", period),
+    sharefile_base = file.path(SHAREFILE_BASE, state, "cfsr/uploads", period),
     processed_base = file.path(CFSR_PROCESSED_DIR, state, period),
     app_data_base = file.path(CFSR_APP_DATA_DIR, state),
     run_date = Sys.Date()
@@ -324,7 +310,7 @@ setup_cfsr_folders <- function(profile_period,
   state_code <- tolower(state_code)
 
   # Build folder paths
-  folder_uploads <- file.path(CFSR_SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
+  folder_uploads <- file.path(SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
   folder_processed <- file.path(base_data_dir, "processed", state_code, profile_period)
   folder_app_data <- file.path(base_data_dir, "app_data", state_code)
   folder_raw <- folder_uploads  # Alias for backward compatibility
@@ -462,5 +448,5 @@ print_available_data <- function() {
 
 message("CFSR Profile configuration loaded")
 message("Base directory: ", CFSR_BASE_DIR)
-message("ShareFile base: ", CFSR_SHAREFILE_BASE)
+message("ShareFile base: ", SHAREFILE_BASE)
 message("\nRun print_available_data() to see available data")
