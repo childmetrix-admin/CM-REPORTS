@@ -15,160 +15,18 @@
 # Load centralized path configuration
 source(file.path(dirname(sys.frame(1)$ofile), "paths.R"))
 
+# Load shared utilities
+source(file.path(SHARED_UTILS_DIR, "state_utils.R"))
+source(file.path(SHARED_UTILS_DIR, "file_discovery.R"))
+source(file.path(SHARED_UTILS_DIR, "period_utils.R"))
+
 # Load packages and generic functions
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
-#####################################
-# DISCOVERY FUNCTIONS ----
-#####################################
-
-#' Discover available states
-#'
-#' Scans ShareFile for state folders with CFSR uploads
-#'
-#' @return Character vector of lowercase state codes
-#' @export
-discover_states <- function() {
-  if (!dir.exists(SHAREFILE_BASE)) {
-    warning("ShareFile not accessible: ", SHAREFILE_BASE)
-    return(character(0))
-  }
-
-  state_dirs <- list.dirs(SHAREFILE_BASE, recursive = FALSE, full.names = FALSE)
-
-  # Filter for 2-letter state codes
-  states <- state_dirs[nchar(state_dirs) == 2]
-
-  # Only return states that have cfsr/uploads folder
-  states_with_cfsr <- character(0)
-  for (state in states) {
-    cfsr_path <- file.path(SHAREFILE_BASE, state, "cfsr/uploads")
-    if (dir.exists(cfsr_path)) {
-      states_with_cfsr <- c(states_with_cfsr, state)
-    }
-  }
-
-  return(sort(tolower(states_with_cfsr)))
-}
-
-#' Discover available periods for a state
-#'
-#' Scans ShareFile uploads folder for period folders
-#'
-#' @param state Lowercase 2-letter state code
-#' @return Character vector of periods in YYYY_MM format
-#' @export
-discover_periods <- function(state) {
-  uploads_path <- file.path(SHAREFILE_BASE, state, "cfsr/uploads")
-
-  if (!dir.exists(uploads_path)) {
-    warning("No uploads folder for state: ", state)
-    return(character(0))
-  }
-
-  period_dirs <- list.dirs(uploads_path, recursive = FALSE, full.names = FALSE)
-
-  # Filter for YYYY_MM format
-  periods <- period_dirs[grepl("^\\d{4}_\\d{2}$", period_dirs)]
-
-  return(sort(periods, decreasing = TRUE))
-}
-
-#' Discover available data sources for a state/period
-#'
-#' Checks which data files are available
-#'
-#' @param state Lowercase 2-letter state code
-#' @param period Period in YYYY_MM format
-#' @return Named logical vector (national, rsp, observed, state)
-#' @export
-discover_sources <- function(state, period) {
-  uploads_path <- file.path(SHAREFILE_BASE, state, "cfsr/uploads", period)
-
-  if (!dir.exists(uploads_path)) {
-    return(c(national = FALSE, rsp = FALSE, observed = FALSE, state = FALSE))
-  }
-
-  files <- list.files(uploads_path, full.names = FALSE, ignore.case = TRUE)
-
-  # Check for each source type
-  sources <- c(
-    national = any(grepl("National.*\\.xlsx?$", files, ignore.case = TRUE)),
-    # RSP: Check for accessible text file OR PDF (PDF will be auto-converted)
-    rsp = any(grepl("adobe_to_accessible_text\\.txt$", files, ignore.case = TRUE)) ||
-          any(grepl("\\.pdf$", files, ignore.case = TRUE)),
-    # Observed: Check for PDF (same source as RSP, page 4)
-    observed = any(grepl("\\.pdf$", files, ignore.case = TRUE)),
-    # State: Check for Supplemental Context Data files excluding National
-    state = any(grepl("Supplemental Context Data.*\\.xlsx?$", files, ignore.case = TRUE) &
-                !grepl("^National", files, ignore.case = TRUE))
-  )
-
-  return(sources)
-}
-
-#####################################
-# VALIDATION FUNCTIONS ----
-#####################################
-
-#' Validate state code
-#'
-#' @param state State code to validate
-#' @return TRUE if valid, stops with error if invalid
-#' @export
-validate_state <- function(state) {
-  available <- discover_states()
-
-  if (length(available) == 0) {
-    stop("No states found in ShareFile. Check S:/ drive access.")
-  }
-
-  if (!tolower(state) %in% available) {
-    stop("State '", state, "' not found. Available states: ", paste(available, collapse = ", "))
-  }
-
-  return(TRUE)
-}
-
-#' Validate period
-#'
-#' @param period Period in YYYY_MM format
-#' @param state Optional state to check period availability
-#' @return TRUE if valid, stops with error if invalid
-#' @export
-validate_period <- function(period, state = NULL) {
-  # Check format
-  if (!grepl("^\\d{4}_\\d{2}$", period)) {
-    stop("Period must be in YYYY_MM format (e.g., '2025_02'), got: ", period)
-  }
-
-  # If state provided, check if period exists for that state
-  if (!is.null(state)) {
-    available <- discover_periods(state)
-    if (!period %in% available) {
-      stop("Period '", period, "' not found for state '", state, "'. ",
-           "Available periods: ", paste(available, collapse = ", "))
-    }
-  }
-
-  return(TRUE)
-}
-
-#' Validate source
-#'
-#' @param source Source type (national, rsp, observed, state, or all)
-#' @return TRUE if valid, stops with error if invalid
-#' @export
-validate_source <- function(source) {
-  valid_sources <- c("national", "rsp", "observed", "state", "all")
-
-  if (!tolower(source) %in% valid_sources) {
-    stop("Source must be one of: ", paste(valid_sources, collapse = ", "),
-         ". Got: ", source)
-  }
-
-  return(TRUE)
-}
+# Note: Discovery and validation functions are now in shared/utils/
+# - discover_states(), discover_periods(), discover_sources() in file_discovery.R
+# - validate_period(), validate_source() in period_utils.R
+# - state_code_to_name(), state_name_to_code() in state_utils.R
 
 #####################################
 # SETUP FUNCTIONS ----
