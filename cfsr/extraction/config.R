@@ -18,15 +18,17 @@ source(file.path(dirname(sys.frame(1)$ofile), "paths.R"))
 # Load shared utilities
 source(file.path(SHARED_UTILS_DIR, "state_utils.R"))
 source(file.path(SHARED_UTILS_DIR, "file_discovery.R"))
-source(file.path(SHARED_UTILS_DIR, "period_utils.R"))
+
+# Load CFSR-specific utilities
+source(file.path(CFSR_FUNCTIONS_DIR, "period_utils.R"))
 
 # Load packages and generic functions
 source("D:/repo_childmetrix/utilities-core/loader.R")
 
-# Note: Discovery and validation functions are now in shared/utils/
-# - discover_states(), discover_periods(), discover_sources() in file_discovery.R
-# - validate_period(), validate_source() in period_utils.R
-# - state_code_to_name(), state_name_to_code() in state_utils.R
+# Note: Discovery and validation functions locations:
+# - discover_states(), discover_periods(), discover_sources() in shared/utils/file_discovery.R
+# - validate_period(), validate_source() in cfsr/functions/period_utils.R (CFSR-specific)
+# - state_code_to_name(), state_name_to_code() in shared/utils/state_utils.R
 
 #####################################
 # SETUP FUNCTIONS ----
