@@ -25,7 +25,7 @@ detect_monorepo_root <- function() {
   return(root)
 }
 monorepo_root <- detect_monorepo_root()
-data_dir <- file.path(monorepo_root, "cfsr/data/app_ready")
+data_dir <- file.path(monorepo_root, "cfsr/data/rds")
 #' Get available RSP profiles for a state
 get_available_rsp_profiles <- function(state) {
   state <- toupper(state)

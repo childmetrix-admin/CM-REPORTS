@@ -320,7 +320,7 @@ save_to_folder_run(rsp_data, "csv")
 ########################################
 
 # PROD: Period-specific file with state prefix (shared app location)
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+output_dir_prod <- CFSR_APP_DATA_DIR
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }

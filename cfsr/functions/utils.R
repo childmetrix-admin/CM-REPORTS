@@ -28,7 +28,7 @@ get_available_profiles <- function(state, type = "national") {
     }
     return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
   }
-  data_dir <- file.path(detect_root(), "cfsr/data/app_ready")
+  data_dir <- file.path(detect_root(), "cfsr/data/rds")
 
   # Naming conventions:
   # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
@@ -80,7 +80,7 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
     }
     return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
   }
-  data_dir <- file.path(detect_root(), "cfsr/data/app_ready")
+  data_dir <- file.path(detect_root(), "cfsr/data/rds")
 
   # If "latest" requested, dynamically find most recent profile
   if (profile == "latest") {

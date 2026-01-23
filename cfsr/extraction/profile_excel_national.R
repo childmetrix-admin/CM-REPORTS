@@ -269,7 +269,7 @@ save_to_folder_run(ind_data, "csv")
 # National data is identical across states, so no state prefix needed
 # RDS contains same data as CSV (all periods, not filtered)
 # Apps can filter to most recent period as needed
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+output_dir_prod <- CFSR_APP_DATA_DIR
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }

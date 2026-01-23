@@ -180,7 +180,7 @@ observed_data <- bind_rows(top_long, bottom_long)
 ########################################
 
 # Load RSP RDS file to get pre-calculated status and data_used
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+output_dir_prod <- CFSR_APP_DATA_DIR
 rsp_rds_path <- file.path(output_dir_prod,
   paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
 
@@ -314,7 +314,7 @@ assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 ########################################
 
 # Load national data to add state_rank and reporting_states columns
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+output_dir_prod <- CFSR_APP_DATA_DIR
 national_file <- file.path(output_dir_prod,
   paste0("cfsr_profile_national_", profile_period, ".rds"))
 
@@ -379,7 +379,7 @@ save_to_folder_run(observed_data, "csv")
 
 # PROD: Period-specific file with state prefix (shared app location)
 # RDS is a snapshot of the CSV data (includes rank columns from earlier join)
-output_dir_prod <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+output_dir_prod <- CFSR_APP_DATA_DIR
 if (!dir.exists(output_dir_prod)) {
   dir.create(output_dir_prod, recursive = TRUE)
 }

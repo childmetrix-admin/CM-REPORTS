@@ -52,7 +52,7 @@ detect_monorepo_root <- function() {
   return(root)
 }
 monorepo_root <- detect_monorepo_root()
-data_dir <- file.path(monorepo_root, "cfsr/data/app_ready")
+data_dir <- file.path(monorepo_root, "cfsr/data/rds")
 
 # State code mapping
 state_codes <- c(

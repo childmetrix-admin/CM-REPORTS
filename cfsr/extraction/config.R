@@ -18,12 +18,10 @@ source(file.path(dirname(sys.frame(1)$ofile), "paths.R"))
 # Load shared utilities
 source(file.path(SHARED_UTILS_DIR, "state_utils.R"))
 source(file.path(SHARED_UTILS_DIR, "file_discovery.R"))
+source(file.path(SHARED_UTILS_DIR, "file_utils.R"))
 
 # Load CFSR-specific utilities
 source(file.path(CFSR_FUNCTIONS_DIR, "period_utils.R"))
-
-# Load packages and generic functions
-source("D:/repo_childmetrix/utilities-core/loader.R")
 
 # Note: Discovery and validation functions locations:
 # - discover_states(), discover_periods(), discover_sources() in shared/utils/file_discovery.R
@@ -70,7 +68,7 @@ setup_profile_env <- function(state, period) {
 #'
 #' Centralizes common setup logic shared across profile_pdf_rsp.R, profile_pdf_observed.R,
 #' and profile_excel_national.R. This function handles:
-#' - Library loading (utilities-core, shared CFSR functions)
+#' - Library loading (shared CFSR functions)
 #' - Folder setup (via setup_cfsr_folders)
 #' - Global variable assignment (folder_date, commitment, my_setup)
 #' - PDF discovery and metadata extraction (RSP and Observed only)
@@ -83,11 +81,6 @@ setup_profile_env <- function(state, period) {
 #' @return Invisible NULL (all outputs assigned to global environment)
 #' @export
 initialize_common_globals <- function(state, period, source) {
-
-  # Source core utilities (if not already loaded)
-  if (!exists("r_load_packages")) {
-    source("D:/repo_childmetrix/utilities-core/loader.R")
-  }
 
   # Source shared CFSR functions
   shared_functions <- file.path(CFSR_FUNCTIONS_DIR, "functions_cfsr_profile_shared.R")

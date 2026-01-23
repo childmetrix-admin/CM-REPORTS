@@ -25,12 +25,27 @@ if (!require("callr")) {
   library(callr)
 }
 
-# Path to the CFSR dashboard apps (shared location)
-app_national_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_national"
-app_rsp_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_rsp"
-app_summary_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/summary/app_summary"
-app_observed_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/measures/app_observed"
-data_path <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+# Detect monorepo root
+detect_monorepo_root <- function() {
+  current <- getwd()
+  while (current != dirname(current)) {
+    if (file.exists(file.path(current, "CLAUDE.md")) ||
+        file.exists(file.path(current, ".git"))) {
+      return(current)
+    }
+    current <- dirname(current)
+  }
+  root <- Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports")
+  return(root)
+}
+monorepo_root <- detect_monorepo_root()
+
+# Path to the CFSR dashboard apps (cfsr/apps/ location)
+app_national_path <- file.path(monorepo_root, "cfsr/apps/app_national")
+app_rsp_path <- file.path(monorepo_root, "cfsr/apps/app_rsp")
+app_summary_path <- file.path(monorepo_root, "cfsr/apps/app_summary")
+app_observed_path <- file.path(monorepo_root, "cfsr/apps/app_observed")
+data_path <- file.path(monorepo_root, "cfsr/data/rds")
 
 # Check if app directories exist
 if (!dir.exists(app_national_path)) {

@@ -9,7 +9,8 @@
 *.jpg binary
 *.jpeg binary
 *.gif binary
-*.svg  text eol=lf  # often text; keep LF
+# SVG files are often text; keep LF
+*.svg  text eol=lf
 
 # Backups not tracked as special, but if they slip in, treat as text
 *.bak   text eol=lf
