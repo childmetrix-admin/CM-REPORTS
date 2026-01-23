@@ -29,7 +29,10 @@
 #   - NOTE: No pdf_path/pdf_metadata for national source (uses Excel files)
 
 # Source national-specific functions
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_excel.R")
+source(file.path(
+  dirname(sys.frame(1)$ofile),
+  "../functions/functions_cfsr_profile_excel.R"
+))
 
 # Set source-specific configuration
 commitment_description <- "state"
@@ -171,7 +174,10 @@ ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
 ########################################
 
 # Load dictionary and join all metadata (for both display and calculations)
-dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+dict_path <- file.path(
+  dirname(sys.frame(1)$ofile),
+  "cfsr_round4_indicators_dictionary.csv"
+)
 if (!file.exists(dict_path)) {
   stop("Dictionary not found at: ", dict_path)
 }

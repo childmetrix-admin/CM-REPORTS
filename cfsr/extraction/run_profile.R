@@ -9,8 +9,8 @@
 # LIBRARIES & CONFIGURATION ----
 #####################################
 
-# Load configuration
-source("D:/repo_childmetrix/cfsr-profile/code/config.R")
+# Load configuration (in same directory)
+source(file.path(dirname(sys.frame(1)$ofile), "config.R"))
 
 #####################################
 # MAIN FUNCTION ----

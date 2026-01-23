@@ -37,7 +37,10 @@
 #   - folder_date, commitment, my_setup (set by initialize_common_globals)
 #   - pdf_path, pdf_metadata (set by initialize_common_globals)
 
-source("D:/repo_childmetrix/cfsr-profile/code/functions/functions_cfsr_profile_pdf_rsp.R")
+source(file.path(
+  dirname(sys.frame(1)$ofile),
+  "../functions/functions_cfsr_profile_pdf_rsp.R"
+))
 # extract_tableau_table() and extract_headers() are in functions_cfsr_profile_shared.R
 
 # Set source-specific configuration
@@ -181,7 +184,10 @@ rsp_data <- rsp_data %>%
   )
 
 # Load dictionary and join all metadata (for both status calculation and display)
-dict_path <- "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv"
+dict_path <- file.path(
+  dirname(sys.frame(1)$ofile),
+  "cfsr_round4_indicators_dictionary.csv"
+)
 if (!file.exists(dict_path)) {
   stop("Dictionary not found at: ", dict_path)
 }
