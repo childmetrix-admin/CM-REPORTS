@@ -17,17 +17,17 @@ library(ggplot2)
 # HELPER FUNCTIONS ----
 #####################################
 
-# Shared functions at cfsr/ level (use absolute paths for reliability)
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/utils.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/data_prep.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/chart_builder.R")
+# Shared functions at cfsr/ level (relative to app directory)
+source("../../functions/utils.R")
+source("../../functions/data_prep.R")
+source("../../functions/chart_builder.R")
 
 #####################################
 # MODULES ----
 #####################################
 
-# Will source indicator_detail module once it's created
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/modules/indicator_detail.R")
+# Source indicator_detail module
+source("../../modules/indicator_detail.R")
 
 #####################################
 # LOAD DATA ----

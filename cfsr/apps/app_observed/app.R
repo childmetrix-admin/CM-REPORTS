@@ -22,9 +22,9 @@ library(ggplot2)
 # NOTE: Shiny should auto-load global.R, but we source it explicitly to ensure it runs
 source("global.R", local = FALSE)
 
-# Source shared modules and functions
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/modules/indicator_detail.R")
-source("D:/repo_childmetrix/cm-reports/shared/cfsr/functions/chart_builder.R")
+# Source shared modules and functions (relative to app directory)
+source("../../modules/indicator_detail.R")
+source("../../functions/chart_builder.R")
 
 # Define %||% operator (null coalescing)
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || x == "") y else x

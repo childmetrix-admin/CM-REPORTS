@@ -36,8 +36,23 @@ if (!require("sparkline", quietly = TRUE)) {
 # CONFIGURATION ----
 #####################################
 
-# Data directory (shared with other CFSR apps)
-data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+# Data directory - dynamically detected from monorepo root
+# Detect monorepo root by finding CLAUDE.md or .git
+detect_monorepo_root <- function() {
+  current <- getwd()
+  while (current != dirname(current)) {
+    if (file.exists(file.path(current, "CLAUDE.md")) ||
+        file.exists(file.path(current, ".git"))) {
+      return(current)
+    }
+    current <- dirname(current)
+  }
+  # Fallback to environment variable
+  root <- Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports")
+  return(root)
+}
+monorepo_root <- detect_monorepo_root()
+data_dir <- file.path(monorepo_root, "cfsr/data/app_ready")
 
 # State code mapping
 state_codes <- c(

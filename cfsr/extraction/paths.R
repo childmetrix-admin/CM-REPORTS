@@ -27,9 +27,9 @@ SHARED_ROOT <- file.path(MONOREPO_ROOT, "shared")
 # Derived paths
 CFSR_EXTRACTION_DIR <- file.path(CFSR_ROOT, "extraction")
 CFSR_FUNCTIONS_DIR <- file.path(CFSR_ROOT, "functions")
-CFSR_DATA_DIR <- file.path(SHARED_ROOT, "cfsr/data")
+CFSR_DATA_DIR <- file.path(CFSR_ROOT, "data")
 CFSR_PROCESSED_DIR <- file.path(CFSR_DATA_DIR, "processed")
-CFSR_APP_DATA_DIR <- file.path(CFSR_DATA_DIR, "app_data")
+CFSR_APP_DATA_DIR <- file.path(CFSR_DATA_DIR, "app_ready")
 SHARED_UTILS_DIR <- file.path(SHARED_ROOT, "utils")
 SHAREFILE_BASE <- "S:/Shared Folders"
 

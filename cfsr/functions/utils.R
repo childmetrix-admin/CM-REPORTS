@@ -16,9 +16,19 @@ get_available_profiles <- function(state, type = "national") {
     type <- "national"
   }
 
-  # Build file path in shared location
-  # Data is at cfsr/data/ level (shared across all apps)
-  data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+  # Detect monorepo root and build path to data directory
+  detect_root <- function() {
+    current <- getwd()
+    while (current != dirname(current)) {
+      if (file.exists(file.path(current, "CLAUDE.md")) ||
+          file.exists(file.path(current, ".git"))) {
+        return(current)
+      }
+      current <- dirname(current)
+    }
+    return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
+  }
+  data_dir <- file.path(detect_root(), "cfsr/data/app_ready")
 
   # Naming conventions:
   # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
@@ -58,9 +68,19 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
     type <- "national"
   }
 
-  # Build file path in shared location
-  # Data is at cfsr/data/ level (shared across all apps)
-  data_dir <- "D:/repo_childmetrix/cm-reports/shared/cfsr/data"
+  # Detect monorepo root and build path to data directory
+  detect_root <- function() {
+    current <- getwd()
+    while (current != dirname(current)) {
+      if (file.exists(file.path(current, "CLAUDE.md")) ||
+          file.exists(file.path(current, ".git"))) {
+        return(current)
+      }
+      current <- dirname(current)
+    }
+    return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
+  }
+  data_dir <- file.path(detect_root(), "cfsr/data/app_ready")
 
   # If "latest" requested, dynamically find most recent profile
   if (profile == "latest") {
