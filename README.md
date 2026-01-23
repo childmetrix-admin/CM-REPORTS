@@ -2,43 +2,49 @@
 
 Web-based reporting platform for child welfare data visualization and analysis across multiple states.
 
+**Last Updated**: January 2026
+
 ## Overview
 
-This repository contains the ChildMetrix reporting platform - a multi-state web application that provides interactive dashboards, data visualizations, and reports for child welfare agencies.
+This repository is a consolidated monorepo containing the ChildMetrix reporting platform - a multi-state web application that provides interactive Shiny dashboards, data visualizations, and reports for child welfare agencies. The CFSR data extraction pipeline (formerly `cfsr-profile` repository) has been integrated into this monorepo.
 
 ## Directory Structure
 
 ```
 cm-reports/
-├── _assets/              # Shared platform assets (logos, CSS, icons)
-│   └── cfsr/            # CFSR-specific shared assets
-├── scripts/              # Development utilities and one-time scripts
-│   └── move_period_selector.py
-├── states/               # State-specific reporting sites
-│   ├── ky/              # Kentucky
-│   │   ├── _assets/     # State-specific assets
-│   │   ├── cfsr/        # CFSR data profile
-│   │   ├── cps/         # CPS reports
-│   │   ├── in_home/     # In-home services
-│   │   ├── ooh/         # Out-of-home care
-│   │   └── index.html   # State landing page
-│   └── md/              # Maryland (primary development state)
-│       ├── _assets/
-│       ├── cfsr/
-│       │   ├── data_dictionary/
-│       │   ├── notes/
-│       │   ├── performance/
-│       │   │   ├── app/          # Shiny dashboard application
-│       │   │   └── index_static.html
-│       │   └── presentations/
-│       ├── cps/
-│       ├── home/
-│       ├── in_home/
-│       ├── ooh/
-│       ├── index.html   # Maryland hub
-│       └── README.md    # Maryland-specific notes
-├── index.html            # Main landing page (state selector)
-└── README.md             # This file
+├── _assets/
+│   ├── css/               # Platform CSS
+│   └── logo.png           # Platform branding
+├── cfsr/                   # CFSR domain (self-contained)
+│   ├── apps/              # 4 Shiny dashboards
+│   │   ├── app_national/  # National comparison (port 3838)
+│   │   ├── app_rsp/       # Risk-Standardized Performance (port 3839)
+│   │   ├── app_summary/   # Performance summary (port 3840)
+│   │   └── app_observed/  # Observed Performance (port 3841)
+│   ├── data/
+│   │   ├── csv/           # CSV archives
+│   │   └── rds/           # RDS files for Shiny apps
+│   ├── extraction/        # Data extraction scripts
+│   │   ├── run_profile.R  # Main orchestrator
+│   │   ├── config.R       # Discovery + validation
+│   │   └── paths.R        # Centralized path configuration
+│   ├── functions/         # CFSR-specific R functions
+│   ├── modules/           # Shiny modules
+│   └── scripts/           # Utilities (launch_cfsr_dashboard.R)
+├── shared/
+│   └── utils/             # Cross-domain utilities
+│       ├── file_discovery.R
+│       ├── file_utils.R
+│       └── state_utils.R
+├── states/                # State-specific sites
+│   ├── md/               # Maryland (primary development)
+│   └── ky/               # Kentucky
+├── docs/                  # Documentation
+│   └── PRD.md            # Product Requirements Document
+├── index.html            # Landing page (state selector)
+├── app.html              # Main app shell
+├── README.md             # This file
+└── CLAUDE.md             # AI assistant guide
 ```
 
 ## Features
@@ -49,131 +55,96 @@ cm-reports/
 - State-specific branding and customization
 
 ### CFSR Data Profile Dashboard
-- Interactive Shiny application for CFSR statewide data indicators
+- Interactive Shiny applications for CFSR statewide data indicators
 - 8 indicators across Safety, Permanency, and Well-Being domains
 - State-by-state rankings and comparisons
-- Data dictionary and presentations
+- Risk-Standardized Performance (RSP) analysis
 
 ### Domain-Specific Reports
 Each state site includes:
 - **CFSR**: Child and Family Services Review data profiles
-- **CPS**: Child Protective Services reports
-- **In-Home**: In-home services tracking
-- **OOH**: Out-of-home care (foster care) reports
+- **CPS**: Child Protective Services reports (planned)
+- **In-Home**: In-home services tracking (planned)
+- **OOH**: Out-of-home care (foster care) reports (planned)
 
 ## Data Integration
 
-The platform integrates with data processing pipelines:
+### CFSR Data Pipeline
 
-**CFSR Data Pipeline:**
-1. Raw data uploaded to ShareFile: `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
-2. Processed by `cfsr-profile` R project
-3. RDS files saved to: `shared/cfsr/data/` (shared across all states)
-4. Shiny dashboard loads data and renders visualizations
+The CFSR extraction pipeline is now integrated into this monorepo:
 
-See [cfsr-profile repository](https://github.com/childmetrix/cfsr-profile) for data processing details.
+1. **Source**: CFSR 4 Data Profile PDFs from ShareFile (`S:/Shared Folders/{state}/cfsr/uploads/`)
+2. **Extraction**: Run `cfsr/extraction/run_profile.R` to process PDFs and Excel files
+3. **Output**: RDS files saved to `cfsr/data/rds/`
+4. **Consumption**: Shiny apps load data from `cfsr/data/rds/`
+5. **Archive**: CSV copies saved to `cfsr/data/csv/`
 
 ## Running the Platform
 
 ### Local Development
 
-**Option 1: Static HTML (no Shiny)**
+**Static HTML (no Shiny):**
 ```bash
 # Open in browser
 file:///D:/repo_childmetrix/cm-reports/index.html
 ```
 
-**Option 2: With Shiny Server**
-1. Start Shiny Server
-2. Configure app location in `/etc/shiny-server/shiny-server.conf`
-3. Navigate to platform via file:// or http://localhost
+**With Shiny Apps:**
+```r
+# Launch all CFSR apps simultaneously
+source("D:/repo_childmetrix/cm-reports/cfsr/scripts/launch_cfsr_dashboard.R")
+```
 
-### Production Deployment
+This starts:
+- **National comparison**: http://localhost:3838
+- **RSP app**: http://localhost:3839
+- **Summary app**: http://localhost:3840
+- **Observed Performance**: http://localhost:3841
 
-Requirements:
-- Web server for static HTML (Apache, Nginx, or file://)
-- Shiny Server for interactive dashboards
-- Access to data processing repositories
+### Staging Deployment
+
+```powershell
+# Full site deploy
+.\deploy-stage.ps1
+
+# Maryland only (faster iteration)
+.\deploy-stage.ps1 -MdOnly
+```
 
 ## Adding a New State
 
-1. **Create state folder:**
-   ```bash
-   mkdir -p states/{state_code}
-   ```
-
-2. **Copy template structure from existing state:**
-   ```bash
-   cp -r states/md/* states/{state_code}/
-   ```
-
-3. **Update state-specific content:**
-   - `states/{state_code}/index.html` - Update branding, navigation
-   - `states/{state_code}/_assets/` - Add state logo, letterhead
-
-4. **Update landing page:**
-   - Add state to dropdown in root `index.html`
-
-5. **Set up data pipeline:**
-   - Create ShareFile folder: `S:/Shared Folders/{state_code}/`
-   - Configure data processing scripts for new state
-
-## Development
-
-### Scripts Folder
-
-The `scripts/` folder contains development utilities:
-- `move_period_selector.py` - Utility for HTML manipulation
-- Add other one-time migration or utility scripts here
-
-### State-Specific Development
-
-Primary development occurs in `states/md/` (Maryland):
-- Test new features in MD first
-- Migrate successful patterns to other states
-- Keep state-specific customizations in respective folders
-
-## Related Repositories
-
-- **[cfsr-profile](https://github.com/childmetrix/cfsr-profile)** - CFSR data processing
-- **[utilities-core](D:/repo_childmetrix/utilities-core/)** - Generic R utilities
-- **[utilities-cfsr](D:/repo_childmetrix/utilities-cfsr/)** - CFSR-specific functions
+1. Create state folder: `mkdir states/{state_code}`
+2. Copy template from existing state
+3. Update branding in `states/{state_code}/_assets/`
+4. Add state to dropdown in root `index.html`
+5. Configure data pipeline for new state
 
 ## Technology Stack
 
-- **Frontend**: HTML5, Tailwind CSS, JavaScript
+- **Frontend**: HTML5, Tailwind CSS (CDN), JavaScript
 - **Interactive Dashboards**: R Shiny, Plotly
-- **Data Processing**: R, tidyverse
-- **Storage**: Local files, ShareFile cloud storage
-
-## Naming Conventions
-
-Following ChildMetrix standards:
-- **State codes**: Lowercase 2-letter codes (`md`, `ky`, `mi`)
-- **Folder names**: kebab-case (`cfsr-profile`, `data-dictionary`)
-- **File names**: snake_case for scripts, lowercase for HTML
-
-## Recent Changes
-
-**November 2025**
-- Reorganized into `states/` folder structure for scalability
-- Created `scripts/` folder for development utilities
-- Removed backup files (now using git history)
-- Removed obsolete implementation documentation
-- Updated paths throughout platform
-
-**October 2025**
-- Integrated CFSR interactive Shiny dashboard
-- Added tertiary navigation for CFSR performance section
-- Created multi-state architecture
+- **Data Processing**: R, tidyverse, pdftools, readxl
+- **Storage**: Local RDS files, ShareFile cloud storage
 
 ## Documentation
 
-- **Main Platform**: This README
-- **Maryland State**: [states/md/README.md](states/md/README.md)
-- **CFSR Integration**: [states/md/cfsr/measures/README.md](states/md/cfsr/measures/README.md)
+- **[Product Requirements Document](docs/PRD.md)** - Strategic roadmap and architecture
+- **[AI Assistant Guide](CLAUDE.md)** - Technical implementation details
+- **[Maryland State](states/md/README.md)** - State-specific notes
+
+## Recent Changes
+
+**January 2026**
+- Consolidated cfsr-profile repository into monorepo
+- Moved Shiny apps to `cfsr/apps/`
+- Moved data to `cfsr/data/rds/` and `cfsr/data/csv/`
+- Extracted shared utilities to `shared/utils/`
+- Removed dependency on external utilities-core repository
+
+**November 2025**
+- Reorganized into `states/` folder structure for scalability
+- Integrated CFSR interactive Shiny dashboard
 
 ---
 
 **Organization**: [ChildMetrix](https://github.com/childmetrix)
-**Last Updated**: November 2025
