@@ -25,7 +25,8 @@ cm-reports/
 │   │   ├── csv/           # CSV archives
 │   │   └── rds/           # RDS files for Shiny apps
 │   ├── extraction/        # Data extraction scripts
-│   │   ├── run_profile.R  # Main orchestrator
+│   │   ├── run.R          # User-friendly entry point
+│   │   ├── run_profile.R  # Main orchestrator function
 │   │   ├── config.R       # Discovery + validation
 │   │   ├── paths.R        # Centralized path configuration
 │   │   ├── profile_pdf_rsp.R        # RSP PDF extraction
@@ -91,10 +92,20 @@ Each state site includes:
 The CFSR extraction pipeline is now integrated into this monorepo:
 
 1. **Source**: CFSR 4 Data Profile PDFs from ShareFile (`S:/Shared Folders/{state}/cfsr/uploads/`)
-2. **Extraction**: Run `cfsr/extraction/run_profile.R` to process PDFs and Excel files
+2. **Extraction**: Run `cfsr/extraction/run.R` (user-friendly entry point with examples)
 3. **Output**: RDS files saved to `cfsr/data/rds/`
 4. **Consumption**: Shiny apps load data from `cfsr/data/rds/`
 5. **Archive**: CSV copies saved to `cfsr/data/csv/`
+
+To extract CFSR data:
+```r
+# Easy way - use run.R with pre-configured examples
+source("D:/repo_childmetrix/cm-reports/cfsr/extraction/run.R")
+
+# Or call run_profile() directly with custom parameters
+source("D:/repo_childmetrix/cm-reports/cfsr/extraction/run_profile.R")
+run_profile(state = "md", period = "2025_02", source = "all")
+```
 
 ## Running the Platform
 
