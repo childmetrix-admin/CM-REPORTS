@@ -27,10 +27,27 @@ cm-reports/
 │   ├── extraction/        # Data extraction scripts
 │   │   ├── run_profile.R  # Main orchestrator
 │   │   ├── config.R       # Discovery + validation
-│   │   └── paths.R        # Centralized path configuration
+│   │   ├── paths.R        # Centralized path configuration
+│   │   ├── profile_pdf_rsp.R        # RSP PDF extraction
+│   │   ├── profile_pdf_observed.R   # Observed PDF extraction
+│   │   ├── profile_excel_national.R # National Excel extraction
+│   │   ├── profile_excel_state.R    # State Excel extraction
+│   │   └── cfsr_round4_indicators_dictionary.csv
 │   ├── functions/         # CFSR-specific R functions
+│   │   ├── functions_cfsr_profile_shared.R      # Shared utilities
+│   │   ├── functions_cfsr_profile_pdf_rsp.R     # RSP parsing
+│   │   ├── functions_cfsr_profile_pdf_observed.R # Observed parsing
+│   │   ├── functions_cfsr_profile_excel.R       # Excel parsing
+│   │   ├── period_utils.R # Period format validation
+│   │   ├── utils.R        # Shiny app data loading
+│   │   ├── chart_builder.R # Chart generation
+│   │   └── data_prep.R    # Data transformation
 │   ├── modules/           # Shiny modules
-│   └── scripts/           # Utilities (launch_cfsr_dashboard.R)
+│   │   ├── indicator_detail.R  # Indicator detail module
+│   │   └── indicator_page.R    # Indicator page module
+│   └── scripts/           # Utilities
+│       ├── launch_cfsr_dashboard.R  # Multi-app launcher
+│       └── move_period_selector.py  # HTML manipulation utility
 ├── shared/
 │   └── utils/             # Cross-domain utilities
 │       ├── file_discovery.R
