@@ -15,6 +15,10 @@
 # Load centralized path configuration
 source(file.path(dirname(sys.frame(1)$ofile), "paths.R"))
 
+# Load packages (shared utility)
+source(file.path(SHARED_UTILS_DIR, "load_packages.R"))
+load_extraction_packages(quiet = TRUE)
+
 # Load shared utilities
 source(file.path(SHARED_UTILS_DIR, "state_utils.R"))
 source(file.path(SHARED_UTILS_DIR, "file_discovery.R"))
@@ -164,8 +168,8 @@ setup_cfsr_folders <- function(profile_period,
 
   # Build folder paths
   folder_uploads <- file.path(SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
-  folder_processed <- file.path(base_data_dir, "processed", state_code, profile_period)
-  folder_app_data <- file.path(base_data_dir, "app_data", state_code)
+  folder_processed <- file.path(CFSR_PROCESSED_DIR, state_code, profile_period)
+  folder_app_data <- file.path(CFSR_APP_DATA_DIR, state_code)
   folder_raw <- folder_uploads  # Alias for backward compatibility
 
   # Check if uploads folder exists
@@ -177,16 +181,10 @@ setup_cfsr_folders <- function(profile_period,
          call. = FALSE)
   }
 
-  # Create processed folders if they don't exist
-  if (!dir.exists(folder_processed)) {
-    dir.create(folder_processed, recursive = TRUE)
-    message("Created processed folder: ", folder_processed)
-  }
-
-  if (!dir.exists(folder_app_data)) {
-    dir.create(folder_app_data, recursive = TRUE)
-    message("Created app_data folder: ", folder_app_data)
-  }
+  # Note: Folders are created on-demand by extraction scripts
+  # - CSV files: save_to_folder_run() creates date-stamped folders
+  # - RDS files: Extraction scripts create output_dir_prod as needed
+  # No need to pre-create empty folder structures here
 
   # Return configuration list
   config <- list(
@@ -300,6 +298,6 @@ print_available_data <- function() {
 #####################################
 
 message("CFSR Profile configuration loaded")
-message("Base directory: ", CFSR_BASE_DIR)
+message("Base directory: ", CFSR_ROOT)
 message("ShareFile base: ", SHAREFILE_BASE)
 message("\nRun print_available_data() to see available data")

@@ -7,3 +7,8 @@ dist/
 *.save
 *.backup.*
 *.rds
+.Rproj.user
+
+# CFSR extraction outputs
+cfsr/data/csv/
+cfsr/data/rds/
