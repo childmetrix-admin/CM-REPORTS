@@ -150,7 +150,7 @@ generate_summary_table <- function(observed_data) {
       indicator,
       indicator_sort,
       indicator_very_short,
-      observed_performance,
+      performance,
       national_standard,
       denominator,
       numerator,
@@ -166,7 +166,7 @@ generate_summary_table <- function(observed_data) {
     left_join(
       indicator_metrics %>%
         filter(is_second_recent) %>%
-        select(indicator, perf_2nd = observed_performance),
+        select(indicator, perf_2nd = performance),
       by = "indicator"
     )
 
@@ -175,7 +175,7 @@ generate_summary_table <- function(observed_data) {
     left_join(
       indicator_metrics %>%
         filter(is_earliest) %>%
-        select(indicator, perf_earliest = observed_performance),
+        select(indicator, perf_earliest = performance),
       by = "indicator"
     )
 
@@ -184,16 +184,16 @@ generate_summary_table <- function(observed_data) {
     mutate(
       # Recent change: most recent vs 2nd most recent
       recent_change = case_when(
-        is.na(observed_performance) | is.na(perf_2nd) ~ NA_real_,
+        is.na(performance) | is.na(perf_2nd) ~ NA_real_,
         perf_2nd == 0 ~ NA_real_,  # Avoid division by zero
-        TRUE ~ ((observed_performance - perf_2nd) / perf_2nd) * 100
+        TRUE ~ ((performance - perf_2nd) / perf_2nd) * 100
       ),
 
       # Long-term change: most recent vs earliest
       longterm_change = case_when(
-        is.na(observed_performance) | is.na(perf_earliest) ~ NA_real_,
+        is.na(performance) | is.na(perf_earliest) ~ NA_real_,
         perf_earliest == 0 ~ NA_real_,  # Avoid division by zero
-        TRUE ~ ((observed_performance - perf_earliest) / perf_earliest) * 100
+        TRUE ~ ((performance - perf_earliest) / perf_earliest) * 100
       )
     )
 
@@ -203,10 +203,10 @@ generate_summary_table <- function(observed_data) {
       # Format observed performance
       # Percent indicators: multiply by 100 (stored as decimal: 0.35 = 35%)
       # Rate indicators: use raw value
-      observed_performance_display = case_when(
-        is.na(observed_performance) ~ "DQ",
-        format == "percent" ~ paste0(round(observed_performance * 100, 1), "%"),
-        TRUE ~ as.character(round(observed_performance, decimal_precision))
+      performance_display = case_when(
+        is.na(performance) ~ "DQ",
+        format == "percent" ~ paste0(round(performance * 100, 1), "%"),
+        TRUE ~ as.character(round(performance, decimal_precision))
       ),
 
       # Format national standard
@@ -238,7 +238,7 @@ generate_summary_table <- function(observed_data) {
     group_by(indicator, indicator_sort) %>%
     arrange(period) %>%
     summarize(
-      sparkline_values = list(observed_performance),
+      sparkline_values = list(performance),
       .groups = "drop"
     )
 
@@ -251,7 +251,7 @@ generate_summary_table <- function(observed_data) {
     arrange(indicator_sort) %>%
     select(
       indicator_very_short,
-      observed_performance_display,
+      performance_display,
       national_standard_display,
       numerator_display,
       denominator_display,

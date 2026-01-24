@@ -124,7 +124,7 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
     mutate(
       bar_color = case_when(
         is.na(rsp) ~ "#f59e0b",              # Amber for DQ (missing RSP data)
-        status == "better" ~ "#10b981",      # Green for statistically better
+        status == "better" ~ "#4472C4",      # Blue for statistically better
         status == "worse" ~ "#ef4444",       # Red for statistically worse
         status == "nodiff" ~ "#6b7280",      # Gray for no difference
         status == "dq" ~ "#f59e0b",          # Amber for data quality
@@ -148,7 +148,7 @@ build_rsp_chart <- function(data, national_std, format_type, direction_rule) {
   p <- ggplot(plot_data, aes(x = period_label)) +
     # National standard dashed line
     geom_hline(yintercept = national_display,
-               linetype = "dashed", color = "#3b82f6", linewidth = 0.8)
+               linetype = "dashed", color = "#10b981", linewidth = 0.8)
   # Add error bars and points for valid data
   if (nrow(plot_data_valid) > 0) {
     p <- p +
@@ -424,12 +424,12 @@ ui <- fluidPage(
         border-radius: 50%;
         flex-shrink: 0;
       }
-      .kpi-status-indicator.better { background: #10b981; }
+      .kpi-status-indicator.better { background: #4472C4; }
       .kpi-status-indicator.worse { background: #ef4444; }
       .kpi-status-indicator.nodiff { background: #6b7280; }
       .kpi-status-indicator.dq { background: #f59e0b; }
       .highlights-kpi .kpi-title {
-        background: #0f4c75;
+        background: #4472C4;
         color: white;
         margin: -16px -16px 12px -16px;
         padding: 12px 16px;
@@ -479,7 +479,7 @@ ui <- fluidPage(
       }
       .kpi-national-value {
         font-weight: 700;
-        color: #3b82f6;
+        color: #10b981;
         margin-left: 4px;
       }
       .kpi-direction {
@@ -500,7 +500,7 @@ ui <- fluidPage(
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
       .interpretation-kpi .kpi-title {
-        background: #0f4c75;
+        background: #4472C4;
         color: white;
         margin: -12px -12px 10px -12px;
         padding: 10px 12px;
@@ -579,7 +579,7 @@ ui <- fluidPage(
         border-radius: 50%;
         flex-shrink: 0;
       }
-      .interpretation-bar.better { background: #10b981; }
+      .interpretation-bar.better { background: #4472C4; }
       .interpretation-bar.worse { background: #ef4444; }
       .interpretation-bar.nodiff { background: #6b7280; }
       .interpretation-bar.dq { background: #f59e0b; }
@@ -587,7 +587,7 @@ ui <- fluidPage(
         width: 20px;
         height: 0;
         background: none;
-        border-bottom: 2px dashed #3b82f6;
+        border-bottom: 2px dashed #10b981;
         border-radius: 0;
       }
       .interpretation-guide {
@@ -638,7 +638,7 @@ ui <- fluidPage(
         line-height: 1.2;
       }
       .summary-count.better {
-        color: #10b981;
+        color: #4472C4;
       }
       .summary-count.nodiff {
         color: #6b7280;
@@ -855,7 +855,7 @@ server <- function(input, output, session) {
     arrow <- if (direction_rule == "lt") "\u25BC" else "\u25B2"
     # Determine value color based on performance status
     value_color <- switch(status_val,
-      "better" = "#10b981",   # Green
+      "better" = "#4472C4",   # Blue
       "worse" = "#ef4444",    # Red
       "nodiff" = "#6b7280",   # Gray
       "dq" = "#f59e0b",       # Orange

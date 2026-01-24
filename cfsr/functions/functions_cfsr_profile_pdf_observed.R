@@ -150,7 +150,7 @@ reshape_observed_wide_to_long <- function(df) {
       indicator = Indicator,
       denominator = Denominator,
       numerator = Numerator,
-      observed_performance = `Observed performance`
+      performance = `Observed performance`
     )
 
   # Filter: Keep rows where at least one field has non-empty data
@@ -159,7 +159,7 @@ reshape_observed_wide_to_long <- function(df) {
     filter(
       (!is.na(denominator) & str_trim(denominator) != "") |
       (!is.na(numerator) & str_trim(numerator) != "") |
-      (!is.na(observed_performance) & str_trim(observed_performance) != "")
+      (!is.na(performance) & str_trim(performance) != "")
     )
 
   # Convert to numeric, handling special cases
@@ -169,13 +169,13 @@ reshape_observed_wide_to_long <- function(df) {
       denominator = as.numeric(str_replace_all(str_replace_all(denominator, ",", ""), " ", "")),
       # Numerator: remove commas AND spaces, convert to numeric (DQ becomes NA)
       numerator = as.numeric(str_replace_all(str_replace_all(numerator, ",", ""), " ", "")),
-      # Observed performance: handle percentages like "26. 0%" and decimals like "4. 60"
+      # Performance: handle percentages like "26. 0%" and decimals like "4. 60"
       # Remove spaces first, then handle % if present
-      observed_performance = case_when(
-        is.na(observed_performance) ~ NA_real_,
-        str_detect(observed_performance, "%") ~
-          as.numeric(str_replace_all(str_replace_all(observed_performance, " ", ""), "%", "")) / 100,
-        TRUE ~ as.numeric(str_replace_all(observed_performance, " ", ""))
+      performance = case_when(
+        is.na(performance) ~ NA_real_,
+        str_detect(performance, "%") ~
+          as.numeric(str_replace_all(str_replace_all(performance, " ", ""), "%", "")) / 100,
+        TRUE ~ as.numeric(str_replace_all(performance, " ", ""))
       )
     )
 

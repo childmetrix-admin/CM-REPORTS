@@ -145,7 +145,8 @@ extract_dimension_rows <- function(data_df, dimension_header_pattern, end_marker
   dimension_start_index <- dimension_row_index + 1
 
   # Find where dimension rows end (row before end marker)
-  candidate_rows <- (dimension_start_index + 1):nrow(data_df)
+  # Start search at dimension_start_index to include first data row
+  candidate_rows <- dimension_start_index:nrow(data_df)
 
   end_marker_index <- NA
   for (row_idx in candidate_rows) {
@@ -260,8 +261,15 @@ process_standard_indicator <- function(sheet_name,
 
   # Helper function to process rows (works for both jurisdiction and demographic data)
   process_rows <- function(data_rows, dimension_name = NULL, dimension_header = NULL) {
-    # Skip metadata row (first row)
-    data_clean <- data_rows[-1, ]
+    # Skip metadata row ONLY for jurisdiction rows (state/locality)
+    # For dimension rows (age, race, locality), first row is actual data
+    if (is.null(dimension_name)) {
+      # Jurisdiction rows: skip first row (metadata)
+      data_clean <- data_rows[-1, ]
+    } else {
+      # Dimension rows: keep all rows (first row is data, e.g., American Indian/Alaska Native)
+      data_clean <- data_rows
+    }
 
     # Rename columns dynamically based on actual number of periods
     n_periods <- length(periods)
@@ -472,8 +480,15 @@ process_entry_rate_indicator <- function(ver = NULL,
 
   # Helper function to process rows (works for both jurisdiction and demographic data)
   process_rows <- function(data_rows, dimension_name = NULL, dimension_header = NULL) {
-    # Skip metadata row (first row)
-    data_clean <- data_rows[-1, ]
+    # Skip metadata row ONLY for jurisdiction rows (state/locality)
+    # For dimension rows (age, race, locality), first row is actual data
+    if (is.null(dimension_name)) {
+      # Jurisdiction rows: skip first row (metadata)
+      data_clean <- data_rows[-1, ]
+    } else {
+      # Dimension rows: keep all rows (first row is data, e.g., American Indian/Alaska Native)
+      data_clean <- data_rows
+    }
 
     # Rename columns
     den_cols <- paste0("den_", years)

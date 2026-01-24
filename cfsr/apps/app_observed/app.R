@@ -41,7 +41,7 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
   if (nrow(data) == 0) return(NULL)
 
   # Prepare data - convert percentages for display
-  # NOTE: observed_performance is stored as proportion (0.125)
+  # NOTE: performance is stored as proportion (0.125)
   #       national_std is stored as percentage (12.5)
   is_pct <- (format_type == "percent")
   multiplier <- if (is_pct) 100 else 1
@@ -51,7 +51,7 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
 
   plot_data <- data %>%
     mutate(
-      observed_display = observed_performance * multiplier,
+      observed_display = performance * multiplier,
       period = factor(period, levels = period_order)
     )
 
@@ -160,7 +160,7 @@ build_observed_chart_bars <- function(data, national_std, format_type, direction
   if (nrow(data) == 0) return(NULL)
 
   # Prepare data - convert percentages for display
-  # NOTE: observed_performance is stored as proportion (0.125)
+  # NOTE: performance is stored as proportion (0.125)
   #       national_std is stored as percentage (12.5)
   is_pct <- (format_type == "percent")
   multiplier <- if (is_pct) 100 else 1
@@ -170,7 +170,7 @@ build_observed_chart_bars <- function(data, national_std, format_type, direction
 
   plot_data <- data %>%
     mutate(
-      observed_display = observed_performance * multiplier,
+      observed_display = performance * multiplier,
       period = factor(period, levels = period_order)
     )
 
@@ -271,6 +271,61 @@ build_observed_chart_bars <- function(data, national_std, format_type, direction
 ui <- fluidPage(
   # Custom CSS
   tags$head(
+    # html2canvas library for client-side screenshot/download
+    tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+
+    # Download visualization function
+    tags$script(HTML("
+      function downloadViz(containerId, filename) {
+        const element = document.getElementById(containerId);
+        const button = element.querySelector('.viz-download-button .btn');
+
+        if (!element) {
+          console.error('Container not found:', containerId);
+          return;
+        }
+
+        // Show clicked state
+        if (button) {
+          button.classList.add('btn-clicked');
+          button.disabled = true;
+        }
+
+        // Hide button only during screenshot capture
+        element.classList.add('exporting');
+
+        html2canvas(element, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          logging: false,
+          useCORS: true
+        }).then(canvas => {
+          // Remove exporting class immediately
+          element.classList.remove('exporting');
+
+          // Trigger download
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+
+          // Reset button state
+          if (button) {
+            button.classList.remove('btn-clicked');
+            button.disabled = false;
+          }
+        }).catch(error => {
+          element.classList.remove('exporting');
+          if (button) {
+            button.classList.remove('btn-clicked');
+            button.disabled = false;
+          }
+          console.error('Screenshot failed:', error);
+          alert('Failed to generate screenshot. Please try again.');
+        });
+      }
+    ")),
+
     tags$style(HTML("
       /* Page Layout */
       body {
@@ -341,7 +396,7 @@ ui <- fluidPage(
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
       .interpretation-kpi .kpi-title {
-        background: #0f4c75;
+        background: #4472C4;
         color: white;
         margin: -12px -12px 10px -12px;
         padding: 10px 12px;
@@ -549,6 +604,103 @@ ui <- fluidPage(
         margin-top: 12px;
         font-style: italic;
       }
+
+      /* Viz Container Styles (for self-contained visualizations with download) */
+      .viz-export-container {
+        position: relative;
+        background: white;
+        border-radius: 6px;
+        padding: 8px 20px 20px 8px;
+      }
+
+      .viz-download-button {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 100;
+      }
+
+      /* Clicked state - visual feedback */
+      .viz-download-button .btn-clicked {
+        background-color: #2c5aa0 !important;
+        transform: scale(0.95);
+      }
+
+      /* Hide download button during screenshot export */
+      .viz-export-container.exporting .viz-download-button {
+        display: none !important;
+      }
+
+      .viz-context-header {
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      }
+
+      .viz-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 4px;
+      }
+
+      .viz-description {
+        font-size: 13px;
+        font-weight: 400;
+        color: #6b7280;
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+
+      /* Pills row container */
+      .viz-pills-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      /* Period pill (highlighted timeframe) - Blue */
+      .viz-period-pill {
+        display: inline-block;
+        background: #4472C4;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 12px;
+      }
+
+      /* Legend (national performance) - Regular text */
+      .viz-legend-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #374151;
+      }
+
+      .viz-legend-pill .legend-line {
+        width: 20px;
+        height: 0;
+        border-top: 2px dashed #10b981;
+        display: inline-block;
+      }
+
+      .viz-chart-area {
+        min-height: 400px;
+      }
+
+      /* Source footnote */
+      .viz-source {
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #e5e7eb;
+      }
     "))
   ),
 
@@ -748,7 +900,7 @@ server <- function(input, output, session) {
 
     # Get latest period data (most recent, including NA)
     latest <- ind_data %>% arrange(desc(period)) %>% slice(1)
-    latest_val <- latest$observed_performance
+    latest_val <- latest$performance
 
     # Format display value
     if (format_type == "percent") {

@@ -21,6 +21,7 @@ library(ggplot2)
 source("../../functions/utils.R")
 source("../../functions/data_prep.R")
 source("../../functions/chart_builder.R")
+source("../../functions/viz_container.R")
 
 #####################################
 # MODULES ----
@@ -99,3 +100,12 @@ view_to_indicator <- c(
   "reentry" = "Reentry to foster care within 12 months",
   "placement" = "Placement stability (moves / 1,000 days in care)"
 )
+
+#####################################
+# FEATURE FLAGS ----
+#####################################
+
+# Feature flag: Self-contained visualization containers
+# Set to TRUE to use new self-contained viz containers with download buttons
+# Set to FALSE to revert to original layout (page-level metadata only)
+USE_VIZ_CONTAINERS <- TRUE

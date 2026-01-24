@@ -22,7 +22,7 @@
 
 # OUTPUT: Processed CSV with observed performance data by indicator and period
 # - Columns: state, indicator, period, period_meaningful, denominator, numerator,
-#            observed_performance, as_of_date, profile_version, source
+#            performance, as_of_date, profile_version, source
 
 # IMPORTANT: This script expects state_code and profile_period to be set
 # by the orchestrator (run_profile.R) or manually before sourcing.
@@ -343,7 +343,7 @@ observed_data <- observed_data %>%
   select(
     # Key columns first
     state, state_abb, category, indicator, period, period_meaningful,
-    denominator, numerator, observed_performance,
+    denominator, numerator, performance,
     national_standard, status,
     # Rank columns from national data (after status)
     state_rank, reporting_states,

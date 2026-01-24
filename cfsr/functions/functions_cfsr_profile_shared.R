@@ -739,16 +739,23 @@ make_period_meaningful <- Vectorize(make_period_meaningful)
 #' Standardize dimension values for national and state data
 #'
 #' Applies consistent recoding to dimension_value column:
-#' - Standardizes race/ethnicity dimension names
-#' - Can be extended for other dimension value cleaning
+#' - Locality dimension: Strips " County" suffix (except "Baltimore County"), capitalizes "Baltimore City"
+#' - Race/ethnicity dimension: Standardizes race/ethnicity names
 #'
 #' @param data Data frame with dimension and dimension_value columns
 #' @return Data frame with standardized dimension_value column
 standardize_dimension_values <- function(data) {
   data %>%
     mutate(dimension_value = case_when(
-      # Only apply to race/ethnicity dimension
+      # Apply to Locality dimension (county names)
+      grepl("^Locality$", dimension, ignore.case = TRUE) ~ case_when(
+        dimension_value == "Baltimore city" ~ "Baltimore City",  # Capitalize City
+        dimension_value == "Baltimore County" ~ "Baltimore County",  # Exception: keep as-is
+        TRUE ~ str_replace(dimension_value, " County$", "")  # Strip " County" suffix
+      ),
+      # Apply to race/ethnicity dimension
       grepl("Race", dimension, ignore.case = TRUE) ~ case_when(
+        dimension_value == "American Indian/Alaska Native-Non Hispanic" ~ "American Indian/Alaska Native",
         dimension_value == "Asian-Non Hispanic" ~ "Asian",
         dimension_value == "Black or African American-Non Hispanic" ~ "Black or African American",
         dimension_value == "Hispanic" ~ "Hispanic (of any race)",
@@ -757,6 +764,6 @@ standardize_dimension_values <- function(data) {
         dimension_value == "White-Non Hispanic" ~ "White",
         TRUE ~ dimension_value  # Keep unchanged (Unknown/Unable to Determine, Missing Race/Ethnicity Data)
       ),
-      TRUE ~ dimension_value  # Not race/ethnicity, keep unchanged
+      TRUE ~ dimension_value  # Other dimensions, keep unchanged
     ))
 }

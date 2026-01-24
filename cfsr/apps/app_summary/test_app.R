@@ -45,7 +45,7 @@ tryCatch({
   # Verify column names
   expected_cols <- c(
     "indicator_very_short",
-    "observed_performance_display",
+    "performance_display",
     "national_standard_display",
     "numerator_display",
     "denominator_display",
@@ -89,9 +89,9 @@ cat("\n=== Testing Data Quality ===\n")
 # Test 4: Verify formatting
 cat("\nTest 4: Verifying data formatting...\n")
 tryCatch({
-  # Check observed_performance_display
-  has_dq <- any(summary_table$observed_performance_display == "DQ")
-  has_percent <- any(grepl("%$", summary_table$observed_performance_display))
+  # Check performance_display
+  has_dq <- any(summary_table$performance_display == "DQ")
+  has_percent <- any(grepl("%$", summary_table$performance_display))
 
   cat("  Observed performance column:\n")
   cat("    Contains DQ values:", has_dq, "\n")

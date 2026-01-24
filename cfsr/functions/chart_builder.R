@@ -124,7 +124,7 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
         xend = target_value,
         y = states_ordered[nrow(ind_df)],  # Bottom state
         yend = states_ordered[1],  # Top state
-        line = list(color = "#87D180", width = 2, dash = "dash"),
+        line = list(color = "#10b981", width = 2, dash = "dash"),
         showlegend = FALSE,
         hoverinfo = "skip",
         inherit = FALSE
@@ -239,7 +239,7 @@ build_overview_chart <- function(ind_df, selected_state = NULL) {
         xend = target_value,
         y = 0,
         yend = nrow(top_states) + 1,
-        line = list(color = "#87D180", width = 1.5, dash = "dash"),
+        line = list(color = "#10b981", width = 1.5, dash = "dash"),
         showlegend = FALSE,
         hoverinfo = "skip",
         inherit = FALSE

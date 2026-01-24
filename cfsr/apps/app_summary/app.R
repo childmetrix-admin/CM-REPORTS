@@ -11,6 +11,55 @@ source("global.R", local = TRUE)
 ui <- fluidPage(
   # Custom CSS
   tags$head(
+    # html2canvas library for client-side screenshot/download
+    tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+
+    # Download visualization function
+    tags$script(HTML("
+      function downloadSummary(containerId, filename) {
+        const element = document.getElementById(containerId);
+        const button = element.querySelector('.summary-download-button .btn');
+
+        if (!button) return;
+
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class=\"fa fa-spinner fa-spin\"></i> Capturing...';
+        button.disabled = true;
+
+        // Hide button only during screenshot capture
+        element.classList.add('exporting');
+
+        html2canvas(element, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          allowTaint: false
+        }).then(canvas => {
+          element.classList.remove('exporting');
+          button.innerHTML = originalText;
+          button.disabled = false;
+
+          canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          });
+        }).catch(err => {
+          console.error('Screenshot failed:', err);
+          element.classList.remove('exporting');
+          button.innerHTML = originalText;
+          button.disabled = false;
+          alert('Failed to capture screenshot');
+        });
+      }
+    ")),
+
     tags$style(HTML("
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -20,25 +69,26 @@ ui <- fluidPage(
       }
       .container-fluid {
         padding: 24px;
-        max-width: 1000px;
+        max-width: 1200px;
         margin-left: 0;
         margin-right: auto;
       }
 
-      /* Header */
+      /* Header (now inside card) */
       .summary-header {
-        margin-bottom: 24px;
-        padding-bottom: 0;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e7eb;
       }
       .summary-title {
         font-size: 16px;
         font-weight: 700;
         color: #4472C4;
-        margin: 0 0 12px 0;
+        margin: 0 0 8px 0;
         letter-spacing: -0.5px;
       }
       .summary-subtitle {
-        font-size: 16px;
+        font-size: 14px;
         color: #6b7280;
         margin: 0;
         line-height: 1.6;
@@ -47,11 +97,31 @@ ui <- fluidPage(
 
       /* Summary table card */
       .summary-card {
+        position: relative;
         background: white;
         padding: 20px 24px;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         margin-bottom: 20px;
+      }
+
+      /* Download button */
+      .summary-download-button {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 10;
+      }
+      .summary-card.exporting .summary-download-button {
+        display: none;
+      }
+
+      .summary-source {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 11px;
+        color: #6b7280;
       }
 
       /* Status pill badges */
@@ -64,8 +134,8 @@ ui <- fluidPage(
         white-space: nowrap;
       }
       .status-pill.better {
-        color: #16a34a;
-        background-color: #dcfce7;
+        color: white;
+        background-color: #4472C4;
       }
       .status-pill.worse {
         color: #dc2626;
@@ -88,8 +158,14 @@ ui <- fluidPage(
         font-size: 13px;
         font-weight: 600;
         white-space: nowrap;
-        color: white;
-        background-color: #4472C4;
+        color: #374151;
+        background-color: #e5e7eb;
+      }
+
+      /* Period value */
+      .period-value {
+        font-size: 13px;
+        color: #374151;
       }
 
       .indicator-table {
@@ -97,7 +173,7 @@ ui <- fluidPage(
       }
       .indicator-header {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 140px 80px;
+        grid-template-columns: 2fr 1fr 1fr 140px 80px 120px;
         gap: 12px;
         padding: 8px 0;
         font-size: 13px;
@@ -113,7 +189,7 @@ ui <- fluidPage(
       }
       .indicator-row {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 140px 80px;
+        grid-template-columns: 2fr 1fr 1fr 140px 80px 120px;
         gap: 12px;
         padding: 8px 0;
         font-size: 15px;
@@ -140,7 +216,7 @@ ui <- fluidPage(
       /* Table footnote */
       .table-footnote {
         margin-top: 12px;
-        font-size: 13px;
+        font-size: 11px;
         color: #6b7280;
         font-style: italic;
       }
@@ -178,13 +254,7 @@ ui <- fluidPage(
     "))
   ),
 
-  # Header
-  div(class = "summary-header",
-    h1(class = "summary-title", textOutput("title")),
-    p(class = "summary-subtitle", uiOutput("subtitle"))
-  ),
-
-  # Status sections
+  # Status sections (includes title/subtitle inside for download capture)
   uiOutput("status_sections")
 )
 
@@ -236,25 +306,6 @@ server <- function(input, output, session) {
       ungroup()
   })
 
-  # Title
-  output$title <- renderText({
-    paste("CFSR Performance Summary —", state_name_rv())
-  })
-
-  # Subtitle
-  output$subtitle <- renderUI({
-    data <- observed_data()
-    if (!is.null(data) && nrow(data) > 0) {
-      profile_ver <- unique(data$profile_version)[1]
-
-      tags$span(
-        "CFSR Round 4 Data Profile | ", profile_ver
-      )
-    } else {
-      tags$span("Loading...")
-    }
-  })
-
   # Helper function to format indicator value
   format_indicator_value <- function(ind_data) {
     # Get decimal precision from data (default to 1 if not available)
@@ -283,16 +334,16 @@ server <- function(input, output, session) {
     }
 
     # If observed performance is NA, return DQ for value but keep national standard
-    if (is.na(ind_data$observed_performance)) {
+    if (is.na(ind_data$performance)) {
       return(list(value = "DQ", unit = "", national = national))
     }
 
     # Format observed performance value
     if (ind_data$format == "percent") {
-      value <- sprintf(format_str, ind_data$observed_performance * 100)
+      value <- sprintf(format_str, ind_data$performance * 100)
       unit <- "%"
     } else {
-      value <- sprintf(format_str, ind_data$observed_performance)
+      value <- sprintf(format_str, ind_data$performance)
       # Determine unit based on indicator
       if (grepl("Maltreatment", ind_data$indicator_short, ignore.case = TRUE)) {
         unit <- " victimizations"
@@ -336,15 +387,43 @@ server <- function(input, output, session) {
       }
     }
 
-    # Build single consolidated table
-    div(class = "summary-card",
+    # Build single consolidated table with header
+    div(
+      id = "summary-container",
+      class = "summary-card",
+
+      # Download button
+      div(class = "summary-download-button",
+        actionButton(
+          "download_summary",
+          "Download",
+          icon = icon("download"),
+          onclick = sprintf(
+            "downloadSummary('%s', 'cfsr_summary_%s.png')",
+            "summary-container",
+            tolower(state_name_rv())
+          )
+        )
+      ),
+
+      # Header (title and subtitle inside container for download capture)
+      div(class = "summary-header",
+        div(class = "summary-title",
+          paste("CFSR Performance Summary —", state_name_rv())
+        ),
+        div(class = "summary-subtitle",
+          paste0("CFSR Round 4 Data Profile | ", data$profile_version[1])
+        )
+      ),
+
       div(class = "indicator-table",
         div(class = "indicator-header",
           span("Indicator"),
-          span("State's Performance"),
+          span("State's Observed Perf"),
           span("National Performance"),
           span("Compared to National*"),
-          span("Rank**")
+          span("Rank**"),
+          span("Period")
         ),
         tags$ul(class = "indicator-list",
           lapply(1:nrow(data), function(i) {
@@ -359,11 +438,19 @@ server <- function(input, output, session) {
                 gsub("^\\s*\\(|\\)$", "", formatted$national)
               ),
               status_pill(ind$status),
-              format_rank(ind)
+              format_rank(ind),
+              span(class = "period-value", ind$period_meaningful)
             )
           })
         )
       ),
+
+      # Source footnote (from data)
+      div(class = "summary-source",
+        paste0("Source: ", data$source[1])
+      ),
+
+      # Explanatory footnotes
       div(class = "table-footnote",
         div("* Based on the state's risk-standardized performance, which is its observed performance after risk-adjustment."),
         div("** Based on the state's observed performance among states whose performance could be calculated.")
