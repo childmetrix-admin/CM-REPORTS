@@ -360,8 +360,8 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             tickfont = list(size = 11),
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
             ticksuffix = if (format_type == "percent") "%" else "",
-            ticks = "outside",  # Show tick marks outside the plot area
-            ticklen = 8  # Length of tick marks (pushes labels further from axis line)
+            ticks = "",  # Hide tick marks
+            standoff = 10  # Distance in pixels between axis line and tick labels
           ),
           yaxis = list(
             title = "",
@@ -457,8 +457,8 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             title = "",
             showgrid = FALSE,
             tickfont = list(size = 11),
-            ticks = "outside",  # Show tick marks outside the plot area
-            ticklen = 8  # Length of tick marks (pushes labels further from axis line)
+            ticks = "",  # Hide tick marks
+            standoff = 10  # Distance in pixels between axis line and tick labels
           ),
           yaxis = list(
             title = "",
@@ -549,8 +549,8 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             title = "",
             showgrid = FALSE,
             tickfont = list(size = 11),
-            ticks = "outside",  # Show tick marks outside the plot area
-            ticklen = 8  # Length of tick marks (pushes labels further from axis line)
+            ticks = "",  # Hide tick marks
+            standoff = 10  # Distance in pixels between axis line and tick labels
           ),
           yaxis = list(
             title = "",

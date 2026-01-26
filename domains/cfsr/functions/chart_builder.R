@@ -139,8 +139,8 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
     gridcolor = "#E5E5E5",
     zeroline = FALSE,  # Remove the vertical 0 axis line
     tickfont = list(size = 11),  # X-axis label font size
-    ticks = "outside",  # Show tick marks outside the plot area
-    ticklen = 8  # Length of tick marks (pushes labels further from axis line)
+    ticks = "",  # Hide tick marks
+    standoff = 10  # Distance in pixels between axis line and tick labels
   )
 
   # Add formatting to axis based on type
