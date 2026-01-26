@@ -180,9 +180,8 @@ observed_data <- bind_rows(top_long, bottom_long)
 ########################################
 
 # Load RSP RDS file to get pre-calculated status and data_used
-output_dir_prod <- CFSR_APP_DATA_DIR
-rsp_rds_path <- file.path(output_dir_prod,
-  paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
+# Use new hierarchical structure
+rsp_rds_path <- build_rds_path(state_code, profile_period, "rsp")
 
 # Load RSP data
 if (file.exists(rsp_rds_path)) {
