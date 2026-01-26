@@ -331,8 +331,8 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       bar_text <- paste0(format(round(data$performance_display, decimal_precision), nsmall = decimal_precision),
                         if (format_type == "percent") "%" else "")
 
-      # Calculate chart height (15px per bar for consistent width)
-      chart_height <- nrow(data) * 15
+      # Calculate chart height (15px per bar for consistent width, minimum 600px)
+      chart_height <- max(600, nrow(data) * 15)
 
       # Create plot
       p <- plot_ly(
