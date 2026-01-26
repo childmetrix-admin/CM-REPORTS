@@ -29,10 +29,32 @@ data_dir <- file.path(monorepo_root, "cfsr/data/rds")
 #' Get available RSP profiles for a state
 get_available_rsp_profiles <- function(state) {
   state <- toupper(state)
-  pattern <- paste0("^", state, "_cfsr_profile_rsp_([0-9]{4}_[0-9]{2})\\.rds$")
-  all_files <- list.files(data_dir, pattern = pattern)
-  if (length(all_files) == 0) return(character(0))
-  periods <- gsub(paste0(state, "_cfsr_profile_rsp_(.*)\\.rds"), "\\1", all_files)
+
+  # New hierarchical structure: cfsr/data/rds/{state}/{period}/
+  state_dir <- file.path(data_dir, tolower(state))
+
+  # Check if state directory exists
+  if (!dir.exists(state_dir)) return(character(0))
+
+  # Get all period subdirectories (e.g., "2025_02", "2024_08")
+  period_dirs <- list.dirs(state_dir, full.names = FALSE, recursive = FALSE)
+  period_dirs <- period_dirs[grepl("^[0-9]{4}_[0-9]{2}$", period_dirs)]
+
+  if (length(period_dirs) == 0) return(character(0))
+
+  # Filter to periods where the RSP file actually exists
+  periods <- character(0)
+  for (period in period_dirs) {
+    expected_file <- file.path(state_dir, period,
+                              paste0(state, "_cfsr_profile_rsp_", period, ".rds"))
+    if (file.exists(expected_file)) {
+      periods <- c(periods, period)
+    }
+  }
+
+  if (length(periods) == 0) return(character(0))
+
+  # Sort in descending order (most recent first)
   sort(periods, decreasing = TRUE)
 }
 #' Load RSP data for a state and profile period
@@ -47,8 +69,12 @@ load_rsp_data <- function(state, profile = "latest") {
     }
     profile <- available[1]
   }
+
+  # New hierarchical structure: cfsr/data/rds/{state}/{period}/
+  state_dir <- file.path(data_dir, tolower(state), profile)
   filename <- paste0(state, "_cfsr_profile_rsp_", profile, ".rds")
-  file_path <- file.path(data_dir, filename)
+  file_path <- file.path(state_dir, filename)
+
   if (!file.exists(file_path)) {
     stop("RSP data file not found: ", file_path)
   }
