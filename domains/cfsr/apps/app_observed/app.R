@@ -827,9 +827,8 @@ server <- function(input, output, session) {
 
             # Interpretation notes
             div(class = "interpretation-notes",
-              tags$p("The observed performance chart shows your state's actual performance over time without risk adjustment."),
-              tags$p("Performance is compared to the national standard. Colored points indicate whether your state's ",
-                    tags$b("risk-adjusted performance"), " is statistically better or worse than national. Those results may differ from the observed values shown here.")
+              tags$p("Observed performance is the percent or rate of children experiencing the outcome, without risk-adjustment."),
+              tags$p("Whether performance is statistically better, worse, or no different from national performance is based on your state's risk-standardized performance (RSP). The results are shown here for convenience.")
             )
           ),
 
