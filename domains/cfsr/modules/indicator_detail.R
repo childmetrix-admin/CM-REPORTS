@@ -359,7 +359,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             zeroline = FALSE,
             tickfont = list(size = 11),
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
-            ticksuffix = if (format_type == "percent") "%" else ""
+            ticksuffix = if (format_type == "percent") "%" else "",
+            ticks = "outside",  # Show tick marks outside the plot area
+            ticklen = 8  # Length of tick marks (pushes labels further from axis line)
           ),
           yaxis = list(
             title = "",
@@ -372,7 +374,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             tickmode = "linear",  # Force all labels to show
             dtick = 1  # One tick per category
           ),
-          margin = list(l = 150, r = 80, t = 10, b = 35),
+          margin = list(l = 150, r = 80, t = 10, b = 20),
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
@@ -454,7 +456,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
           xaxis = list(
             title = "",
             showgrid = FALSE,
-            tickfont = list(size = 11)
+            tickfont = list(size = 11),
+            ticks = "outside",  # Show tick marks outside the plot area
+            ticklen = 8  # Length of tick marks (pushes labels further from axis line)
           ),
           yaxis = list(
             title = "",
@@ -464,7 +468,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
             ticksuffix = if (format_type == "percent") "%" else ""
           ),
-          margin = list(l = 60, r = 40, t = 10, b = 70),
+          margin = list(l = 60, r = 40, t = 10, b = 60),
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
@@ -544,7 +548,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
           xaxis = list(
             title = "",
             showgrid = FALSE,
-            tickfont = list(size = 11)
+            tickfont = list(size = 11),
+            ticks = "outside",  # Show tick marks outside the plot area
+            ticklen = 8  # Length of tick marks (pushes labels further from axis line)
           ),
           yaxis = list(
             title = "",
@@ -554,7 +560,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
             ticksuffix = if (format_type == "percent") "%" else ""
           ),
-          margin = list(l = 60, r = 40, t = 10, b = 70),
+          margin = list(l = 60, r = 40, t = 10, b = 60),
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
