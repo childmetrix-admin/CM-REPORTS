@@ -469,8 +469,16 @@ cfsr_profile_version <- function(file_path = NULL, data_df = NULL, state_code = 
   month <- parts[1]
   year  <- parts[2]
 
+  # Build source citation - use state name for state files, "National" for national file
+  if (!is.null(state_code)) {
+    state_name <- convert_state_code_to_name(toupper(state_code))
+    data_type <- paste0(state_name, " - supplemental context data")
+  } else {
+    data_type <- "National - supplemental context data"
+  }
+
   source <- paste0(
-    "Children's Bureau. (", year, ", ", month, "). National - supplemental context data - ",
+    "Children's Bureau. (", year, ", ", month, "). ", data_type, " - ",
     month, " ", year, " [Data file]. U.S. Department of Health & Human Services, ",
     "Administration for Children and Families, Administration on Children, Youth and Families."
   )

@@ -258,13 +258,44 @@ if (file.exists(national_file)) {
     )
 }
 
+########################################
+# ADD STATUS COLUMN FROM RSP DATA ----
+########################################
+
+# Load RSP data to add status column (indicates "dq" for data quality issues)
+# This allows charts to show appropriate message when performance can't be calculated
+rsp_file <- build_rds_path(state_code, profile_period, "rsp")
+
+if (file.exists(rsp_file)) {
+  rsp_data <- readRDS(rsp_file)
+
+  # Join RSP data to add status column
+  # Join on: indicator, period
+  # Note: Drop existing status column first to avoid .x/.y suffix conflicts
+  ind_data <- ind_data %>%
+    select(-any_of("status")) %>%
+    left_join(
+      rsp_data %>%
+        select(indicator, period, status) %>%
+        distinct(),
+      by = c("indicator", "period")
+    )
+
+} else {
+  warning("RSP data file not found: ", rsp_file)
+  warning("Continuing without status column. Charts won't show DQ messages.")
+  # Add placeholder status column so column structure is consistent
+  ind_data <- ind_data %>%
+    mutate(status = NA_character_)
+}
+
 # Reorder columns for consistency across all outputs
 ind_data <- ind_data %>%
   select(
     # Key columns first
     state, state_abb, category, indicator, dimension, dimension_value,
     period, period_meaningful,
-    denominator, numerator, performance, state_rank, reporting_states,
+    denominator, numerator, performance, state_rank, reporting_states, status,
     # Add census_year if it exists (only for entry rate indicator)
     any_of("census_year"),
     national_standard,

@@ -132,7 +132,7 @@ indicator_detail_ui <- function(id) {
 # SERVER FUNCTION ----
 #####################################
 
-indicator_detail_server <- function(id, indicator_name, national_data, state_code) {
+indicator_detail_server <- function(id, indicator_name, national_data, state_code, profile = reactive("latest")) {
   moduleServer(id, function(input, output, session) {
 
     # Check if national_data is a reactive - if so, call it to get the data
@@ -279,8 +279,32 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       req(county_data())
       data <- county_data()
 
-      # Get metadata
-      format_type <- data$format[1]
+      # Check if DQ flag set (data quality issues)
+      if (is.list(data) && !is.null(data$dq) && data$dq) {
+        # Return empty plot with message
+        plot_ly() %>%
+          layout(
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            annotations = list(
+              list(
+                text = "The Children's Bureau could not calculate performance due to data quality issues with the state's AFCARS and/or NCANDS submissions.",
+                x = 0.5,
+                y = 0.5,
+                xref = "paper",
+                yref = "paper",
+                showarrow = FALSE,
+                font = list(size = 14, color = "#6b7280")
+              )
+            ),
+            margin = list(l = 20, r = 20, t = 20, b = 20),
+            plot_bgcolor = "white",
+            paper_bgcolor = "white"
+          ) %>%
+          config(displayModeBar = FALSE)
+      } else {
+        # Get metadata
+        format_type <- data$format[1]
       decimal_precision <- if (!is.na(data$decimal_precision[1])) data$decimal_precision[1] else 1
       scale_val <- if (!is.na(data$scale[1])) data$scale[1] else 1
 
@@ -294,18 +318,21 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       # Add transformed performance to data frame
       data$performance_display <- performance
 
-      # Sort by performance (best to worst based on direction_desired)
+      # Sort ALL data together (state and counties) by performance
       direction <- data$direction_desired[1]
       if (!is.na(direction) && grepl("lower", direction, ignore.case = TRUE)) {
         # Lower is better: sort ascending (best = lowest first)
-        data <- data %>% arrange(performance)
+        data <- data %>% arrange(performance_display)
       } else {
         # Higher is better: sort descending (best = highest first)
-        data <- data %>% arrange(desc(performance))
+        data <- data %>% arrange(desc(performance_display))
       }
 
       # Create factor to preserve sort order in plot
       data$dimension_value <- factor(data$dimension_value, levels = data$dimension_value)
+
+      # Create color vector (state = blue, counties = gray)
+      bar_colors <- ifelse(data$is_state_total, "#4472C4", "#D3D3D3")
 
       # Determine scale label
       scale_label <- case_when(
@@ -334,6 +361,10 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       # Calculate chart height using fixed 15px per bar for consistent bar width and text size
       chart_height <- nrow(data) * 15
 
+      # Calculate x-axis range with padding to prevent label cutoff
+      max_value <- max(data$performance_display, na.rm = TRUE)
+      x_axis_max <- max_value * 1.15  # Add 15% padding for data labels
+
       # Create plot
       p <- plot_ly(
         data = data,
@@ -341,7 +372,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         y = ~dimension_value,
         type = "bar",
         orientation = "h",
-        marker = list(color = "#4472C4"),
+        marker = list(color = bar_colors),
         text = bar_text,
         textposition = "outside",
         textfont = list(size = 11, color = "#666666", family = "Arial"),  # Data label font size (horizontal charts)
@@ -362,7 +393,8 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             ticksuffix = if (format_type == "percent") "%" else "",
             ticks = "outside",  # Show tick marks outside to create spacing
             ticklen = 8,  # Length of tick marks (creates space for labels)
-            tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
+            tickcolor = "rgba(255,255,255,0)",  # Make tick marks invisible (transparent)
+            range = c(0, x_axis_max)  # Explicit range with padding for labels
           ),
           yaxis = list(
             title = "",
@@ -373,9 +405,10 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             fixedrange = TRUE,
             range = c(-0.5, nrow(data) - 0.5),  # Tight fit to data (controls bar width)
             tickmode = "linear",  # Force all labels to show
-            dtick = 1  # One tick per category
+            dtick = 1,  # One tick per category
+            automargin = FALSE  # Prevent plotly from auto-adjusting margin for long labels
           ),
-          margin = list(l = 150, r = 80, t = 10, b = 20),
+          margin = list(l = 115, r = 120, t = 10, b = 5),  # Extra space for longer county names
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
@@ -386,6 +419,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         config(displayModeBar = FALSE)
 
       return(p)
+      }
     })
 
     # Age chart (vertical bar chart)
@@ -393,8 +427,32 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       req(age_data())
       data <- age_data()
 
-      # Get metadata
-      format_type <- data$format[1]
+      # Check if DQ flag set (data quality issues)
+      if (is.list(data) && !is.null(data$dq) && data$dq) {
+        # Return empty plot with message
+        plot_ly() %>%
+          layout(
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            annotations = list(
+              list(
+                text = "The Children's Bureau could not calculate performance due to data quality issues with the state's AFCARS and/or NCANDS submissions.",
+                x = 0.5,
+                y = 0.5,
+                xref = "paper",
+                yref = "paper",
+                showarrow = FALSE,
+                font = list(size = 14, color = "#6b7280")
+              )
+            ),
+            margin = list(l = 20, r = 20, t = 20, b = 20),
+            plot_bgcolor = "white",
+            paper_bgcolor = "white"
+          ) %>%
+          config(displayModeBar = FALSE)
+      } else {
+        # Get metadata
+        format_type <- data$format[1]
       decimal_precision <- if (!is.na(data$decimal_precision[1])) data$decimal_precision[1] else 1
       scale_val <- if (!is.na(data$scale[1])) data$scale[1] else 1
 
@@ -416,13 +474,14 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         TRUE ~ ""
       )
 
-      # Build data labels (performance + numerator/denominator)
+      # Build data labels (performance with numerator/denominator in parentheses on new line)
       data_labels <- paste0(
         format(round(performance, decimal_precision), nsmall = decimal_precision),
         if (format_type == "percent") "%" else "",
-        "\n",
+        "\n(",
         trimws(format(data$numerator, big.mark = ",")), " / ",
-        trimws(format(data$denominator, big.mark = ","))
+        trimws(format(data$denominator, big.mark = ",")),
+        ")"
       )
 
       # Build hover text
@@ -437,17 +496,25 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         "<extra></extra>"
       )
 
+      # Calculate y-axis range with padding to prevent label cutoff
+      max_value <- max(performance, na.rm = TRUE)
+      y_axis_max <- max_value * 1.25  # Add 25% padding for data labels (nudges labels up)
+
+      # Create color vector (total = blue, age groups = gray)
+      bar_colors <- ifelse(data$is_total, "#4472C4", "#D3D3D3")
+
       # Create plot
       p <- plot_ly(
         data = data,
         x = ~dimension_value,
         y = ~performance_display,
         type = "bar",
-        marker = list(color = "#4472C4"),
+        marker = list(color = bar_colors),
         text = data_labels,
         textposition = "outside",
-        textfont = list(size = 15, color = "#666666", family = "Arial"),  # Data label font size (vertical charts)
+        textfont = list(size = 13, color = "#666666", family = "Arial"),
         hovertemplate = hover_text,
+        width = 900,
         height = 500
       )
 
@@ -458,9 +525,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             title = "",
             showgrid = FALSE,
             tickfont = list(size = 11),
-            ticks = "outside",  # Show tick marks outside to create spacing
-            ticklen = 8,  # Length of tick marks (creates space for labels)
-            tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
+            ticks = "outside",
+            ticklen = 8,
+            tickcolor = "rgba(255,255,255,0)"
           ),
           yaxis = list(
             title = "",
@@ -468,17 +535,20 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             zeroline = FALSE,
             tickfont = list(size = 11),
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
-            ticksuffix = if (format_type == "percent") "%" else ""
+            ticksuffix = if (format_type == "percent") "%" else "",
+            range = c(0, y_axis_max)
           ),
-          margin = list(l = 60, r = 40, t = 10, b = 60),
+          margin = list(l = 60, r = 40, t = 10, b = 10),
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
-          showlegend = FALSE
+          showlegend = FALSE,
+          uniformtext = list(minsize = 11, mode = "show")  # Enforce minimum 11px text size
         ) %>%
         config(displayModeBar = FALSE)
 
       return(p)
+      }
     })
 
     # Race chart (vertical bar chart)
@@ -486,8 +556,32 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       req(race_data())
       data <- race_data()
 
-      # Get metadata
-      format_type <- data$format[1]
+      # Check if DQ flag set (data quality issues)
+      if (is.list(data) && !is.null(data$dq) && data$dq) {
+        # Return empty plot with message
+        plot_ly() %>%
+          layout(
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            annotations = list(
+              list(
+                text = "The Children's Bureau could not calculate performance due to data quality issues with the state's AFCARS and/or NCANDS submissions.",
+                x = 0.5,
+                y = 0.5,
+                xref = "paper",
+                yref = "paper",
+                showarrow = FALSE,
+                font = list(size = 14, color = "#6b7280")
+              )
+            ),
+            margin = list(l = 20, r = 20, t = 20, b = 20),
+            plot_bgcolor = "white",
+            paper_bgcolor = "white"
+          ) %>%
+          config(displayModeBar = FALSE)
+      } else {
+        # Get metadata
+        format_type <- data$format[1]
       decimal_precision <- if (!is.na(data$decimal_precision[1])) data$decimal_precision[1] else 1
       scale_val <- if (!is.na(data$scale[1])) data$scale[1] else 1
 
@@ -509,26 +603,48 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         TRUE ~ ""
       )
 
-      # Build data labels (performance + numerator/denominator)
+      # Build data labels (performance with numerator/denominator in parentheses on new line)
       data_labels <- paste0(
         format(round(performance, decimal_precision), nsmall = decimal_precision),
         if (format_type == "percent") "%" else "",
-        "\n",
+        "\n(",
         trimws(format(data$numerator, big.mark = ",")), " / ",
-        trimws(format(data$denominator, big.mark = ","))
+        trimws(format(data$denominator, big.mark = ",")),
+        ")"
       )
 
-      # Build hover text
-      hover_text <- paste0(
-        "  <b>", data$race_display, "</b>",
-        "<br><br>",
-        "  Performance: ", format(round(performance, decimal_precision), nsmall = decimal_precision), scale_label, "  ",
-        "<br>",
-        "  Numerator: ", trimws(format(data$numerator, big.mark = ",")), "  ",
-        "<br>",
-        "  Denominator: ", trimws(format(data$denominator, big.mark = ",")), "  ",
-        "<extra></extra>"
-      )
+      # Build hover text (with breakdown for "Other" group)
+      hover_text <- sapply(1:nrow(data), function(i) {
+        base_text <- paste0(
+          "  <b>", data$race_display[i], "</b>",
+          "<br><br>",
+          "  Performance: ", format(round(performance[i], decimal_precision), nsmall = decimal_precision), scale_label, "  ",
+          "<br>",
+          "  Numerator: ", trimws(format(data$numerator[i], big.mark = ",")), "  ",
+          "<br>",
+          "  Denominator: ", trimws(format(data$denominator[i], big.mark = ",")), "  "
+        )
+
+        # Add breakdown if this is "Other" group
+        if (!is.na(data$breakdown[i])) {
+          base_text <- paste0(
+            base_text,
+            "<br><br>",
+            "  <b>Breakdown:</b>",
+            "<br>",
+            data$breakdown[i], "  "
+          )
+        }
+
+        paste0(base_text, "<extra></extra>")
+      })
+
+      # Calculate y-axis range with padding to prevent label cutoff
+      max_value <- max(performance, na.rm = TRUE)
+      y_axis_max <- max_value * 1.25  # Add 25% padding for data labels (nudges labels up)
+
+      # Create color vector (total = blue, race groups = gray)
+      bar_colors <- ifelse(data$is_total, "#4472C4", "#D3D3D3")
 
       # Create plot
       p <- plot_ly(
@@ -536,11 +652,12 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         x = ~race_display,
         y = ~performance_display,
         type = "bar",
-        marker = list(color = "#4472C4"),
+        marker = list(color = bar_colors),
         text = data_labels,
         textposition = "outside",
-        textfont = list(size = 15, color = "#666666", family = "Arial"),  # Data label font size (vertical charts)
+        textfont = list(size = 13, color = "#666666", family = "Arial"),
         hovertemplate = hover_text,
+        width = 900,
         height = 500
       )
 
@@ -551,9 +668,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             title = "",
             showgrid = FALSE,
             tickfont = list(size = 11),
-            ticks = "outside",  # Show tick marks outside to create spacing
-            ticklen = 8,  # Length of tick marks (creates space for labels)
-            tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
+            ticks = "outside",
+            ticklen = 8,
+            tickcolor = "rgba(255,255,255,0)"
           ),
           yaxis = list(
             title = "",
@@ -561,17 +678,20 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             zeroline = FALSE,
             tickfont = list(size = 11),
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
-            ticksuffix = if (format_type == "percent") "%" else ""
+            ticksuffix = if (format_type == "percent") "%" else "",
+            range = c(0, y_axis_max)
           ),
-          margin = list(l = 60, r = 40, t = 10, b = 60),
+          margin = list(l = 60, r = 40, t = 10, b = 10),
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
-          showlegend = FALSE
+          showlegend = FALSE,
+          uniformtext = list(minsize = 11, mode = "show")  # Enforce minimum 11px text size
         ) %>%
         config(displayModeBar = FALSE)
 
       return(p)
+      }
     })
 
     # Source footnote
@@ -590,10 +710,11 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
     # Load state RDS data for County, Age, Race breakdowns
     state_data <- reactive({
       selected_state_code <- get_state()
+      selected_profile <- if (is.reactive(profile)) profile() else profile
 
       # Load state RDS file using load_cfsr_data from utils.R
       tryCatch({
-        load_cfsr_data(selected_state_code, "latest", "state")
+        load_cfsr_data(selected_state_code, selected_profile, "state")
       }, error = function(e) {
         message("Error loading state data: ", e$message)
         return(NULL)
@@ -626,15 +747,58 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
     # County data reactive
     county_data <- reactive({
       req(state_data())
-      data <- get_latest_period_data(state_data(), indicator_name, "^Locality$")
+      counties <- get_latest_period_data(state_data(), indicator_name, "^Locality$")
 
       # Filter out missing localities
-      if (!is.null(data) && nrow(data) > 0) {
-        data <- data %>%
-          filter(dimension_value != "Locality of report missing")
+      if (is.null(counties) || nrow(counties) == 0) {
+        return(NULL)
       }
 
-      data
+      # Check if performance couldn't be calculated (status == "dq")
+      if (!is.null(counties$status) && any(counties$status == "dq", na.rm = TRUE)) {
+        return(list(dq = TRUE))
+      }
+
+      counties <- counties %>%
+        filter(dimension_value != "Locality of report missing")
+
+      # Calculate state total by summing counties
+      state_calc <- counties %>%
+        summarise(
+          numerator = sum(numerator, na.rm = TRUE),
+          denominator = sum(denominator, na.rm = TRUE),
+          # Copy metadata from first county
+          indicator = first(indicator),
+          description = first(description),
+          format = first(format),
+          decimal_precision = first(decimal_precision),
+          scale = first(scale),
+          direction_desired = first(direction_desired),
+          profile_version = first(profile_version),
+          period = first(period),
+          period_meaningful = first(period_meaningful),
+          source = first(source),
+          dimension = "Locality"
+        ) %>%
+        mutate(
+          # Calculate performance matching county data format
+          # For percentages (format="percent"): stored as decimal (0.142 for 14.2%)
+          # For rates (format="rate"): stored as scaled value (2.5 for "2.5 per 1,000")
+          performance = if_else(
+            format == "percent",
+            numerator / denominator,              # Percentage: decimal only
+            (numerator / denominator) * scale     # Rate: apply scale multiplier
+          ),
+          # State name label
+          dimension_value = state_codes[get_state()],
+          is_state_total = TRUE
+        )
+
+      # Add flag to counties
+      counties <- counties %>% mutate(is_state_total = FALSE)
+
+      # Combine (will be sorted in chart rendering)
+      bind_rows(state_calc, counties)
     })
 
     # Age data reactive
@@ -642,9 +806,21 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       req(state_data())
       data <- get_latest_period_data(state_data(), indicator_name, "^Age")
 
-      if (!is.null(data) && nrow(data) > 0) {
-        # Filter out subtotal and total rows
-        data <- data %>%
+      if (is.null(data) || nrow(data) == 0) {
+        return(NULL)
+      }
+
+      # Check if performance couldn't be calculated (status == "dq")
+      if (!is.null(data$status) && any(data$status == "dq", na.rm = TRUE)) {
+        return(list(dq = TRUE))
+      }
+
+      if (TRUE) {
+        # Separate Total row from age groups (filter out only subtotals)
+        total_row <- data %>%
+          filter(grepl("^total$", dimension_value, ignore.case = TRUE))
+
+        age_groups <- data %>%
           filter(!grepl("subtotal|total", dimension_value, ignore.case = TRUE))
 
         # Sort age groups in chronological order
@@ -663,13 +839,29 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         )
 
         # Only convert to factor using ages that exist in the data
-        existing_ages <- unique(data$dimension_value)
+        existing_ages <- unique(age_groups$dimension_value)
         valid_order <- age_order[age_order %in% existing_ages]
 
         if (length(valid_order) > 0) {
-          data <- data %>%
+          age_groups <- age_groups %>%
             mutate(dimension_value = factor(dimension_value, levels = valid_order)) %>%
             arrange(dimension_value)
+        }
+
+        # Add is_total flag
+        if (nrow(total_row) > 0) {
+          total_row <- total_row %>% mutate(is_total = TRUE)
+          age_groups <- age_groups %>% mutate(is_total = FALSE)
+
+          # Combine: Total first, then age groups
+          data <- bind_rows(total_row, age_groups)
+
+          # Convert dimension_value to factor to preserve order (Total first) in plot
+          data <- data %>%
+            mutate(dimension_value = factor(dimension_value, levels = unique(dimension_value)))
+        } else {
+          # No total found, just return age groups with flag
+          data <- age_groups %>% mutate(is_total = FALSE)
         }
       }
 
@@ -681,24 +873,140 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       req(state_data())
       data <- get_latest_period_data(state_data(), indicator_name, "^Race/ethnicity$")
 
-      if (!is.null(data) && nrow(data) > 0) {
-        # Recode race values for brevity
-        data <- data %>%
+      if (is.null(data) || nrow(data) == 0) {
+        return(NULL)
+      }
+
+      # Check if performance couldn't be calculated (status == "dq")
+      if (!is.null(data$status) && any(data$status == "dq", na.rm = TRUE)) {
+        return(list(dq = TRUE))
+      }
+
+      if (TRUE) {
+        # Calculate Total by summing numerators/denominators
+        total_calc <- data %>%
+          summarise(
+            numerator = sum(numerator, na.rm = TRUE),
+            denominator = sum(denominator, na.rm = TRUE),
+            # Copy metadata from first race row
+            indicator = first(indicator),
+            description = first(description),
+            format = first(format),
+            decimal_precision = first(decimal_precision),
+            scale = first(scale),
+            direction_desired = first(direction_desired),
+            profile_version = first(profile_version),
+            period = first(period),
+            period_meaningful = first(period_meaningful),
+            source = first(source),
+            dimension = first(dimension),
+            dimension_value = "Total"
+          ) %>%
+          mutate(
+            # Calculate performance matching race data format
+            performance = if_else(
+              format == "percent",
+              numerator / denominator,              # Percentage: decimal only
+              (numerator / denominator) * scale     # Rate: apply scale multiplier
+            ),
+            race_display = "Total",
+            is_total = TRUE
+          )
+
+        # Separate "Other" races (small sample sizes) from major groups
+        other_races <- data %>%
+          filter(dimension_value %in% c(
+            "American Indian/Alaska Native",
+            "Asian",
+            "Native Hawaiian/Other Pacific Islander"
+          ))
+
+        major_races <- data %>%
+          filter(!dimension_value %in% c(
+            "American Indian/Alaska Native",
+            "Asian",
+            "Native Hawaiian/Other Pacific Islander"
+          ))
+
+        # Create "Other" aggregated row if there are any small groups
+        if (nrow(other_races) > 0) {
+          # Store breakdown for tooltip
+          other_breakdown <- other_races %>%
+            mutate(
+              breakdown_text = paste0(
+                "  • ",
+                dimension_value, ": ",
+                trimws(format(numerator, big.mark = ",")), " / ",
+                trimws(format(denominator, big.mark = ","))
+              )
+            ) %>%
+            pull(breakdown_text) %>%
+            paste(collapse = "<br>")
+
+          # Aggregate "Other" row
+          other_calc <- other_races %>%
+            summarise(
+              numerator = sum(numerator, na.rm = TRUE),
+              denominator = sum(denominator, na.rm = TRUE),
+              # Copy metadata from first row
+              indicator = first(indicator),
+              description = first(description),
+              format = first(format),
+              decimal_precision = first(decimal_precision),
+              scale = first(scale),
+              direction_desired = first(direction_desired),
+              profile_version = first(profile_version),
+              period = first(period),
+              period_meaningful = first(period_meaningful),
+              source = first(source),
+              dimension = first(dimension),
+              dimension_value = "Other"
+            ) %>%
+            mutate(
+              performance = if_else(
+                format == "percent",
+                numerator / denominator,
+                (numerator / denominator) * scale
+              ),
+              race_display = "Other",
+              is_total = FALSE,
+              breakdown = other_breakdown
+            )
+        } else {
+          other_calc <- NULL
+        }
+
+        # Recode major race values for brevity
+        race_groups <- major_races %>%
           mutate(
             race_display = case_when(
-              dimension_value == "American Indian/Alaska Native" ~ "AA/AN",
-              dimension_value == "Asian" ~ "Asian",
               dimension_value == "Black or African American" ~ "Black or AA",
               dimension_value == "Hispanic (of any race)" ~ "Hispanic",
-              dimension_value == "Native Hawaiian/Other Pacific Islander" ~ "NH or OPI",
               dimension_value == "White" ~ "White",
               dimension_value == "Two or More" ~ "Two or More",
               dimension_value == "Unknown/Unable to Determine" ~ "Unknown",
               dimension_value == "Missing Race/Ethnicity Data" ~ "Missing",
               TRUE ~ dimension_value
-            )
-          ) %>%
-          arrange(race_display)  # Sort alphabetically by display name
+            ),
+            is_total = FALSE,
+            breakdown = NA_character_
+          )
+
+        # Combine major races with "Other" if it exists
+        if (!is.null(other_calc)) {
+          race_groups <- bind_rows(race_groups, other_calc)
+        }
+
+        # Sort by performance (highest first)
+        race_groups <- race_groups %>%
+          arrange(desc(performance))
+
+        # Combine: Total first, then race groups sorted by performance
+        data <- bind_rows(total_calc %>% mutate(breakdown = NA_character_), race_groups)
+
+        # Convert race_display to factor to preserve order (Total first) in plot
+        data <- data %>%
+          mutate(race_display = factor(race_display, levels = unique(race_display)))
       }
 
       data
@@ -742,7 +1050,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
           "National performance: ", symbol, " ", target, suffix
         ))
       } else {
-        HTML("No national performance")
+        HTML("")  # Empty string instead of "No national performance"
       }
     }
 
@@ -752,7 +1060,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       data <- ind_data()
 
       # Extract metadata
-      ind_title <- data$indicator[1]
+      ind_title <- paste0(data$indicator[1], " \u2014 By State")
       ind_desc <- data$description[1]
       profile_ver <- data$profile_version[1]
       period <- data$period_meaningful[1]
@@ -767,6 +1075,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         description = ind_desc,
         period = period,
         profile = profile_ver,
+        state = state_codes[get_state()],
         legend = legend_html,
         chart_output = plotlyOutput(session$ns("chart"), height = "auto"),
         source = source_text
@@ -779,12 +1088,12 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       nat_data <- ind_data()
       county <- county_data()
 
-      ind_title <- nat_data$indicator[1]
+      ind_title <- paste0(nat_data$indicator[1], " \u2014 By County")
       ind_desc <- nat_data$description[1]
       profile_ver <- county$profile_version[1]
       period <- county$period_meaningful[1]
       source_text <- county$source[1]
-      legend_html <- HTML("County-level breakdown")
+      legend_html <- HTML("")
 
       build_viz_container(
         ns = session$ns,
@@ -793,6 +1102,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         description = ind_desc,
         period = period,
         profile = profile_ver,
+        state = state_codes[get_state()],
         legend = legend_html,
         chart_output = plotlyOutput(session$ns("chart_county"), height = "auto"),
         source = source_text
@@ -805,12 +1115,12 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       nat_data <- ind_data()
       age <- age_data()
 
-      ind_title <- nat_data$indicator[1]
+      ind_title <- paste0(nat_data$indicator[1], " \u2014 By Age")
       ind_desc <- nat_data$description[1]
       profile_ver <- age$profile_version[1]
       period <- age$period_meaningful[1]
       source_text <- age$source[1]
-      legend_html <- HTML("Age group breakdown")
+      legend_html <- HTML("")
 
       build_viz_container(
         ns = session$ns,
@@ -819,6 +1129,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         description = ind_desc,
         period = period,
         profile = profile_ver,
+        state = state_codes[get_state()],
         legend = legend_html,
         chart_output = plotlyOutput(session$ns("chart_age"), height = "auto"),
         source = source_text
@@ -831,20 +1142,17 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       nat_data <- ind_data()
       race <- race_data()
 
-      ind_title <- nat_data$indicator[1]
+      ind_title <- paste0(nat_data$indicator[1], " \u2014 By Race")
       ind_desc <- nat_data$description[1]
       profile_ver <- race$profile_version[1]
       period <- race$period_meaningful[1]
       source_text <- race$source[1]
-      legend_html <- HTML("Race & ethnicity breakdown")
+      legend_html <- HTML("")
 
-      # Build race abbreviation footnote
-      race_footnote <- paste0(
-        source_text, "<br><br>",
-        "<strong>Race/ethnicity abbreviations:</strong> ",
-        "AA/AN = American Indian/Alaska Native; ",
-        "Black or AA = Black or African American; ",
-        "NH or OPI = Native Hawaiian/Other Pacific Islander"
+      # Build notes text with race definitions
+      notes_text <- paste0(
+        "<strong>Other</strong> = American Indian/Alaska Native, Asian, and Native Hawaiian/Other Pacific Islander. ",
+        "All races exclude children of Hispanic origin. Children of Hispanic ethnicity may be any race."
       )
 
       build_viz_container(
@@ -854,9 +1162,11 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         description = ind_desc,
         period = period,
         profile = profile_ver,
+        state = state_codes[get_state()],
         legend = legend_html,
         chart_output = plotlyOutput(session$ns("chart_race"), height = "auto"),
-        source = race_footnote
+        source = source_text,
+        notes = notes_text
       )
     })
   })

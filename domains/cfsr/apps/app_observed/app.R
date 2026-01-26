@@ -672,6 +672,18 @@ ui <- fluidPage(
         border-radius: 12px;
       }
 
+      /* State pill - Orange */
+      .viz-state-pill {
+        display: inline-block;
+        background: #f59e0b;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 12px;
+        margin-right: 16px;  /* Space after orange pill */
+      }
+
       /* Legend (national performance) - Regular text */
       .viz-legend-pill {
         display: inline-flex;
@@ -689,17 +701,20 @@ ui <- fluidPage(
         display: inline-block;
       }
 
-      .viz-chart-area {
-        min-height: 400px;
-      }
-
       /* Source footnote */
       .viz-source {
         font-size: 11px;
         color: #6b7280;
-        margin-top: 8px;
-        padding-top: 8px;
+        margin-top: 4px;
+        padding-top: 4px;
         border-top: 1px solid #e5e7eb;
+      }
+
+      /* Notes (definitions, methodology) */
+      .viz-notes {
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 12px;
       }
     "))
   ),
@@ -967,14 +982,14 @@ server <- function(input, output, session) {
 
   # Call indicator detail module server for each of the 8 indicators
   # These will be rendered when the corresponding view is active
-  indicator_detail_server("entry_rate", view_to_indicator[["entry_rate"]], national_data, state_code_rv)
-  indicator_detail_server("maltreatment", view_to_indicator[["maltreatment"]], national_data, state_code_rv)
-  indicator_detail_server("recurrence", view_to_indicator[["recurrence"]], national_data, state_code_rv)
-  indicator_detail_server("perm12_entries", view_to_indicator[["perm12_entries"]], national_data, state_code_rv)
-  indicator_detail_server("perm12_12_23", view_to_indicator[["perm12_12_23"]], national_data, state_code_rv)
-  indicator_detail_server("perm12_24", view_to_indicator[["perm12_24"]], national_data, state_code_rv)
-  indicator_detail_server("reentry", view_to_indicator[["reentry"]], national_data, state_code_rv)
-  indicator_detail_server("placement", view_to_indicator[["placement"]], national_data, state_code_rv)
+  indicator_detail_server("entry_rate", view_to_indicator[["entry_rate"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("maltreatment", view_to_indicator[["maltreatment"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("recurrence", view_to_indicator[["recurrence"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("perm12_entries", view_to_indicator[["perm12_entries"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("perm12_12_23", view_to_indicator[["perm12_12_23"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("perm12_24", view_to_indicator[["perm12_24"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("reentry", view_to_indicator[["reentry"]], national_data, state_code_rv, profile_rv)
+  indicator_detail_server("placement", view_to_indicator[["placement"]], national_data, state_code_rv, profile_rv)
 }
 
 #####################################

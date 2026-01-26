@@ -132,6 +132,10 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
       )
   }
 
+  # Calculate x-axis range with padding to prevent label cutoff
+  max_value <- max(ind_df_display$performance, na.rm = TRUE)
+  x_axis_max <- max_value * 1.15  # Add 15% padding for data labels
+
   # Configure x-axis format based on indicator type
   xaxis_config <- list(
     title = "",  # Remove x-axis title
@@ -141,7 +145,8 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
     tickfont = list(size = 11),  # X-axis label font size
     ticks = "outside",  # Show tick marks outside to create spacing
     ticklen = 8,  # Length of tick marks (creates space for labels)
-    tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
+    tickcolor = "rgba(255,255,255,0)",  # Make tick marks invisible (transparent)
+    range = c(0, x_axis_max)  # Explicit range with padding for labels
   )
 
   # Add formatting to axis based on type
@@ -168,7 +173,7 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
         fixedrange = TRUE,  # Prevent zooming/panning
         range = c(-0.5, num_states - 0.5)  # Tight fit to data, no extra space
       ),
-      margin = list(l = 100, r = 80, t = 10, b = 20),
+      margin = list(l = 100, r = 120, t = 10, b = 10),  # Reduced spacing to footnote
       plot_bgcolor = "white",
       paper_bgcolor = "white",
       hovermode = "closest",
