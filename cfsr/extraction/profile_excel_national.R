@@ -249,19 +249,23 @@ ind_data <- ind_data %>%
 # SAVE CSV ----
 ########################################
 
-# Create run folder in shared national structure (not state-specific):
-# Structure: cfsr/data/csv/national/{period}/{date}/
-# National data is identical across all states, so save once in shared location
+# Create shared national structure (not state-specific):
+# Structure: cfsr/data/csv/national/{period}/{date}/cfsr_profile_national_{period}.csv
+# National data is identical across all states
+# Note: Each state's extraction will overwrite this file (harmless since data is identical)
 run_date <- Sys.Date()
-folder_run <- file.path(CFSR_PROCESSED_DIR, "national", profile_period, format(run_date, "%Y-%m-%d"))
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
+csv_dir <- file.path(CFSR_PROCESSED_DIR, "national", profile_period, format(run_date, "%Y-%m-%d"))
+if (!dir.exists(csv_dir)) {
+  dir.create(csv_dir, recursive = TRUE)
 }
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
 
-# Save using save_to_folder_run pattern
-save_to_folder_run(ind_data, "csv")
+# Build filename without state prefix (matches RDS naming)
+csv_filename <- paste0("cfsr_profile_national_", profile_period, ".csv")
+csv_path <- file.path(csv_dir, csv_filename)
+
+# Save CSV
+write.csv(ind_data, csv_path, row.names = FALSE, fileEncoding = "UTF-8", na = "")
+message("Saved: ", csv_path)
 
 ########################################
 # SAVE RDS FOR SHINY APP ----
