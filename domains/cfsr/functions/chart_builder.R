@@ -139,7 +139,9 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
     gridcolor = "#E5E5E5",
     zeroline = FALSE,  # Remove the vertical 0 axis line
     tickfont = list(size = 11),  # X-axis label font size
-    ticks = ""  # Hide tick marks
+    ticks = "outside",  # Show tick marks outside to create spacing
+    ticklen = 8,  # Length of tick marks (creates space for labels)
+    tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
   )
 
   # Add formatting to axis based on type
@@ -166,7 +168,7 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
         fixedrange = TRUE,  # Prevent zooming/panning
         range = c(-0.5, num_states - 0.5)  # Tight fit to data, no extra space
       ),
-      margin = list(l = 100, r = 80, t = 10, b = 40),
+      margin = list(l = 100, r = 80, t = 10, b = 20),
       plot_bgcolor = "white",
       paper_bgcolor = "white",
       hovermode = "closest",

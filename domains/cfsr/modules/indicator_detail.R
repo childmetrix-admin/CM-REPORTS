@@ -360,7 +360,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             tickfont = list(size = 11),
             tickformat = if (format_type == "percent") ".1f" else paste0(".", decimal_precision, "f"),
             ticksuffix = if (format_type == "percent") "%" else "",
-            ticks = ""  # Hide tick marks
+            ticks = "outside",  # Show tick marks outside to create spacing
+            ticklen = 8,  # Length of tick marks (creates space for labels)
+            tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
           ),
           yaxis = list(
             title = "",
@@ -373,7 +375,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             tickmode = "linear",  # Force all labels to show
             dtick = 1  # One tick per category
           ),
-          margin = list(l = 150, r = 80, t = 10, b = 40),
+          margin = list(l = 150, r = 80, t = 10, b = 20),
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
@@ -456,7 +458,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             title = "",
             showgrid = FALSE,
             tickfont = list(size = 11),
-            ticks = ""  # Hide tick marks
+            ticks = "outside",  # Show tick marks outside to create spacing
+            ticklen = 8,  # Length of tick marks (creates space for labels)
+            tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
           ),
           yaxis = list(
             title = "",
@@ -547,7 +551,9 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
             title = "",
             showgrid = FALSE,
             tickfont = list(size = 11),
-            ticks = ""  # Hide tick marks
+            ticks = "outside",  # Show tick marks outside to create spacing
+            ticklen = 8,  # Length of tick marks (creates space for labels)
+            tickcolor = "rgba(255,255,255,0)"  # Make tick marks invisible (transparent)
           ),
           yaxis = list(
             title = "",
