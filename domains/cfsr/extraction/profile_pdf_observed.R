@@ -313,9 +313,8 @@ assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 ########################################
 
 # Load national data to add state_rank and reporting_states columns
-output_dir_prod <- CFSR_APP_DATA_DIR
-national_file <- file.path(output_dir_prod,
-  paste0("cfsr_profile_national_", profile_period, ".rds"))
+# Use new hierarchical structure: domains/cfsr/data/rds/national/
+national_file <- build_rds_path(state_code = NULL, profile_period, "national")
 
 if (file.exists(national_file)) {
   national_data <- readRDS(national_file)
