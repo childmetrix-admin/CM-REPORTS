@@ -170,7 +170,8 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
       paper_bgcolor = "white",
       hovermode = "closest",
       showlegend = FALSE,
-      autosize = FALSE  # Prevent proportional scaling of text with chart height
+      autosize = FALSE,  # Prevent proportional scaling of text with chart height
+      uniformtext = list(minsize = 15, mode = "show")  # Enforce minimum 15px text size
     ) %>%
     config(displayModeBar = FALSE)  # Hide plotly toolbar
 
