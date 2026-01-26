@@ -101,7 +101,7 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
     marker = list(color = bar_colors),
     text = bar_text,
     textposition = "outside",
-    textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
+    textfont = list(size = 11, color = "#666666", family = "Arial"),  # Data label font size
     hovertemplate = hover_text,
     height = chart_height  # Specify height here, not in layout()
   )
@@ -171,7 +171,7 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
       hovermode = "closest",
       showlegend = FALSE,
       autosize = FALSE,  # Prevent proportional scaling of text with chart height
-      uniformtext = list(minsize = 15, mode = "show")  # Enforce minimum 15px text size
+      uniformtext = list(minsize = 11, mode = "show")  # Enforce minimum 11px text size (horizontal charts)
     ) %>%
     config(displayModeBar = FALSE)  # Hide plotly toolbar
 

@@ -344,7 +344,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         marker = list(color = "#4472C4"),
         text = bar_text,
         textposition = "outside",
-        textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
+        textfont = list(size = 11, color = "#666666", family = "Arial"),  # Data label font size (horizontal charts)
         hovertemplate = hover_text,
         height = chart_height
       )
@@ -378,7 +378,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
           hovermode = "closest",
           showlegend = FALSE,
           autosize = FALSE,  # Prevent proportional scaling of text with chart height
-          uniformtext = list(minsize = 15, mode = "show")  # Enforce minimum 15px text size
+          uniformtext = list(minsize = 11, mode = "show")  # Enforce minimum 11px text size (horizontal charts)
         ) %>%
         config(displayModeBar = FALSE)
 
@@ -443,7 +443,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         marker = list(color = "#4472C4"),
         text = data_labels,
         textposition = "outside",
-        textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
+        textfont = list(size = 15, color = "#666666", family = "Arial"),  # Data label font size (vertical charts)
         hovertemplate = hover_text,
         height = 500
       )
@@ -533,7 +533,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         marker = list(color = "#4472C4"),
         text = data_labels,
         textposition = "outside",
-        textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
+        textfont = list(size = 15, color = "#666666", family = "Arial"),  # Data label font size (vertical charts)
         hovertemplate = hover_text,
         height = 500
       )
