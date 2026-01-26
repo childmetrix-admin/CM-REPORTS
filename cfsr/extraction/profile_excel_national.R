@@ -249,9 +249,11 @@ ind_data <- ind_data %>%
 # SAVE CSV ----
 ########################################
 
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/national/
+# Create run folder in shared national structure (not state-specific):
+# Structure: cfsr/data/csv/national/{period}/{date}/
+# National data is identical across all states, so save once in shared location
 run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "national")
+folder_run <- file.path(CFSR_PROCESSED_DIR, "national", profile_period, format(run_date, "%Y-%m-%d"))
 if (!dir.exists(folder_run)) {
   dir.create(folder_run, recursive = TRUE)
 }
