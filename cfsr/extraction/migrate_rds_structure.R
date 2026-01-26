@@ -9,15 +9,17 @@
 #
 # NEW STRUCTURE:
 # cfsr/data/rds/
+# ├── national/
+# │   ├── cfsr_profile_national_2025_02.rds
+# │   └── cfsr_profile_national_2025_08.rds
 # ├── md/
 # │   ├── 2025_02/
 # │   │   ├── MD_cfsr_profile_rsp_2025_02.rds
 # │   │   ├── MD_cfsr_profile_observed_2025_02.rds
 # │   │   └── MD_cfsr_profile_state_2025_02.rds
 # │   └── 2025_08/
-# ├── ky/
-# │   └── ...
-# └── cfsr_profile_national_2025_02.rds  # National stays at root
+# └── ky/
+#     └── ...
 
 library(dplyr)
 
@@ -91,7 +93,7 @@ files_to_migrate <- files_to_migrate %>%
     # Build new path
     new_path = if_else(
       is_national,
-      file.path(RDS_DIR, filename),  # National stays at root
+      file.path(RDS_DIR, "national", filename),  # National goes to national/ subdirectory
       file.path(RDS_DIR, tolower(state_code), period, filename)  # State-specific goes to subdirectory
     )
   )
@@ -202,8 +204,13 @@ for (state in states) {
 }
 
 # Check national files
-national_files <- list.files(RDS_DIR, pattern = "^cfsr_profile_national_.*\\.rds$")
-message("  National files at root: ", length(national_files))
+national_dir <- file.path(RDS_DIR, "national")
+if (dir.exists(national_dir)) {
+  national_files <- list.files(national_dir, pattern = "^cfsr_profile_national_.*\\.rds$")
+  message("  National files in national/: ", length(national_files))
+} else {
+  message("  National directory not found")
+}
 
 message("")
 message("Migration script complete!")

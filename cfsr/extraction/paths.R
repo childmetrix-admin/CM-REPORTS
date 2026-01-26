@@ -34,8 +34,9 @@ SHARED_UTILS_DIR <- file.path(SHARED_ROOT, "utils")
 SHAREFILE_BASE <- "S:/Shared Folders"
 
 # Helper function to build RDS output path with new hierarchical structure
-# New structure: cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
-# Exception: National files stay at root (cfsr/data/rds/cfsr_profile_national_{period}.rds)
+# New structure:
+# - National: cfsr/data/rds/national/cfsr_profile_national_{period}.rds
+# - State-specific: cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
 build_rds_path <- function(state_code, period, type) {
   # Validate type
   valid_types <- c("national", "rsp", "observed", "state")
@@ -43,10 +44,14 @@ build_rds_path <- function(state_code, period, type) {
     stop("Invalid type '", type, "'. Must be one of: ", paste(valid_types, collapse = ", "))
   }
 
-  # National files stay at root (shared across all states)
+  # National files go in national/ subdirectory (shared across all states)
   if (type == "national") {
+    national_dir <- file.path(CFSR_APP_DATA_DIR, "national")
+    if (!dir.exists(national_dir)) {
+      dir.create(national_dir, recursive = TRUE)
+    }
     filename <- paste0("cfsr_profile_national_", period, ".rds")
-    return(file.path(CFSR_APP_DATA_DIR, filename))
+    return(file.path(national_dir, filename))
   }
 
   # State-specific files go in state/period subdirectories

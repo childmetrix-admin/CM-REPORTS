@@ -31,13 +31,16 @@ get_available_profiles <- function(state, type = "national") {
   data_dir <- file.path(detect_root(), "cfsr/data/rds")
 
   # New hierarchical structure:
-  # - national: cfsr/data/rds/cfsr_profile_national_{PERIOD}.rds (at root)
+  # - national: cfsr/data/rds/national/cfsr_profile_national_{PERIOD}.rds
   # - state-specific: cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
 
   if (type == "national") {
-    # National files at root level
+    # National files in national/ subdirectory
+    national_dir <- file.path(data_dir, "national")
+    if (!dir.exists(national_dir)) return(character(0))
+
     pattern <- paste0("^cfsr_profile_national_([0-9]{4}_[0-9]{2})\\.rds$")
-    all_files <- list.files(data_dir, pattern = pattern)
+    all_files <- list.files(national_dir, pattern = pattern)
     if (length(all_files) == 0) return(character(0))
     periods <- gsub("cfsr_profile_national_(.*)\\.rds", "\\1", all_files)
   } else {
@@ -115,11 +118,12 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
   }
 
   # New hierarchical structure:
-  # - national: cfsr/data/rds/cfsr_profile_national_{PERIOD}.rds (at root)
+  # - national: cfsr/data/rds/national/cfsr_profile_national_{PERIOD}.rds
   # - state-specific: cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
   if (type == "national") {
+    national_dir <- file.path(data_dir, "national")
     filename <- paste0("cfsr_profile_national_", profile, ".rds")
-    file_path <- file.path(data_dir, filename)
+    file_path <- file.path(national_dir, filename)
   } else {
     state_dir <- file.path(data_dir, tolower(state), profile)
     filename <- paste0(state, "_cfsr_profile_", type, "_", profile, ".rds")
