@@ -344,7 +344,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         marker = list(color = "#4472C4"),
         text = bar_text,
         textposition = "outside",
-        textfont = list(size = 11, color = "#666666", family = "Arial"),
+        textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
         hovertemplate = hover_text,
         height = chart_height
       )
@@ -442,7 +442,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         marker = list(color = "#4472C4"),
         text = data_labels,
         textposition = "outside",
-        textfont = list(size = 11, color = "#666666", family = "Arial"),
+        textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
         hovertemplate = hover_text,
         height = 500
       )
@@ -532,7 +532,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
         marker = list(color = "#4472C4"),
         text = data_labels,
         textposition = "outside",
-        textfont = list(size = 11, color = "#666666", family = "Arial"),
+        textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
         hovertemplate = hover_text,
         height = 500
       )

@@ -101,7 +101,7 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
     marker = list(color = bar_colors),
     text = bar_text,
     textposition = "outside",
-    textfont = list(size = 11, color = "#666666", family = "Arial"),  # Data label font size (matches axis labels)
+    textfont = list(size = 15, color = "#666666", family = "Arial"),  # TEST: Increased to 15px to verify font size rendering
     hovertemplate = hover_text,
     height = chart_height  # Specify height here, not in layout()
   )
