@@ -153,12 +153,12 @@ Line endings normalized to LF in repository via `.gitattributes`:
 
 ## CFSR Shiny Apps
 
-The `cfsr/apps/` directory contains interactive R Shiny dashboards that are embedded into state CFSR pages via iframes.
+The `domains/cfsr/apps/` directory contains interactive R Shiny dashboards that are embedded into state CFSR pages via iframes.
 
 ### App Structure
 
 ```
-cfsr/
+domains/cfsr/
 ├── apps/                              # Shiny applications
 │   ├── app_national/                  # National comparison app (port 3838)
 │   ├── app_rsp/                       # Risk-Standardized Performance (port 3839)
@@ -196,15 +196,15 @@ cfsr/
 
 **Source**: Data is extracted from CFSR 4 Data Profile PDFs (biannual: February, August)
 **Input Location**: ShareFile at `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
-**Output Location**: RDS files saved to `cfsr/data/rds/`
-**Archive Location**: CSV copies saved to `cfsr/data/csv/`
+**Output Location**: RDS files saved to `domains/cfsr/data/rds/`
+**Archive Location**: CSV copies saved to `domains/cfsr/data/csv/`
 **Format**: Each RDS contains state-specific indicator data with period, performance metrics, and metadata
 
 ### Running CFSR Apps Locally
 
 ```r
 # Launch all CFSR apps simultaneously on different ports
-source("D:/repo_childmetrix/cm-reports/cfsr/scripts/launch_cfsr_dashboard.R")
+source("D:/repo_childmetrix/cm-reports/domains/cfsr/scripts/launch_cfsr_dashboard.R")
 ```
 
 This starts:
@@ -219,7 +219,7 @@ Apps run in background R processes and can be stopped via the launcher script.
 
 ```r
 # Extract CFSR data for all available states and periods
-source("D:/repo_childmetrix/cm-reports/cfsr/extraction/run_profile.R")
+source("D:/repo_childmetrix/cm-reports/domains/cfsr/extraction/run_profile.R")
 ```
 
 The extraction pipeline:
@@ -227,8 +227,8 @@ The extraction pipeline:
 2. Parses PDFs using coordinate-based extraction (pdftools)
 3. Reads Excel files for supplemental context data
 4. Validates extracted data
-5. Saves RDS files to `cfsr/data/rds/`
-6. Saves CSV archives to `cfsr/data/csv/`
+5. Saves RDS files to `domains/cfsr/data/rds/`
+6. Saves CSV archives to `domains/cfsr/data/csv/`
 
 ### App Integration
 
@@ -272,7 +272,7 @@ The `shared/utils/` directory contains cross-domain R utilities that are used by
 **`shared/utils/file_utils.R`**:
 - File handling utilities for extraction scripts
 
-**`cfsr/functions/period_utils.R`** (CFSR-specific):
+**`domains/cfsr/functions/period_utils.R`** (CFSR-specific):
 - `validate_period(period)` - Check period format (YYYY_MM)
 - Period format conversion utilities
 
@@ -284,9 +284,10 @@ This repository was consolidated in January 2026 to merge the formerly separate 
 - `cfsr-profile/` - Extraction scripts, wrote to cm-reports/shared/cfsr/data/
 - `cm-reports/` - Frontend + Shiny apps, read from shared/cfsr/data/
 
-**After (single monorepo):**
-- All CFSR code is self-contained in `cfsr/` directory
-- Data lives at `cfsr/data/rds/` (not shared/cfsr/data/)
+**After (single monorepo with domains structure):**
+- All CFSR code is self-contained in `domains/cfsr/` directory
+- Data lives at `domains/cfsr/data/rds/` (organized by state/period)
+- Other report domains will live in `domains/{domain}/` (cps, in_home, ooh, onehome, community)
 - Shared utilities internalized to `shared/utils/`
 - No dependency on external utilities-core repository
 
