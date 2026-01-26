@@ -236,8 +236,10 @@ if (file.exists(national_file)) {
 
   # Join national data to add state_rank and reporting_states
   # Join on: indicator, period, state_abb
+  # Note: Drop existing NA columns first to avoid .x/.y suffix conflicts
   ind_data <- ind_data %>%
     mutate(state_abb = convert_state_name_to_code(state)) %>%
+    select(-state_rank, -reporting_states) %>%
     left_join(
       national_data %>%
         select(indicator, period, state_abb, state_rank, reporting_states),
