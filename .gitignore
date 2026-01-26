@@ -9,6 +9,8 @@ dist/
 *.rds
 .Rproj.user
 
-# CFSR extraction outputs
+# CFSR extraction outputs (generated data files)
 cfsr/data/csv/
 cfsr/data/rds/
+domains/cfsr/data/csv/
+domains/cfsr/data/rds/
