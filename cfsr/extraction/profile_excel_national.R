@@ -265,15 +265,9 @@ save_to_folder_run(ind_data, "csv")
 # SAVE RDS FOR SHINY APP ----
 ########################################
 
-# PROD: Period-specific file WITHOUT state prefix (shared app location)
-# National data is identical across states, so no state prefix needed
+# Use hierarchical structure (national files stay at root)
+# National data is identical across states, so stored at cfsr/data/rds/ root
 # RDS contains same data as CSV (all periods, not filtered)
 # Apps can filter to most recent period as needed
-output_dir_prod <- CFSR_APP_DATA_DIR
-if (!dir.exists(output_dir_prod)) {
-  dir.create(output_dir_prod, recursive = TRUE)
-}
-
-output_file_prod_period <- file.path(output_dir_prod,
-  paste0("cfsr_profile_national_", profile_period, ".rds"))
+output_file_prod_period <- build_rds_path(state_code = NULL, profile_period, "national")
 saveRDS(ind_data, output_file_prod_period)

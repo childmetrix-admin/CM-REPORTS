@@ -30,19 +30,40 @@ get_available_profiles <- function(state, type = "national") {
   }
   data_dir <- file.path(detect_root(), "cfsr/data/rds")
 
-  # Naming conventions:
-  # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
-  # - rsp/state: {STATE}_cfsr_profile_{type}_{PERIOD}.rds (state-specific)
+  # New hierarchical structure:
+  # - national: cfsr/data/rds/cfsr_profile_national_{PERIOD}.rds (at root)
+  # - state-specific: cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
+
   if (type == "national") {
+    # National files at root level
     pattern <- paste0("^cfsr_profile_national_([0-9]{4}_[0-9]{2})\\.rds$")
     all_files <- list.files(data_dir, pattern = pattern)
     if (length(all_files) == 0) return(character(0))
     periods <- gsub("cfsr_profile_national_(.*)\\.rds", "\\1", all_files)
   } else {
-    pattern <- paste0("^", state, "_cfsr_profile_", type, "_([0-9]{4}_[0-9]{2})\\.rds$")
-    all_files <- list.files(data_dir, pattern = pattern)
-    if (length(all_files) == 0) return(character(0))
-    periods <- gsub(paste0(state, "_cfsr_profile_", type, "_(.*)\\.rds"), "\\1", all_files)
+    # State-specific files in state subdirectory
+    state_dir <- file.path(data_dir, tolower(state))
+
+    # Check if state directory exists
+    if (!dir.exists(state_dir)) return(character(0))
+
+    # Get all period subdirectories (e.g., "2025_02", "2024_08")
+    period_dirs <- list.dirs(state_dir, full.names = FALSE, recursive = FALSE)
+    period_dirs <- period_dirs[grepl("^[0-9]{4}_[0-9]{2}$", period_dirs)]
+
+    if (length(period_dirs) == 0) return(character(0))
+
+    # Filter to periods where the file actually exists
+    periods <- character(0)
+    for (period in period_dirs) {
+      expected_file <- file.path(state_dir, period,
+                                paste0(state, "_cfsr_profile_", type, "_", period, ".rds"))
+      if (file.exists(expected_file)) {
+        periods <- c(periods, period)
+      }
+    }
+
+    if (length(periods) == 0) return(character(0))
   }
 
   # Sort in descending order (most recent first)
@@ -93,16 +114,17 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
     message("Using most recent profile: ", profile)
   }
 
-  # Naming conventions:
-  # - national: cfsr_profile_national_{PERIOD}.rds (no state prefix, shared across all states)
-  # - rsp/state: {STATE}_cfsr_profile_{type}_{PERIOD}.rds (state-specific)
+  # New hierarchical structure:
+  # - national: cfsr/data/rds/cfsr_profile_national_{PERIOD}.rds (at root)
+  # - state-specific: cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
   if (type == "national") {
     filename <- paste0("cfsr_profile_national_", profile, ".rds")
+    file_path <- file.path(data_dir, filename)
   } else {
+    state_dir <- file.path(data_dir, tolower(state), profile)
     filename <- paste0(state, "_cfsr_profile_", type, "_", profile, ".rds")
+    file_path <- file.path(state_dir, filename)
   }
-
-  file_path <- file.path(data_dir, filename)
 
   # Check if file exists
   if (!file.exists(file_path)) {

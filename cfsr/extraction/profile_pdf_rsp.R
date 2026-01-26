@@ -319,12 +319,6 @@ save_to_folder_run(rsp_data, "csv")
 # SAVE RDS FOR SHINY APP ----
 ########################################
 
-# PROD: Period-specific file with state prefix (shared app location)
-output_dir_prod <- CFSR_APP_DATA_DIR
-if (!dir.exists(output_dir_prod)) {
-  dir.create(output_dir_prod, recursive = TRUE)
-}
-
-output_file_prod_period <- file.path(output_dir_prod,
-  paste0(toupper(state_code), "_cfsr_profile_rsp_", profile_period, ".rds"))
+# Use new hierarchical structure: cfsr/data/rds/{state}/{period}/
+output_file_prod_period <- build_rds_path(state_code, profile_period, "rsp")
 saveRDS(rsp_data, output_file_prod_period)
