@@ -87,9 +87,9 @@ build_indicator_chart <- function(ind_df, selected_state = NULL) {
                           if (format_type == "percent") "%" else ""))
 
   # Calculate chart height based on number of states
-  # Use fixed 20px per bar for consistent bar width and text size across all charts
+  # Use fixed 15px per bar for consistent bar width and text size across all charts
   num_states <- nrow(ind_df_display)
-  chart_height <- num_states * 20
+  chart_height <- num_states * 15
 
   # Create base plot using pre-calculated sort_value
   p <- plot_ly(
