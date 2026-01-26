@@ -376,7 +376,8 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
           plot_bgcolor = "white",
           paper_bgcolor = "white",
           hovermode = "closest",
-          showlegend = FALSE
+          showlegend = FALSE,
+          autosize = FALSE  # Prevent proportional scaling of text with chart height
         ) %>%
         config(displayModeBar = FALSE)
 
