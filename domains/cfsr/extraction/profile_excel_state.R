@@ -223,12 +223,41 @@ if (nrow(missing_joins) > 0) {
 # Standardize dimension values (race/ethnicity recoding)
 ind_data <- standardize_dimension_values(ind_data)
 
+########################################
+# ADD RANK COLUMNS FROM NATIONAL DATA ----
+########################################
+
+# Load national data to add state_rank and reporting_states columns
+# Use new hierarchical structure: domains/cfsr/data/rds/national/
+national_file <- build_rds_path(state_code = NULL, profile_period, "national")
+
+if (file.exists(national_file)) {
+  national_data <- readRDS(national_file)
+
+  # Join national data to add state_rank and reporting_states
+  # Join on: indicator, period, state_abb
+  ind_data <- ind_data %>%
+    mutate(state_abb = convert_state_name_to_code(state)) %>%
+    left_join(
+      national_data %>%
+        select(indicator, period, state_abb, state_rank, reporting_states),
+      by = c("indicator", "period", "state_abb")
+    )
+
+} else {
+  warning("National data file not found: ", national_file)
+  warning("Continuing without rank columns. Run profile_excel_national.R first to add ranks.")
+  # Add state_abb and placeholder rank columns so column structure is consistent
+  ind_data <- ind_data %>%
+    mutate(
+      state_abb = convert_state_name_to_code(state),
+      state_rank = NA_integer_,
+      reporting_states = NA_integer_
+    )
+}
+
 # Reorder columns for consistency across all outputs
 ind_data <- ind_data %>%
-  mutate(
-    # Add state abbreviation column using reverse mapping
-    state_abb = convert_state_name_to_code(state)
-  ) %>%
   select(
     # Key columns first
     state, state_abb, category, indicator, dimension, dimension_value,
