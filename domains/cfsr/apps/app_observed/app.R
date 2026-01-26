@@ -72,7 +72,7 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
   # Add national standard dashed line
   # NOTE: Don't multiply national_std - it's already a percentage
   p <- p + geom_hline(yintercept = national_std,
-                     linetype = "dashed", color = "#3b82f6", linewidth = 0.8)
+                     linetype = "dashed", color = "#10b981", linewidth = 0.8)
 
   # Add line connecting points
   p <- p + geom_line(color = "#6b7280", linewidth = 0.5)
@@ -124,7 +124,7 @@ build_observed_chart <- function(data, national_std, format_type, direction_rule
   # Color scale for status
   p <- p + scale_color_manual(
     values = c(
-      "better" = "#10b981",   # Green
+      "better" = "#4472C4",   # Blue
       "worse" = "#ef4444",    # Red
       "nodiff" = "#6b7280",   # Gray
       "dq" = "#f59e0b"        # Amber
@@ -202,7 +202,7 @@ build_observed_chart_bars <- function(data, national_std, format_type, direction
   # Add national standard dashed line
   # NOTE: Don't multiply national_std - it's already a percentage
   p <- p + geom_hline(yintercept = national_std,
-                     linetype = "dashed", color = "#3b82f6", linewidth = 0.8)
+                     linetype = "dashed", color = "#10b981", linewidth = 0.8)
 
   # Add value labels on top of bars
   if (nrow(plot_data_valid) > 0) {
@@ -233,7 +233,7 @@ build_observed_chart_bars <- function(data, national_std, format_type, direction
   # Color scale for status (fill instead of color)
   p <- p + scale_fill_manual(
     values = c(
-      "better" = "#10b981",   # Green
+      "better" = "#4472C4",   # Blue
       "worse" = "#ef4444",    # Red
       "nodiff" = "#6b7280",   # Gray
       "dq" = "#f59e0b"        # Amber
@@ -450,7 +450,7 @@ ui <- fluidPage(
       }
       .kpi-national-value {
         font-weight: 700;
-        color: #3b82f6;
+        color: #10b981;
         margin-left: 4px;
       }
       .kpi-direction {
@@ -471,7 +471,7 @@ ui <- fluidPage(
         border-radius: 50%;
         flex-shrink: 0;
       }
-      .kpi-status-indicator.better { background: #10b981; }
+      .kpi-status-indicator.better { background: #4472C4; }
       .kpi-status-indicator.worse { background: #ef4444; }
       .kpi-status-indicator.nodiff { background: #6b7280; }
       .kpi-status-indicator.dq { background: #f59e0b; }
@@ -546,7 +546,7 @@ ui <- fluidPage(
         border-radius: 50%;
         flex-shrink: 0;
       }
-      .interpretation-point.better { background: #10b981; }
+      .interpretation-point.better { background: #4472C4; }
       .interpretation-point.worse { background: #ef4444; }
       .interpretation-point.nodiff { background: #6b7280; }
       .interpretation-point.dq { background: #f59e0b; }
@@ -556,8 +556,8 @@ ui <- fluidPage(
         background: #6b7280;
       }
       .interpretation-line.national {
-        background: #3b82f6;
-        border-top: 2px dashed #3b82f6;
+        background: #10b981;
+        border-top: 2px dashed #10b981;
         background: none;
       }
       .interpretation-notes {
@@ -922,7 +922,7 @@ server <- function(input, output, session) {
     # Use pre-calculated status from RDS for value color
     status_val <- latest$status
     value_color <- switch(status_val,
-      "better" = "#10b981",   # Green
+      "better" = "#4472C4",   # Blue
       "worse" = "#ef4444",    # Red
       "nodiff" = "#6b7280",   # Gray for no statistical difference
       "dq" = "#f59e0b",       # Amber for data quality issue
