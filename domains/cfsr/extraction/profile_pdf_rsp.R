@@ -161,27 +161,16 @@ rsp_data <- bind_rows(top_long, bottom_long)
 # ADD METADATA ----
 ########################################
 
-# Get as_of_date from national file if available, otherwise use profile period
-as_of_date <- tryCatch({
-  metadata <- extract_shared_metadata()
-  metadata$as_of_date
-}, error = function(e) {
-  # Fallback: derive from profile period (format: YYYY_MM)
-  year <- as.numeric(substr(profile_period, 1, 4))
-  month <- as.numeric(substr(profile_period, 6, 7))
-  as.Date(paste(year, month, "15", sep = "-"))
-})
+# Get as_of_date from national file with fallback to profile period
+as_of_date <- get_as_of_date(profile_period, state_code)
 
-# Add basic metadata columns
-rsp_data <- rsp_data %>%
-  mutate(
-    state_abb = pdf_metadata$state,  # 2-letter code from PDF filename (MD, KY, etc.)
-    state = convert_state_code_to_name(state_abb),  # Full name (Maryland, Kentucky, etc.)
-    period_meaningful = make_period_meaningful(period),
-    as_of_date = as_of_date,
-    profile_version = pdf_metadata$profile_version,
-    source = pdf_metadata$source
-  )
+# Add metadata columns using shared function
+rsp_data <- add_extraction_metadata(
+  data = rsp_data,
+  pdf_metadata = pdf_metadata,
+  profile_period = profile_period,
+  as_of_date = as_of_date
+)
 
 # Load dictionary and join all metadata (for both status calculation and display)
 # Join dictionary metadata using shared function
@@ -210,33 +199,12 @@ rsp_data <- rsp_data %>%
 # VALIDATION ----
 ########################################
 
-# Check for NA values in critical fields
-validation_results <- list(
-  period_na = sum(is.na(rsp_data[['period']])),
-  period_meaningful_na = sum(is.na(rsp_data[['period_meaningful']])),
-  status_na = sum(is.na(rsp_data[['status']])),
-  data_used_na = sum(is.na(rsp_data[['data_used']]))
+# Validate using shared function
+validation_results <- validate_extraction_results(
+  data = rsp_data,
+  critical_fields = c("period", "period_meaningful", "status", "data_used"),
+  script_name = "profile_pdf_rsp"
 )
-
-total_na <- sum(unlist(validation_results))
-
-if (total_na > 0) {
-  message("\n\u26A0  VALIDATION WARNINGS:")
-  if (validation_results[['period_na']] > 0) {
-    message("  - period: ", validation_results[['period_na']], " NA values")
-  }
-  if (validation_results[['period_meaningful_na']] > 0) {
-    message("  - period_meaningful: ", validation_results[['period_meaningful_na']], " NA values")
-  }
-  if (validation_results[['status_na']] > 0) {
-    message("  - status: ", validation_results[['status_na']], " NA values")
-  }
-  if (validation_results[['data_used_na']] > 0) {
-    message("  - data_used: ", validation_results[['data_used_na']], " NA values")
-  }
-} else {
-  message("\u2713 All critical fields populated (no NA values)")
-}
 
 # Save validation results for orchestrator
 assign("validation_results", validation_results, envir = .GlobalEnv)
@@ -257,25 +225,14 @@ rsp_data <- rsp_data %>%
   )
 
 ########################################
-# SAVE CSV ----
+# SAVE OUTPUT (CSV + RDS) ----
 ########################################
 
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/rsp/
-run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "rsp")
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
-}
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
-
-# Save using save_to_folder_run pattern
-save_to_folder_run(rsp_data, "csv")
-
-########################################
-# SAVE RDS FOR SHINY APP ----
-########################################
-
-# Use new hierarchical structure: cfsr/data/rds/{state}/{period}/
-output_file_prod_period <- build_rds_path(state_code, profile_period, "rsp")
-saveRDS(rsp_data, output_file_prod_period)
+# Save using shared function (handles both CSV and RDS)
+save_extraction_output(
+  data = rsp_data,
+  state_code = state_code,
+  profile_period = profile_period,
+  data_type = "rsp",
+  folder_processed = folder_processed
+)
