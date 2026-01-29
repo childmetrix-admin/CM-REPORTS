@@ -918,8 +918,13 @@ save_extraction_output <- function(data,
     dir.create(folder_run, recursive = TRUE)
   }
 
+  # Assign to global environment BEFORE calling save_to_folder_run()
+  # (save_to_folder_run expects folder_run to be in global environment)
+  assign("folder_run", folder_run, envir = .GlobalEnv)
+  assign("run_date", run_date, envir = .GlobalEnv)
+
   # Save CSV using save_to_folder_run pattern (function from config.R)
-  # This function is expected to be available in the global environment
+  # This function expects folder_run to be available in the global environment
   save_to_folder_run(data, "csv")
 
   # Save RDS for Shiny app
@@ -930,10 +935,6 @@ save_extraction_output <- function(data,
     type = data_type
   )
   saveRDS(data, output_file_rds)
-
-  # Assign to global environment for orchestrator logging
-  assign("folder_run", folder_run, envir = .GlobalEnv)
-  assign("run_date", run_date, envir = .GlobalEnv)
 
   return(list(folder_run = folder_run, run_date = run_date))
 }
