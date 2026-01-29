@@ -16,22 +16,18 @@
 # LIBRARIES & UTILITIES ----
 #####################################
 
-# Detect monorepo root
-detect_monorepo_root <- function() {
-  current <- getwd()
-  while (current != dirname(current)) {
-    if (file.exists(file.path(current, "CLAUDE.md")) ||
-        file.exists(file.path(current, ".git"))) {
-      return(current)
-    }
-    current <- dirname(current)
-  }
-  return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
+# Find paths.R relative to this script's location
+script_dir <- if (interactive()) {
+  dirname(rstudioapi::getSourceEditorContext()$path)
+} else {
+  dirname(sys.frame(1)$ofile)
 }
 
-# Load the run_profile function
-monorepo_root <- detect_monorepo_root()
-source(file.path(monorepo_root, "domains/cfsr/extraction/run_profile.R"))
+# Source paths.R first to get canonical detect_monorepo_root() and path variables
+source(file.path(script_dir, "paths.R"))
+
+# Load the run_profile function using the CFSR_EXTRACTION_DIR variable
+source(file.path(CFSR_EXTRACTION_DIR, "run_profile.R"))
 
 #####################################
 # RUN ----

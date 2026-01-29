@@ -158,51 +158,8 @@ ind_data <- bind_rows(ind_entrate_df, ind_reentry_df, ind_perm12_df,
 ########################################
 
 # Load dictionary and join all metadata (for both display and calculations)
-dict_path <- file.path(
-  dirname(sys.frame(1)$ofile),
-  "cfsr_round4_indicators_dictionary.csv"
-)
-if (!file.exists(dict_path)) {
-  stop("Dictionary not found at: ", dict_path)
-}
-
-dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-
-# Join ALL dictionary metadata
-ind_data <- ind_data %>%
-  left_join(
-    dict %>% select(
-      indicator,
-      indicator_sort,
-      indicator_short,
-      indicator_very_short,
-      category,
-      description,
-      denominator_def = denominator,
-      numerator_def = numerator,
-      national_standard,
-      direction_rule,
-      direction_desired,
-      direction_legend,
-      decimal_precision,
-      scale,
-      format,
-      risk_adjustment,
-      exclusions,
-      notes
-    ),
-    by = "indicator"
-  )
-
-# Check for missing joins
-missing_joins <- ind_data %>%
-  filter(is.na(category)) %>%
-  distinct(indicator)
-
-if (nrow(missing_joins) > 0) {
-  warning("The following indicators did not match the dictionary:")
-  print(missing_joins[["indicator"]])
-}
+# Join dictionary metadata using shared function
+ind_data <- join_indicator_dictionary(ind_data)
 
 # Reorder columns for consistency across all outputs
 # Add state_abb column (initialize as NA for all rows)

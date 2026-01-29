@@ -81,71 +81,75 @@ extract_pdf_metadata <- function(pdf_path) {
 # STATE NAME CONVERSION ----
 ########################################
 
-# Standardized state code to full name mapping (52 entries: 50 states + DC + PR)
-# Single source of truth - used by both conversion functions
-# Format: c("CODE" = "Full Name")
-CFSR_STATE_CODES <- c(
-  "AL" = "Alabama", "AK" = "Alaska", "AZ" = "Arizona", "AR" = "Arkansas",
-  "CA" = "California", "CO" = "Colorado", "CT" = "Connecticut", "DE" = "Delaware",
-  "FL" = "Florida", "GA" = "Georgia", "HI" = "Hawaii", "ID" = "Idaho",
-  "IL" = "Illinois", "IN" = "Indiana", "IA" = "Iowa", "KS" = "Kansas",
-  "KY" = "Kentucky", "LA" = "Louisiana", "ME" = "Maine", "MD" = "Maryland",
-  "MA" = "Massachusetts", "MI" = "Michigan", "MN" = "Minnesota", "MS" = "Mississippi",
-  "MO" = "Missouri", "MT" = "Montana", "NE" = "Nebraska", "NV" = "Nevada",
-  "NH" = "New Hampshire", "NJ" = "New Jersey", "NM" = "New Mexico", "NY" = "New York",
-  "NC" = "North Carolina", "ND" = "North Dakota", "OH" = "Ohio", "OK" = "Oklahoma",
-  "OR" = "Oregon", "PA" = "Pennsylvania", "RI" = "Rhode Island", "SC" = "South Carolina",
-  "SD" = "South Dakota", "TN" = "Tennessee", "TX" = "Texas", "UT" = "Utah",
-  "VT" = "Vermont", "VA" = "Virginia", "WA" = "Washington", "WV" = "West Virginia",
-  "WI" = "Wisconsin", "WY" = "Wyoming", "DC" = "D.C.", "PR" = "Puerto Rico"
-)
+# State code utilities - Using shared/utils/state_utils.R as single source of truth
+# (state_utils.R is sourced via config.R)
+#
+# Create aliases for backward compatibility with existing code
+convert_state_code_to_name <- state_code_to_name
+convert_state_name_to_code <- state_name_to_code
+CFSR_STATE_CODES <- STATE_CODES
 
-#' Convert state code to full state name
+########################################
+# DICTIONARY JOIN HELPER ----
+########################################
+
+#' Join indicator dictionary metadata to extracted data
 #'
-#' Converts 2-letter state codes to full state names using standardized mapping.
-#' Handles special case: DC -> "D.C." (not "District of Columbia")
+#' Loads the CFSR Round 4 indicators dictionary and left joins all metadata
+#' columns to the provided data frame. Checks for and warns about missing joins.
 #'
-#' @param state_code Character vector of 2-letter state codes (e.g., "MD", "KY", "DC")
-#' @return Character vector of full state names (e.g., "Maryland", "Kentucky", "D.C.")
+#' @param data Data frame with an 'indicator' column
+#' @return Data frame with dictionary columns joined
 #' @examples
-#' convert_state_code_to_name("MD")  # Returns "Maryland"
-#' convert_state_code_to_name("DC")  # Returns "D.C."
-#' convert_state_code_to_name(c("MD", "KY"))  # Vectorized
-convert_state_code_to_name <- function(state_code) {
-  state_code_upper <- toupper(state_code)
-  state_name <- CFSR_STATE_CODES[state_code_upper]
+#' rsp_data <- join_indicator_dictionary(rsp_data)
+join_indicator_dictionary <- function(data) {
+  # Use portable monorepo path (CFSR_EXTRACTION_DIR defined in paths.R)
+  dict_path <- file.path(CFSR_EXTRACTION_DIR, "cfsr_round4_indicators_dictionary.csv")
 
-  if (any(is.na(state_name))) {
-    warning("Unrecognized state code(s): ", paste(state_code[is.na(state_name)], collapse = ", "))
+  if (!file.exists(dict_path)) {
+    stop("Dictionary not found at: ", dict_path)
   }
 
-  return(unname(state_name))
-}
+  # Load dictionary
+  dict <- read.csv(dict_path, stringsAsFactors = FALSE)
 
-#' Convert full state name to state code
-#'
-#' Converts full state names to 2-letter state codes using standardized mapping.
-#' Handles special cases: "D.C." and "District of Columbia" both -> "DC"
-#'
-#' @param state_name Character vector of full state names (e.g., "Maryland", "D.C.")
-#' @return Character vector of 2-letter state codes (e.g., "MD", "DC")
-#' @examples
-#' convert_state_name_to_code("Maryland")  # Returns "MD"
-#' convert_state_name_to_code("D.C.")  # Returns "DC"
-#' convert_state_name_to_code("District of Columbia")  # Returns "DC"
-convert_state_name_to_code <- function(state_name) {
-  # Normalize D.C. variations before lookup
-  state_name_normalized <- ifelse(state_name == "District of Columbia", "D.C.", state_name)
+  # Join ALL dictionary metadata
+  result <- data %>%
+    left_join(
+      dict %>% select(
+        indicator,
+        indicator_sort,
+        indicator_short,
+        indicator_very_short,
+        category,
+        description,
+        denominator_def = denominator,
+        numerator_def = numerator,
+        national_standard,
+        direction_rule,
+        direction_desired,
+        direction_legend,
+        decimal_precision,
+        scale,
+        format,
+        risk_adjustment,
+        exclusions,
+        notes
+      ),
+      by = "indicator"
+    )
 
-  # Create reverse mapping from CFSR_STATE_CODES
-  state_names_to_codes <- setNames(names(CFSR_STATE_CODES), CFSR_STATE_CODES)
-  state_code <- state_names_to_codes[state_name_normalized]
+  # Check for missing joins
+  missing_joins <- result %>%
+    filter(is.na(category)) %>%
+    distinct(indicator)
 
-  if (any(is.na(state_code))) {
-    warning("Unrecognized state name(s): ", paste(state_name[is.na(state_code)], collapse = ", "))
+  if (nrow(missing_joins) > 0) {
+    warning("The following indicators did not match the dictionary:\n  ",
+            paste(missing_joins[["indicator"]], collapse = "\n  "))
   }
 
-  return(unname(state_code))
+  return(result)
 }
 
 ########################################
@@ -344,23 +348,11 @@ find_cfsr_file <- function(keyword = NULL,
 #'
 #' @return Named vector where names are sheet names and values are indicator display names
 load_indicator_dictionary <- function() {
-  # Try to find the dictionary file
-  dict_paths <- c(
-    "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv",
-    file.path(getwd(), "code", "cfsr_round4_indicators_dictionary.csv"),
-    file.path(dirname(getwd()), "code", "cfsr_round4_indicators_dictionary.csv")
-  )
+  # Use portable monorepo path (CFSR_EXTRACTION_DIR defined in paths.R)
+  dict_file <- file.path(CFSR_EXTRACTION_DIR, "cfsr_round4_indicators_dictionary.csv")
 
-  dict_file <- NULL
-  for (path in dict_paths) {
-    if (file.exists(path)) {
-      dict_file <- path
-      break
-    }
-  }
-
-  if (is.null(dict_file)) {
-    warning("Indicator dictionary not found. Searched:\n  ", paste(dict_paths, collapse = "\n  "))
+  if (!file.exists(dict_file)) {
+    warning("Indicator dictionary not found at: ", dict_file)
     return(NULL)
   }
 
@@ -541,23 +533,10 @@ cfsr_profile_extract_asof_date <- function(data_df) {
 rank_states_by_performance <- function(df) {
 
   # Load dictionary to get direction_desired for this indicator
-  # Try multiple possible paths
-  possible_paths <- c(
-    "D:/repo_childmetrix/cfsr-profile/code/cfsr_round4_indicators_dictionary.csv",
-    "code/cfsr_round4_indicators_dictionary.csv",
-    file.path(getwd(), "code", "cfsr_round4_indicators_dictionary.csv"),
-    file.path(dirname(getwd()), "code", "cfsr_round4_indicators_dictionary.csv")
-  )
+  # Use portable monorepo path (CFSR_EXTRACTION_DIR defined in paths.R)
+  dict_path <- file.path(CFSR_EXTRACTION_DIR, "cfsr_round4_indicators_dictionary.csv")
 
-  dict_path <- NULL
-  for (path in possible_paths) {
-    if (file.exists(path)) {
-      dict_path <- path
-      break
-    }
-  }
-
-  if (!is.null(dict_path)) {
+  if (file.exists(dict_path)) {
     dict <- read.csv(dict_path, stringsAsFactors = FALSE)
 
     # Get the indicator name from the dataframe
@@ -574,7 +553,7 @@ rank_states_by_performance <- function(df) {
   } else {
     # If dictionary file not found, default to "down" (lower is better - safer default)
     direction <- "down"
-    warning("Dictionary file not found at expected locations. Defaulting to 'down' direction for ranking.")
+    warning("Dictionary file not found at: ", dict_path, ". Defaulting to 'down' direction for ranking.")
   }
 
   # Rank within each period and calculate reporting_states

@@ -184,51 +184,8 @@ rsp_data <- rsp_data %>%
   )
 
 # Load dictionary and join all metadata (for both status calculation and display)
-dict_path <- file.path(
-  dirname(sys.frame(1)$ofile),
-  "cfsr_round4_indicators_dictionary.csv"
-)
-if (!file.exists(dict_path)) {
-  stop("Dictionary not found at: ", dict_path)
-}
-
-dict <- read.csv(dict_path, stringsAsFactors = FALSE)
-
-# Join ALL dictionary metadata
-rsp_data <- rsp_data %>%
-  left_join(
-    dict %>% select(
-      indicator,
-      indicator_sort,
-      indicator_short,
-      indicator_very_short,
-      category,
-      description,
-      denominator_def = denominator,
-      numerator_def = numerator,
-      national_standard,
-      direction_rule,
-      direction_desired,
-      direction_legend,
-      decimal_precision,
-      scale,
-      format,
-      risk_adjustment,
-      exclusions,
-      notes
-    ),
-    by = "indicator"
-  )
-
-# Check for missing joins
-missing_joins <- rsp_data %>%
-  filter(is.na(category)) %>%
-  distinct(indicator)
-
-if (nrow(missing_joins) > 0) {
-  warning("The following indicators did not match the dictionary:")
-  print(missing_joins[["indicator"]])
-}
+# Join dictionary metadata using shared function
+rsp_data <- join_indicator_dictionary(rsp_data)
 
 ########################################
 # CALCULATE RSP STATUS (above, below, no diff) ----
