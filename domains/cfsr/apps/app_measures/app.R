@@ -222,10 +222,7 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "sidebar_menu",
 
-      menuItem("Risk Standardized Performance", tabName = "rsp", icon = icon("chart-line")),
-
-      tags$li(class = "header", "OBSERVED PERFORMANCE"),
-      menuItem("Overview", tabName = "obs_overview", icon = icon("th")),
+      menuItem("Overview", tabName = "overview", icon = icon("th")),
       menuItem("Entry rate", tabName = "obs_entry_rate", icon = NULL),
       menuItem("Maltreatment in care", tabName = "obs_maltreatment", icon = NULL),
       menuItem("Recurrence", tabName = "obs_recurrence", icon = NULL),
@@ -668,20 +665,55 @@ ui <- dashboardPage(
           color: #6b7280;
           margin-top: 12px;
         }
+
+        /* ===== OVERVIEW PAGE CONTAINER ===== */
+        .indicator-page-container {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 20px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+          margin-bottom: 16px;
+        }
       "))
     ),
 
     tabItems(
-      # RSP tab
+      # Overview tab (contains both RSP and Observed Performance as sub-tabs)
       tabItem(
-        tabName = "rsp",
-        uiOutput("rsp_content")
-      ),
+        tabName = "overview",
+        fluidRow(
+          column(12,
+            # White container box (like indicator pages)
+            div(class = "indicator-page-container",
+              # Title
+              div(
+                class = "indicator-header",
+                style = "padding-top: 4px; margin-bottom: 28px;",
+                h2(
+                  style = "color: #4472C4; font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.5px;",
+                  textOutput("overview_title", inline = TRUE)
+                )
+              ),
 
-      # Observed overview tab
-      tabItem(
-        tabName = "obs_overview",
-        uiOutput("obs_overview_content")
+              # Tabset with transparent tabs
+              tabsetPanel(
+                id = "overview_tabs",
+                type = "tabs",
+
+                tabPanel(
+                  "Risk Standardized Performance",
+                  div(style = "margin-top: 22px;", uiOutput("rsp_content"))
+                ),
+
+                tabPanel(
+                  "Observed Performance",
+                  div(style = "margin-top: 22px;", uiOutput("obs_overview_content"))
+                )
+              )
+            )
+          )
+        )
       ),
 
       # Observed indicator detail tabs
@@ -757,6 +789,14 @@ server <- function(input, output, session) {
   })
 
   #####################################
+  # OVERVIEW PAGE TITLE ----
+  #####################################
+
+  output$overview_title <- renderText({
+    paste("CFSR Performance Trends —", state_name_rv())
+  })
+
+  #####################################
   # RSP VIEW (KPI CARDS) ----
   #####################################
 
@@ -764,14 +804,20 @@ server <- function(input, output, session) {
     data <- rsp_data()
 
     tagList(
-      div(class = "header",
-        h1(paste("Risk-Standardized Performance —", state_name_rv())),
-        p(class = "subtitle",
+      div(class = "viz-context-header",
+        div(class = "viz-title", "Risk-Standardized Performance — CFSR Statewide Data Indicators"),
+        div(class = "viz-description",
+          "RSP is the state's observed performance, with risk-adjustment"
+        ),
+        div(class = "viz-pills-row",
           if (is.null(data) || nrow(data) == 0) {
-            "No RSP data available for this state/profile"
+            div(class = "viz-period-pill", "No data available")
           } else {
             profile_ver <- unique(data$profile_version)[1]
-            paste0("CFSR Round 4 Data Profile | ", profile_ver)
+            tagList(
+              div(class = "viz-period-pill", paste0("CFSR Round 4 Data Profile | ", profile_ver)),
+              div(class = "viz-state-pill", state_name_rv())
+            )
           }
         )
       ),
@@ -927,10 +973,14 @@ server <- function(input, output, session) {
     }
 
     tagList(
-      div(class = "header",
-        h1(paste("Observed Performance —", state_name_rv())),
-        p(class = "subtitle",
-          paste0("CFSR Round 4 Data Profile | ", profile_version)
+      div(class = "viz-context-header",
+        div(class = "viz-title", "Observed Performance — CFSR Statewide Data Indicators"),
+        div(class = "viz-description",
+          "Observed performance is the state's performance, without risk-adjustment"
+        ),
+        div(class = "viz-pills-row",
+          div(class = "viz-period-pill", paste0("CFSR Round 4 Data Profile | ", profile_version)),
+          div(class = "viz-state-pill", state_name_rv())
         )
       ),
 
