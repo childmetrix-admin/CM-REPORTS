@@ -146,8 +146,8 @@
     const loading = document.getElementById('loadingIndicator');
     const error = document.getElementById('errorMessage');
 
-    // Summary app port
-    const SUMMARY_PORT = 3840;
+    // Summary app port (now unified on 3838 with view parameter)
+    const SUMMARY_PORT = 3838;
 
     // Get state from URL query parameter (passed from parent)
     function getStateFromURL() {
@@ -191,7 +191,7 @@
 
       if (serverRunning) {
         // Server is running, load the app
-        const appURL = `http://localhost:${SUMMARY_PORT}/?state=${state}&profile=${profile}`;
+        const appURL = `http://localhost:${SUMMARY_PORT}/?state=${state}&profile=${profile}&view=summary`;
         iframe.src = appURL;
 
         iframe.onload = function() {
@@ -220,7 +220,7 @@
       // Update direct link with current state
       const directLink = document.getElementById('directLink');
       if (directLink) {
-        directLink.href = `http://localhost:${SUMMARY_PORT}/?state=${state}&profile=${profile}`;
+        directLink.href = `http://localhost:${SUMMARY_PORT}/?state=${state}&profile=${profile}&view=summary`;
       }
 
       loadShinyApp(state, profile);

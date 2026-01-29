@@ -190,7 +190,7 @@
 
       if (serverRunning) {
         // Server is running, load the app
-        const appURL = `http://localhost:3838/?state=${state}&profile=${profile}`;
+        const appURL = `http://localhost:3838/?state=${state}&profile=${profile}&view=national`;
         iframe.src = appURL;
 
         iframe.onload = function() {
@@ -219,7 +219,7 @@
       // Update direct link with current state
       const directLink = document.getElementById('directLink');
       if (directLink) {
-        directLink.href = `http://localhost:3838/?state=${state}&profile=${profile}`;
+        directLink.href = `http://localhost:3838/?state=${state}&profile=${profile}&view=national`;
       }
 
       loadShinyApp(state, profile);

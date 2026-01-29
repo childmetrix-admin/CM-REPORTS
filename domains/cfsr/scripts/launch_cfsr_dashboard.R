@@ -1,10 +1,11 @@
-# Launch CFSR Dashboard (All Apps)
+# Launch CFSR Dashboard (Unified App)
 #
-# This script starts ALL CFSR Shiny apps in background processes:
-#   - National comparison app on http://localhost:3838
-#   - RSP (Risk-Standardized Performance) app on http://localhost:3839
-#   - Summary (Performance Summary) app on http://localhost:3840
-#   - Observed Performance app on http://localhost:3841
+# This script starts the unified CFSR Shiny app on http://localhost:3838
+# The single app handles all 4 views via URL parameters:
+#   - National comparison: ?view=national
+#   - RSP (Risk-Standardized Performance): ?view=rsp
+#   - Summary (Performance Summary): ?view=summary
+#   - Observed Performance: ?view=observed
 #
 # INSTRUCTIONS:
 # 1. Open this file in R or RStudio
@@ -12,7 +13,7 @@
 # 3. Keep R running - don't close this window!
 # 4. Open your browser to: file:///D:/repo_childmetrix/cm-reports/app.html
 #
-# To stop: Close this R session (all apps will terminate)
+# To stop: Close this R session (app will terminate)
 
 # Load required packages
 if (!require("shiny")) {
@@ -40,37 +41,27 @@ detect_monorepo_root <- function() {
 }
 monorepo_root <- detect_monorepo_root()
 
-# Path to the CFSR dashboard apps (domains/cfsr/apps/ location)
-app_national_path <- file.path(monorepo_root, "domains/cfsr/apps/app_national")
-app_rsp_path <- file.path(monorepo_root, "domains/cfsr/apps/app_rsp")
-app_summary_path <- file.path(monorepo_root, "domains/cfsr/apps/app_summary")
-app_observed_path <- file.path(monorepo_root, "domains/cfsr/apps/app_observed")
+# Path to the unified CFSR app
+app_cfsr_path <- file.path(monorepo_root, "domains/cfsr/apps/app_cfsr")
 data_path <- file.path(monorepo_root, "domains/cfsr/data/rds")
 
-# Check if app directories exist
-if (!dir.exists(app_national_path)) {
-  stop("National app directory not found: ", app_national_path)
-}
-if (!dir.exists(app_rsp_path)) {
-  stop("RSP app directory not found: ", app_rsp_path)
-}
-if (!dir.exists(app_summary_path)) {
-  stop("Summary app directory not found: ", app_summary_path)
-}
-if (!dir.exists(app_observed_path)) {
-  stop("Observed Performance app directory not found: ", app_observed_path)
+# Check if app directory exists
+if (!dir.exists(app_cfsr_path)) {
+  stop("Unified CFSR app directory not found: ", app_cfsr_path,
+       "\n\nNote: The CFSR apps have been consolidated into app_cfsr/",
+       "\nOld separate apps (app_national, app_rsp, app_summary, app_observed) are deprecated.")
 }
 
 # Check if data directory exists
 if (!dir.exists(data_path)) {
   warning("Data directory not found: ", data_path,
-          "\n\nYou may need to run cfsr-profile.R first to generate data.")
+          "\n\nYou may need to run the CFSR extraction pipeline first to generate data.")
 }
 
 # Launch banner
 cat("\n")
 cat("================================================================\n")
-cat("  CFSR Dashboard - Starting All Apps...\n")
+cat("  CFSR Dashboard - Starting Unified App...\n")
 cat("================================================================\n\n")
 
 # Function to run app in background
@@ -84,99 +75,56 @@ run_app_background <- function(app_path, port) {
   )
 }
 
-# Start RSP app in background (port 3839)
-cat("Starting RSP app on port 3839...")
-rsp_process <- run_app_background(app_rsp_path, 3839)
-Sys.sleep(2)  # Give it time to start
-if (rsp_process$is_alive()) {
+# Start unified CFSR app in background (port 3838)
+cat("Starting unified CFSR app on port 3838...")
+cfsr_process <- run_app_background(app_cfsr_path, 3838)
+Sys.sleep(3)  # Give it time to start
+if (cfsr_process$is_alive()) {
   cat(" OK\n")
 } else {
   cat(" FAILED\n")
-  cat("RSP app error:", rsp_process$read_error(), "\n")
-}
-
-# Start National app in background (port 3838)
-cat("Starting National app on port 3838...")
-national_process <- run_app_background(app_national_path, 3838)
-Sys.sleep(2)  # Give it time to start
-if (national_process$is_alive()) {
-  cat(" OK\n")
-} else {
-  cat(" FAILED\n")
-  cat("National app error:", national_process$read_error(), "\n")
-}
-
-# Start Summary app in background (port 3840)
-cat("Starting Summary app on port 3840...")
-summary_process <- run_app_background(app_summary_path, 3840)
-Sys.sleep(2)  # Give it time to start
-if (summary_process$is_alive()) {
-  cat(" OK\n")
-} else {
-  cat(" FAILED\n")
-  cat("Summary app error:", summary_process$read_error(), "\n")
-}
-
-# Start Observed Performance app in background (port 3841)
-cat("Starting Observed Performance app on port 3841...")
-observed_process <- run_app_background(app_observed_path, 3841)
-Sys.sleep(2)  # Give it time to start
-if (observed_process$is_alive()) {
-  cat(" OK\n")
-} else {
-  cat(" FAILED\n")
-  cat("Observed app error:", observed_process$read_error(), "\n")
+  cat("CFSR app error:", cfsr_process$read_error(), "\n")
+  stop("Failed to start CFSR app")
 }
 
 cat("\n")
 cat("================================================================\n")
-cat("  All CFSR Apps Running!\n")
+cat("  CFSR App Running!\n")
 cat("================================================================\n\n")
-cat("App URLs:\n")
-cat("  National (state-by-state): http://localhost:3838/?state=MD\n")
-cat("  RSP (risk-standardized):   http://localhost:3839/?state=MD\n")
-cat("  Summary (performance):     http://localhost:3840/?state=MD\n")
-cat("  Observed Performance:      http://localhost:3841/?state=MD&indicator=overview\n\n")
+cat("App URLs (all on port 3838 with view parameter):\n")
+cat("  National (state-by-state): http://localhost:3838/?state=MD&view=national\n")
+cat("  RSP (risk-standardized):   http://localhost:3838/?state=MD&view=rsp\n")
+cat("  Summary (performance):     http://localhost:3838/?state=MD&view=summary\n")
+cat("  Observed Performance:      http://localhost:3838/?state=MD&view=observed&indicator=overview\n\n")
 cat("Full platform:\n")
 cat("  file:///D:/repo_childmetrix/cm-reports/app.html\n\n")
-cat("Keep this R session running! Close it to stop all apps.\n")
+cat("Keep this R session running! Close it to stop the app.\n")
 cat("================================================================\n\n")
 
-# Keep session alive and monitor processes
-cat("Press Ctrl+C to stop all apps and exit.\n\n")
+# Keep session alive and monitor process
+cat("Press Ctrl+C to stop the app and exit.\n\n")
 
 # Monitor loop - keeps R session alive
 tryCatch({
   while (TRUE) {
     Sys.sleep(5)
 
-    # Check if processes died unexpectedly
-    if (!national_process$is_alive() && !rsp_process$is_alive() &&
-        !summary_process$is_alive() && !observed_process$is_alive()) {
-      cat("\nAll apps have stopped.\n")
+    # Check if process died unexpectedly
+    if (!cfsr_process$is_alive()) {
+      cat("\nApp has stopped unexpectedly.\n")
+      cat("Error output:\n")
+      cat(cfsr_process$read_error(), "\n")
       break
     }
   }
 }, interrupt = function(e) {
-  cat("\n\nShutting down apps...\n")
+  cat("\n\nShutting down app...\n")
 })
 
 # Cleanup on exit
-if (exists("national_process") && national_process$is_alive()) {
-  national_process$kill()
-  cat("National app stopped.\n")
-}
-if (exists("rsp_process") && rsp_process$is_alive()) {
-  rsp_process$kill()
-  cat("RSP app stopped.\n")
-}
-if (exists("summary_process") && summary_process$is_alive()) {
-  summary_process$kill()
-  cat("Summary app stopped.\n")
-}
-if (exists("observed_process") && observed_process$is_alive()) {
-  observed_process$kill()
-  cat("Observed Performance app stopped.\n")
+if (exists("cfsr_process") && cfsr_process$is_alive()) {
+  cfsr_process$kill()
+  cat("CFSR app stopped.\n")
 }
 
 cat("Done.\n")

@@ -146,8 +146,8 @@
     const loading = document.getElementById('loadingIndicator');
     const error = document.getElementById('errorMessage');
 
-    // RSP app port (different from national app on 3838)
-    const RSP_PORT = 3839;
+    // RSP app port (now unified on 3838 with view parameter)
+    const RSP_PORT = 3838;
 
     // Get state from URL query parameter (passed from parent)
     function getStateFromURL() {
@@ -191,7 +191,7 @@
 
       if (serverRunning) {
         // Server is running, load the app
-        const appURL = `http://localhost:${RSP_PORT}/?state=${state}&profile=${profile}`;
+        const appURL = `http://localhost:${RSP_PORT}/?state=${state}&profile=${profile}&view=rsp`;
         iframe.src = appURL;
 
         iframe.onload = function() {
@@ -220,7 +220,7 @@
       // Update direct link with current state
       const directLink = document.getElementById('directLink');
       if (directLink) {
-        directLink.href = `http://localhost:${RSP_PORT}/?state=${state}`;
+        directLink.href = `http://localhost:${RSP_PORT}/?state=${state}&profile=${profile}&view=rsp`;
       }
 
       loadShinyApp(state, profile);

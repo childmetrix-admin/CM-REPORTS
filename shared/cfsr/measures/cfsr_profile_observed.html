@@ -52,7 +52,7 @@
   <iframe id="shiny-container" style="display: none;"></iframe>
 
   <script>
-    const OBSERVED_PORT = 3841;
+    const OBSERVED_PORT = 3838;
 
     // Get state, profile, and view from URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -60,8 +60,8 @@
     const profile = urlParams.get('profile') || 'latest';
     const view = urlParams.get('view') || 'overview';
 
-    // Construct Shiny app URL
-    const shinyUrl = `http://localhost:${OBSERVED_PORT}/?state=${state}&profile=${profile}&view=${view}`;
+    // Construct Shiny app URL (view=observed with indicator sub-routing)
+    const shinyUrl = `http://localhost:${OBSERVED_PORT}/?state=${state}&profile=${profile}&view=observed&indicator=${view}`;
 
     const iframe = document.getElementById('shiny-container');
 
