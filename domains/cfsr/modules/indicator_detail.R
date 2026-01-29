@@ -12,6 +12,14 @@ indicator_detail_ui <- function(id) {
     # Add CSS for header styling
     tags$head(
       tags$style(HTML("
+        .indicator-page-container {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 20px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+          margin-bottom: 16px;
+        }
         .indicator-header {
           margin-bottom: 24px;
           padding-bottom: 0;
@@ -38,6 +46,8 @@ indicator_detail_ui <- function(id) {
 
     fluidRow(
       column(12,
+        # Wrap entire indicator page in white container
+        div(class = "indicator-page-container",
         # Indicator title (always shown)
         div(class = "indicator-header",
           div(class = "indicator-title", textOutput(ns("title")))
@@ -123,6 +133,7 @@ indicator_detail_ui <- function(id) {
         if (!exists("USE_VIZ_CONTAINERS") || !USE_VIZ_CONTAINERS) {
           div(class = "chart-footnote", style = "margin-top: 20px;", textOutput(ns("source")))
         }
+        ) # Close indicator-page-container div
       )
     )
   )

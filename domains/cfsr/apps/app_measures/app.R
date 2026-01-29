@@ -294,7 +294,7 @@ ui <- dashboardPage(
       tags$style(HTML("
         /* ===== BASE STYLES ===== */
         body {
-          background-color: #f9fafb;
+          background-color: #fafafa;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           margin: 0;
           padding: 0;
@@ -343,8 +343,11 @@ ui <- dashboardPage(
           text-decoration: none;
         }
 
-        /* Reduce top whitespace */
-        .content-wrapper, .right-side { padding-top: 10px !important; }
+        /* Content area background - very subtle gray */
+        .content-wrapper, .right-side {
+          padding-top: 10px !important;
+          background-color: #fafafa !important;
+        }
         .main-sidebar { padding-top: 0 !important; margin-top: 0 !important; }
         .sidebar { padding-top: 10px !important; }
 
@@ -578,9 +581,9 @@ ui <- dashboardPage(
 
         .viz-export-container {
           position: relative;
-          background: white;
-          border-radius: 6px;
+          background: transparent;
           padding: 8px 20px 20px 8px;
+          margin-bottom: 16px;
         }
         .viz-download-button {
           position: absolute;
