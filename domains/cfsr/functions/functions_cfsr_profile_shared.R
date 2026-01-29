@@ -754,3 +754,187 @@ standardize_dimension_values <- function(data) {
       TRUE ~ dimension_value  # Other dimensions, keep unchanged
     ))
 }
+
+########################################
+# PHASE 2: EXTRACTION OUTPUT HELPERS ----
+########################################
+
+# Functions extracted to consolidate duplicate save, validation,
+# and metadata logic across extraction scripts
+
+#' Get as_of_date with fallback to profile period
+#'
+#' Tries to extract as_of_date from national Excel file metadata.
+#' Falls back to deriving date from profile_period if extraction fails.
+#'
+#' @param profile_period Profile period string in YYYY_MM format (e.g., "2025_02")
+#' @param state_code State code (optional, for error messages)
+#' @return Date object representing the as_of_date
+#' @examples
+#' as_of_date <- get_as_of_date("2025_02", "MD")
+get_as_of_date <- function(profile_period, state_code = NULL) {
+  as_of_date <- tryCatch({
+    metadata <- extract_shared_metadata()
+    metadata$as_of_date
+  }, error = function(e) {
+    # Fallback: derive from profile period (format: YYYY_MM)
+    year <- as.numeric(substr(profile_period, 1, 4))
+    month <- as.numeric(substr(profile_period, 6, 7))
+    as.Date(paste(year, month, "15", sep = "-"))
+  })
+
+  return(as_of_date)
+}
+
+#' Add extraction metadata columns to data
+#'
+#' Adds standard metadata columns to extracted data:
+#' - state_abb, state, period_meaningful, as_of_date, profile_version, source
+#'
+#' @param data Data frame with extraction results
+#' @param pdf_metadata Metadata extracted from PDF (for PDF sources)
+#' @param profile_period Profile period in YYYY_MM format
+#' @param as_of_date AFCARS/NCANDS data as-of date
+#' @param state_code State code (for Excel sources without pdf_metadata)
+#' @param profile_version Profile version string (for Excel sources)
+#' @param source Source citation (for Excel sources)
+#' @return Data frame with metadata columns added
+add_extraction_metadata <- function(data,
+                                     pdf_metadata = NULL,
+                                     profile_period,
+                                     as_of_date,
+                                     state_code = NULL,
+                                     profile_version = NULL,
+                                     source = NULL) {
+
+  # Determine state_abb and other metadata based on source type
+  if (!is.null(pdf_metadata)) {
+    # PDF source (RSP, Observed)
+    data <- data %>%
+      mutate(
+        state_abb = pdf_metadata$state,
+        state = convert_state_code_to_name(state_abb),
+        period_meaningful = make_period_meaningful(period),
+        as_of_date = as_of_date,
+        profile_version = pdf_metadata$profile_version,
+        source = pdf_metadata$source
+      )
+  } else if (!is.null(state_code)) {
+    # Excel source (State)
+    data <- data %>%
+      mutate(
+        state_abb = toupper(state_code),
+        state = convert_state_code_to_name(state_abb),
+        period_meaningful = make_period_meaningful(period),
+        as_of_date = as_of_date,
+        profile_version = profile_version,
+        source = source
+      )
+  } else {
+    # National source (no state)
+    data <- data %>%
+      mutate(
+        period_meaningful = make_period_meaningful(period),
+        as_of_date = as_of_date,
+        profile_version = profile_version,
+        source = source
+      )
+  }
+
+  return(data)
+}
+
+#' Validate extraction results
+#'
+#' Checks for NA values in critical fields and prints validation warnings.
+#' Returns validation results for logging by orchestrator.
+#'
+#' @param data Data frame to validate
+#' @param critical_fields Character vector of field names to check for NAs
+#' @param script_name Script name for error messages (e.g., "profile_pdf_rsp")
+#' @return List of validation results (field_name_na = count)
+#' @examples
+#' validation_results <- validate_extraction_results(
+#'   rsp_data,
+#'   c("period", "period_meaningful", "status", "data_used"),
+#'   "profile_pdf_rsp"
+#' )
+validate_extraction_results <- function(data,
+                                         critical_fields,
+                                         script_name = "extraction") {
+
+  # Check for NA values in each critical field
+  validation_results <- sapply(critical_fields, function(field) {
+    if (field %in% names(data)) {
+      sum(is.na(data[[field]]))
+    } else {
+      NA_integer_
+    }
+  }, simplify = FALSE)
+
+  # Calculate total NAs
+  total_na <- sum(unlist(validation_results[!is.na(validation_results)]))
+
+  # Print validation report
+  if (total_na > 0) {
+    message("\n\u26A0  VALIDATION WARNINGS (", script_name, "):")
+    for (field in names(validation_results)) {
+      na_count <- validation_results[[field]]
+      if (!is.na(na_count) && na_count > 0) {
+        message("  - ", field, ": ", na_count, " NA values")
+      }
+    }
+  } else {
+    message("\u2713 All critical fields populated (no NA values)")
+  }
+
+  return(validation_results)
+}
+
+#' Save extraction output (CSV and RDS)
+#'
+#' Consolidates CSV and RDS save logic used by all extraction scripts.
+#' Creates timestamped run folder and saves both CSV and RDS files.
+#'
+#' @param data Data frame to save
+#' @param state_code State code (for state-specific files)
+#' @param profile_period Profile period in YYYY_MM format
+#' @param data_type Type of data: "rsp", "observed", "national", "state"
+#' @param folder_processed Base folder for CSV archives
+#' @return List with folder_run and run_date (assigned to global environment)
+#' @examples
+#' save_extraction_output(rsp_data, "MD", "2025_02", "rsp", folder_processed)
+save_extraction_output <- function(data,
+                                    state_code,
+                                    profile_period,
+                                    data_type,
+                                    folder_processed) {
+
+  # Create run folder in processed structure: data/csv/{STATE}/{PERIOD}/DATE/{type}/
+  run_date <- Sys.Date()
+  folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), data_type)
+
+  if (!dir.exists(folder_run)) {
+    dir.create(folder_run, recursive = TRUE)
+  }
+
+  # Assign to global environment BEFORE calling save_to_folder_run()
+  # (save_to_folder_run expects folder_run to be in global environment)
+  assign("folder_run", folder_run, envir = .GlobalEnv)
+  assign("run_date", run_date, envir = .GlobalEnv)
+
+  # Save CSV using save_to_folder_run pattern (function from config.R)
+  # This function expects folder_run to be available in the global environment
+  save_to_folder_run(data, "csv")
+
+  # Save RDS for Shiny app
+  # Use new hierarchical structure: cfsr/data/rds/{state}/{period}/ or national/
+  output_file_rds <- build_rds_path(
+    state_code = if (data_type == "national") NULL else state_code,
+    period = profile_period,
+    type = data_type
+  )
+  saveRDS(data, output_file_rds)
+
+  return(list(folder_run = folder_run, run_date = run_date))
+}

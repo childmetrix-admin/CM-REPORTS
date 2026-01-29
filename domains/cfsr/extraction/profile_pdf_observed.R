@@ -201,30 +201,16 @@ if (file.exists(rsp_rds_path)) {
   warning("Status and data_used set to NA. Run profile_pdf_rsp.R first.")
 }
 
-# Get as_of_date from national file if available, otherwise use profile period
-as_of_date <- tryCatch({
-  # Try to extract from national file (requires profile_excel_national.R to have run)
-  metadata <- cfsr_profile_extract_asof_date(
-    find_cfsr_file("National", file_type = "excel", sheet_name = 1)
-  )
-  metadata$as_of_date
-}, error = function(e) {
-  # Fallback: derive from profile period (format: YYYY_MM)
-  year <- as.numeric(substr(profile_period, 1, 4))
-  month <- as.numeric(substr(profile_period, 6, 7))
-  as.Date(paste(year, month, "15", sep = "-"))
-})
+# Get as_of_date from national file with fallback to profile period
+as_of_date <- get_as_of_date(profile_period, state_code)
 
-# Add basic metadata columns
-observed_data <- observed_data %>%
-  mutate(
-    state_abb = pdf_metadata$state,  # 2-letter code from PDF filename (MD, KY, etc.)
-    state = convert_state_code_to_name(state_abb),  # Full name (Maryland, Kentucky, etc.)
-    period_meaningful = make_period_meaningful(period),
-    as_of_date = as_of_date,
-    profile_version = pdf_metadata$profile_version,
-    source = pdf_metadata$source
-  )
+# Add metadata columns using shared function
+observed_data <- add_extraction_metadata(
+  data = observed_data,
+  pdf_metadata = pdf_metadata,
+  profile_period = profile_period,
+  as_of_date = as_of_date
+)
 
 # Load dictionary and join all metadata (for both display and calculations)
 # Join dictionary metadata using shared function
@@ -234,33 +220,12 @@ observed_data <- join_indicator_dictionary(observed_data)
 # VALIDATION ----
 ########################################
 
-# Check for NA values in critical fields
-validation_results_obs <- list(
-  period_na = sum(is.na(observed_data[['period']])),
-  period_meaningful_na = sum(is.na(observed_data[['period_meaningful']])),
-  status_na = sum(is.na(observed_data[['status']])),
-  data_used_na = sum(is.na(observed_data[['data_used']]))
+# Validate using shared function
+validation_results_obs <- validate_extraction_results(
+  data = observed_data,
+  critical_fields = c("period", "period_meaningful", "status", "data_used"),
+  script_name = "profile_pdf_observed"
 )
-
-total_na_obs <- sum(unlist(validation_results_obs))
-
-if (total_na_obs > 0) {
-  message("\n\u26A0  VALIDATION WARNINGS:")
-  if (validation_results_obs[['period_na']] > 0) {
-    message("  - period: ", validation_results_obs[['period_na']], " NA values")
-  }
-  if (validation_results_obs[['period_meaningful_na']] > 0) {
-    message("  - period_meaningful: ", validation_results_obs[['period_meaningful_na']], " NA values")
-  }
-  if (validation_results_obs[['status_na']] > 0) {
-    message("  - status: ", validation_results_obs[['status_na']], " NA values (expected if RSP join failed)")
-  }
-  if (validation_results_obs[['data_used_na']] > 0) {
-    message("  - data_used: ", validation_results_obs[['data_used_na']], " NA values (expected if RSP join failed)")
-  }
-} else {
-  message("\u2713 All critical fields populated (no NA values)")
-}
 
 # Save validation results for orchestrator
 assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
@@ -313,26 +278,14 @@ observed_data <- observed_data %>%
   )
 
 ########################################
-# SAVE CSV ----
+# SAVE OUTPUT (CSV + RDS) ----
 ########################################
 
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/observed/
-run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "observed")
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
-}
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
-
-# Save using save_to_folder_run pattern
-save_to_folder_run(observed_data, "csv")
-
-########################################
-# SAVE RDS FOR SHINY APP ----
-########################################
-
-# Use new hierarchical structure: cfsr/data/rds/{state}/{period}/
-# RDS is a snapshot of the CSV data (includes rank columns from earlier join)
-output_file_prod_period <- build_rds_path(state_code, profile_period, "observed")
-saveRDS(observed_data, output_file_prod_period)
+# Save using shared function (handles both CSV and RDS)
+save_extraction_output(
+  data = observed_data,
+  state_code = state_code,
+  profile_period = profile_period,
+  data_type = "observed",
+  folder_processed = folder_processed
+)

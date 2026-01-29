@@ -266,26 +266,14 @@ ind_data <- ind_data %>%
   )
 
 ########################################
-# SAVE CSV ----
+# SAVE OUTPUT (CSV + RDS) ----
 ########################################
 
-# Create run folder in processed structure: data/processed/STATE/PERIOD/DATE/state/
-run_date <- Sys.Date()
-folder_run <- file.path(folder_processed, format(run_date, "%Y-%m-%d"), "state")
-if (!dir.exists(folder_run)) {
-  dir.create(folder_run, recursive = TRUE)
-}
-assign("folder_run", folder_run, envir = .GlobalEnv)
-assign("run_date", run_date, envir = .GlobalEnv)
-
-# Save using save_to_folder_run pattern
-save_to_folder_run(ind_data, "csv")
-
-########################################
-# SAVE RDS FOR SHINY APP ----
-########################################
-
-# Use new hierarchical structure: cfsr/data/rds/{state}/{period}/
-# RDS is a snapshot of the CSV data (includes rank columns from earlier join)
-output_file_prod_period <- build_rds_path(state_code, profile_period, "state")
-saveRDS(ind_data, output_file_prod_period)
+# Save using shared function (handles both CSV and RDS)
+save_extraction_output(
+  data = ind_data,
+  state_code = state_code,
+  profile_period = profile_period,
+  data_type = "state",
+  folder_processed = folder_processed
+)
