@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CFSR Performance Summary</title>
+  <title>CFSR Measures Dashboard</title>
   <style>
     body, html {
       margin: 0;
@@ -110,23 +110,23 @@
     <div class="message hidden" id="errorMessage">
       <div class="instructions">
         <h3>Shiny Server Not Running</h3>
-        <p>The Performance Summary dashboard requires a running Shiny server. To start it:</p>
+        <p>The CFSR Measures dashboard requires a running Shiny server. To start it:</p>
 
         <p><strong>Step 1:</strong> Open R or RStudio</p>
 
         <p><strong>Step 2:</strong> Run this command:</p>
-        <div class="code-block">shiny::runApp("D:/repo_childmetrix/cm-reports/domains/cfsr/apps/app_summary", port = 3840)</div>
+        <div class="code-block">source("D:/repo_childmetrix/cm-reports/domains/cfsr/launch_cfsr_apps.R")</div>
 
         <p><strong>Step 3:</strong> Once running, choose an option:</p>
         <p>
-          <a href="http://localhost:3840/" id="directLink" class="button" target="_blank">Open Dashboard Directly</a>
+          <a href="http://localhost:3838/" id="directLink" class="button" target="_blank">Open Dashboard Directly</a>
           <a href="#" class="button" onclick="location.reload(); return false;">Reload This Page</a>
         </p>
 
         <hr style="margin: 20px 0; border: none; border-top: 1px solid #d1d5db;">
 
         <p style="font-size: 13px; color: #6b7280;">
-          <strong>Note:</strong> The Summary app runs on port 3840. The Measures app runs on port 3838.
+          <strong>Note:</strong> The Measures app runs on port 3838 and includes RSP, Observed Overview, and all indicator detail pages.
         </p>
       </div>
     </div>
@@ -136,7 +136,7 @@
       id="shinyFrame"
       class="hidden"
       src=""
-      title="CFSR Performance Summary Dashboard"
+      title="CFSR Measures Dashboard"
       allow="fullscreen"
     ></iframe>
   </div>
@@ -146,8 +146,8 @@
     const loading = document.getElementById('loadingIndicator');
     const error = document.getElementById('errorMessage');
 
-    // Summary app port
-    const SUMMARY_PORT = 3840;
+    // Measures app port
+    const MEASURES_PORT = 3838;
 
     // Get state from URL query parameter (passed from parent)
     function getStateFromURL() {
@@ -164,7 +164,7 @@
     // Check if Shiny server is running
     async function checkShinyServer() {
       try {
-        const response = await fetch(`http://localhost:${SUMMARY_PORT}/`, {
+        const response = await fetch(`http://localhost:${MEASURES_PORT}/`, {
           method: 'HEAD',
           mode: 'no-cors'
         });
@@ -174,13 +174,13 @@
           const img = new Image();
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = `http://localhost:${SUMMARY_PORT}/favicon.ico?` + Date.now();
+          img.src = `http://localhost:${MEASURES_PORT}/favicon.ico?` + Date.now();
           setTimeout(() => resolve(false), 2000);
         });
       }
     }
 
-    // Load the Shiny app with state and profile parameters
+    // Load the Shiny app with state parameter
     async function loadShinyApp(state, profile) {
       loading.classList.remove('hidden');
       error.classList.add('hidden');
@@ -191,7 +191,8 @@
 
       if (serverRunning) {
         // Server is running, load the app
-        const appURL = `http://localhost:${SUMMARY_PORT}/?state=${state}&profile=${profile}`;
+        // No view parameter needed - app_measures handles navigation internally via sidebar
+        const appURL = `http://localhost:${MEASURES_PORT}/?state=${state}&profile=${profile}`;
         iframe.src = appURL;
 
         iframe.onload = function() {
@@ -220,7 +221,7 @@
       // Update direct link with current state
       const directLink = document.getElementById('directLink');
       if (directLink) {
-        directLink.href = `http://localhost:${SUMMARY_PORT}/?state=${state}&profile=${profile}`;
+        directLink.href = `http://localhost:${MEASURES_PORT}/?state=${state}&profile=${profile}`;
       }
 
       loadShinyApp(state, profile);

@@ -697,17 +697,9 @@
         } else if (currentSubsection === 'performance') {
           if (currentCategory === 'cfsr') {
             const period = periodSelect.value;
-            // Load the current tertiary page based on currentTertiary state
-            if (currentTertiary === 'rsp') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
-            } else if (currentTertiary === 'obs_overview') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=overview`;
-            } else if (currentTertiary.startsWith('obs_ind_')) {
-              const indNum = currentTertiary.replace('obs_ind_', '');
-              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=${indNum}&tab=state_us`;
-            }
-            cfsrTertiarySidebar.style.display = 'block';
-            setTertiaryActive(currentTertiary);
+            // Load the measures app (app handles navigation internally with built-in sidebar)
+            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}`;
+            cfsrTertiarySidebar.style.display = 'none'; // Hide external sidebar
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/current/index.html`;
           } else if (currentCategory === 'community') {
@@ -795,12 +787,10 @@
         const stateCode = window.CM_STATE || 'md';
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
-          currentTertiary = 'rsp';
           const period = periodSelect.value;
-          frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
-          cfsrTertiarySidebar.style.display = 'block';
+          frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}`;
+          cfsrTertiarySidebar.style.display = 'none'; // Hide external sidebar - app has built-in sidebar
           setSecondaryActive('performance');
-          setTertiaryActive(currentTertiary);
         } else if (currentCategory === 'in-home') {
           currentSubsection = 'performance';
           frame.src = `states/${stateCode}/in_home/current/index.html`;
@@ -905,15 +895,8 @@
           if (currentSubsection === 'summary') {
             frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}`;
           } else if (currentSubsection === 'performance') {
-            // For performance, reload the current tertiary page
-            if (currentTertiary === 'rsp') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
-            } else if (currentTertiary === 'obs_overview') {
-              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=overview`;
-            } else if (currentTertiary.startsWith('obs_ind_')) {
-              const indNum = currentTertiary.replace('obs_ind_', '');
-              frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&indicator=${indNum}&tab=state_us`;
-            }
+            // Reload the measures app with new profile (app handles navigation internally)
+            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}`;
           } else if (currentSubsection === 'presentations') {
             frame.src = `shared/cfsr/presentations/index.html`;
           } else if (currentSubsection === 'data_dictionary') {
