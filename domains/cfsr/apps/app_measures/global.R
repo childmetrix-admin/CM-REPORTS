@@ -37,7 +37,7 @@ message("Monorepo root detected: ", monorepo_root)
 # Add resource path for shared CSS files
 shared_path <- file.path(monorepo_root, "shared")
 if (dir.exists(shared_path)) {
-  addResourcePath("shared", shared_path)
+  addResourcePath("cm-shared", shared_path)
   message("Shared resources path added: ", shared_path)
 } else {
   warning("Shared directory not found at: ", shared_path)

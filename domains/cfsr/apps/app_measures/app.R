@@ -288,9 +288,9 @@ ui <- dashboardPage(
 
       # Import ChildMetrix design system
       tags$link(rel = "stylesheet", type = "text/css",
-                href = "shared/css/design-tokens.css"),
+                href = "cm-shared/css/design-tokens.css"),
       tags$link(rel = "stylesheet", type = "text/css",
-                href = "shared/css/components.css"),
+                href = "cm-shared/css/components.css"),
 
       # App-specific CSS (sidebar, info popups, interpretation cards, export states)
       tags$style(HTML("
