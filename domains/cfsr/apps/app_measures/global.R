@@ -34,6 +34,15 @@ detect_monorepo_root <- function() {
 monorepo_root <- detect_monorepo_root()
 message("Monorepo root detected: ", monorepo_root)
 
+# Add resource path for shared CSS files
+shared_path <- file.path(monorepo_root, "shared")
+if (dir.exists(shared_path)) {
+  addResourcePath("shared", shared_path)
+  message("Shared resources path added: ", shared_path)
+} else {
+  warning("Shared directory not found at: ", shared_path)
+}
+
 # Source helper functions
 utils_path <- file.path(monorepo_root, "domains/cfsr/functions/utils.R")
 data_prep_path <- file.path(monorepo_root, "domains/cfsr/functions/data_prep.R")

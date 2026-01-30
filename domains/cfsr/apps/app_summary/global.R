@@ -52,6 +52,16 @@ detect_monorepo_root <- function() {
   return(root)
 }
 monorepo_root <- detect_monorepo_root()
+
+# Add resource path for shared CSS files
+shared_path <- file.path(monorepo_root, "shared")
+if (dir.exists(shared_path)) {
+  addResourcePath("shared", shared_path)
+  message("Shared resources path added: ", shared_path)
+} else {
+  warning("Shared directory not found at: ", shared_path)
+}
+
 data_dir <- file.path(monorepo_root, "domains/cfsr/data/rds")
 
 # State code mapping

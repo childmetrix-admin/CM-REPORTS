@@ -64,12 +64,12 @@ ui <- fluidPage(
     tags$link(
       rel = "stylesheet",
       type = "text/css",
-      href = "../../../../shared/css/design-tokens.css"
+      href = "shared/css/design-tokens.css"
     ),
     tags$link(
       rel = "stylesheet",
       type = "text/css",
-      href = "../../../../shared/css/components.css"
+      href = "shared/css/components.css"
     ),
 
     # App-specific CSS (indicator table grid layout)
