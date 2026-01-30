@@ -4,9 +4,9 @@
   --cm-surface: #ffffff;/* cards */
   --cm-text: #1f2937;   /* slate/dark */
   --cm-muted: #6b7280;  /* muted text */
-  --cm-primary: #0f4c75;/* deep blue */
-  --cm-accent: #0e9ba4; /* teal */
-  --cm-accent-weak:#e6f4f6; /* pale teal */
+  --cm-primary: #4472C4;/* ChildMetrix primary blue (logo color) */
+  --cm-accent: #52C8FA; /* ChildMetrix light blue accent */
+  --cm-accent-weak:#e3f2fd; /* pale blue */
   --cm-border: #e5e7eb; /* light gray */
   --cm-focus: #93c5fd;  /* focus ring */
 }

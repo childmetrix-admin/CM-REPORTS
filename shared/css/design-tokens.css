@@ -1,0 +1,117 @@
+/* ================================================================================
+   ChildMetrix Design Tokens
+   ================================================================================
+
+   Central repository for all design values (colors, typography, spacing, etc.)
+   Used across all CFSR Shiny apps and R Markdown reports.
+
+   Usage: Import this file first in all apps before custom styles.
+   ================================================================================ */
+
+:root {
+  /* ===== BRAND COLORS ===== */
+  --cm-primary: #4472C4;        /* ChildMetrix primary blue (logo color) */
+  --cm-primary-light: #52C8FA;  /* Light blue accent */
+
+  /* ===== STATUS COLORS ===== */
+  --cm-status-better: #4472C4;     /* Better than target/national */
+  --cm-status-worse: #ef4444;      /* Worse than target/national */
+  --cm-status-nodiff: #6b7280;     /* No significant difference */
+  --cm-status-dq: #f59e0b;         /* Data quality issue */
+  --cm-status-national: #10b981;   /* National performance line (green) */
+
+  /* Status pill backgrounds */
+  --cm-status-better-bg: #4472C4;
+  --cm-status-worse-bg: #fee2e2;
+  --cm-status-worse-text: #dc2626;
+  --cm-status-nodiff-bg: #f3f4f6;
+  --cm-status-dq-bg: #fef3c7;
+
+  /* ===== TEXT COLORS ===== */
+  --cm-text-primary: #1f2937;   /* Main body text */
+  --cm-text-dark: #111827;      /* Headings, emphasis text */
+  --cm-text-muted: #6b7280;     /* Secondary text, subtitles, descriptions */
+  --cm-text-light: #374151;     /* Table content, lighter text */
+  --cm-text-label: #666666;     /* Chart axis labels, data labels */
+
+  /* ===== BACKGROUND COLORS ===== */
+  --cm-bg-page: #f9fafb;        /* Page background */
+  --cm-bg-card: #ffffff;        /* Card/container background */
+  --cm-bg-nav: #2c3e50;         /* Sidebar navigation background */
+  --cm-bg-subtle: #f8f9fa;      /* Subtle backgrounds */
+
+  /* ===== BORDER COLORS ===== */
+  --cm-border: #e5e7eb;         /* Default border color */
+  --cm-border-light: #f3f4f6;   /* Light dividers */
+  --cm-grid: #E5E5E5;           /* Chart gridlines */
+
+  /* ===== SHADOWS ===== */
+  --cm-shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --cm-shadow-md: 0 1px 3px rgba(0,0,0,0.10);
+  --cm-shadow-lg: 0 6px 20px rgba(0,0,0,0.04);
+
+  /* ===== TYPOGRAPHY ===== */
+  --cm-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Font sizes */
+  --cm-text-xs: 11px;           /* Footnotes, source citations */
+  --cm-text-sm: 12px;           /* Pills, small labels */
+  --cm-text-base: 13px;         /* Descriptions, body text */
+  --cm-text-md: 14px;           /* Secondary content */
+  --cm-text-lg: 15px;           /* Section titles */
+  --cm-text-xl: 16px;           /* Page titles, subtitles */
+  --cm-text-2xl: 18px;          /* Large headers */
+  --cm-text-3xl: 20px;          /* Chart titles */
+
+  /* Font weights */
+  --cm-font-normal: 400;
+  --cm-font-medium: 500;
+  --cm-font-semibold: 600;
+  --cm-font-bold: 700;
+
+  /* Letter spacing */
+  --cm-tracking-tight: -0.5px;
+  --cm-tracking-normal: 0;
+  --cm-tracking-wide: 1px;
+
+  /* Line heights */
+  --cm-leading-tight: 1.3;
+  --cm-leading-normal: 1.4;
+  --cm-leading-relaxed: 1.6;
+
+  /* ===== SPACING SCALE ===== */
+  --cm-space-1: 4px;            /* 0.25rem */
+  --cm-space-2: 8px;            /* 0.5rem */
+  --cm-space-3: 12px;           /* 0.75rem */
+  --cm-space-4: 16px;           /* 1rem */
+  --cm-space-5: 20px;           /* 1.25rem */
+  --cm-space-6: 24px;           /* 1.5rem */
+  --cm-space-8: 32px;           /* 2rem */
+  --cm-space-10: 40px;          /* 2.5rem */
+
+  /* ===== BORDER RADIUS ===== */
+  --cm-radius-sm: 6px;          /* Small cards */
+  --cm-radius-md: 8px;          /* Summary cards */
+  --cm-radius-lg: 10px;         /* KPI cards */
+  --cm-radius-pill: 12px;       /* Pills */
+  --cm-radius-full: 50%;        /* Status dots (circular) */
+
+  /* ===== CHART SETTINGS ===== */
+  --cm-chart-bar-height: 15px;              /* Height per bar in horizontal charts */
+  --cm-chart-label-font: 11px;              /* Axis labels */
+  --cm-chart-data-label-font: 11px;         /* Horizontal bar data labels */
+  --cm-chart-data-label-font-vertical: 13px;/* Vertical bar data labels */
+  --cm-chart-margin-left: 100px;            /* Left margin for horizontal charts */
+  --cm-chart-margin-right: 120px;           /* Right margin for horizontal charts */
+  --cm-chart-margin-top: 10px;
+  --cm-chart-margin-bottom: 10px;
+
+  /* ===== SIDEBAR NAVIGATION ===== */
+  --cm-sidebar-width: 220px;
+
+  /* ===== KPI CARD VALUES ===== */
+  --cm-kpi-title-size: 1.40rem;     /* ~22px */
+  --cm-kpi-subtitle-size: 0.8rem;   /* ~13px */
+  --cm-kpi-value-size: 1.6rem;      /* ~26px */
+  --cm-kpi-unit-size: 0.85rem;      /* ~14px */
+}
