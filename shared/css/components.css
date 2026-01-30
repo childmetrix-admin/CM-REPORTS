@@ -417,6 +417,16 @@
   display: none !important;
 }
 
+/* Font size utilities */
+.cm-text-xs { font-size: var(--cm-text-xs); }
+.cm-text-sm { font-size: var(--cm-text-sm); }
+.cm-text-base { font-size: var(--cm-text-base); }
+.cm-text-md { font-size: var(--cm-text-md); }
+.cm-text-lg { font-size: var(--cm-text-lg); }
+.cm-text-xl { font-size: var(--cm-text-xl); }
+.cm-text-2xl { font-size: var(--cm-text-2xl); }
+.cm-text-3xl { font-size: var(--cm-text-3xl); }
+
 .cm-mt-0 { margin-top: 0; }
 .cm-mt-1 { margin-top: var(--cm-space-1); }
 .cm-mt-2 { margin-top: var(--cm-space-2); }

@@ -235,7 +235,6 @@ ui <- dashboardPage(
   ),
 
   dashboardBody(
-    # Consolidated CSS from all 3 apps
     tags$head(
       # html2canvas library for downloads
       tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
@@ -244,7 +243,7 @@ ui <- dashboardPage(
       tags$script(HTML("
         function downloadViz(containerId, filename) {
           const element = document.getElementById(containerId);
-          const button = element.querySelector('.viz-download-button .btn');
+          const button = element.querySelector('.cm-download-btn .btn');
 
           if (!element) {
             console.error('Container not found:', containerId);
@@ -256,7 +255,7 @@ ui <- dashboardPage(
             button.disabled = true;
           }
 
-          element.classList.add('exporting');
+          element.classList.add('cm-exporting');
 
           html2canvas(element, {
             backgroundColor: '#ffffff',
@@ -264,7 +263,7 @@ ui <- dashboardPage(
             logging: false,
             useCORS: true
           }).then(canvas => {
-            element.classList.remove('exporting');
+            element.classList.remove('cm-exporting');
 
             const link = document.createElement('a');
             link.download = filename;
@@ -276,7 +275,7 @@ ui <- dashboardPage(
               button.disabled = false;
             }
           }).catch(error => {
-            element.classList.remove('exporting');
+            element.classList.remove('cm-exporting');
             if (button) {
               button.classList.remove('btn-clicked');
               button.disabled = false;
@@ -287,31 +286,37 @@ ui <- dashboardPage(
         }
       ")),
 
-      # Consolidated CSS
+      # Import ChildMetrix design system
+      tags$link(rel = "stylesheet", type = "text/css",
+                href = "../../../../shared/css/design-tokens.css"),
+      tags$link(rel = "stylesheet", type = "text/css",
+                href = "../../../../shared/css/components.css"),
+
+      # App-specific CSS (sidebar, info popups, interpretation cards, export states)
       tags$style(HTML("
         /* ===== BASE STYLES ===== */
         body {
-          background-color: #fafafa;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background-color: var(--cm-bg-page);
+          font-family: var(--cm-font-family);
           margin: 0;
           padding: 0;
         }
 
-        /* ===== SIDEBAR STYLES ===== */
-        .main-sidebar { background-color: #2c3e50 !important; }
-        .sidebar { background-color: #2c3e50 !important; }
-        .skin-blue .main-sidebar { background-color: #2c3e50 !important; }
+        /* ===== SHINYDASHBOARD SIDEBAR OVERRIDES ===== */
+        .main-sidebar { background-color: var(--cm-bg-nav) !important; }
+        .sidebar { background-color: var(--cm-bg-nav) !important; }
+        .skin-blue .main-sidebar { background-color: var(--cm-bg-nav) !important; }
 
         /* Section headers */
         .sidebar-menu li.header {
           font-size: 13px !important;
           text-transform: uppercase;
           color: #ecf0f1 !important;
-          font-weight: 700;
-          padding: 12px 15px !important;
-          letter-spacing: 1px;
+          font-weight: var(--cm-font-bold);
+          padding: var(--cm-space-3) var(--cm-space-4) !important;
+          letter-spacing: var(--cm-tracking-wide);
           background-color: rgba(52, 73, 94, 0.6) !important;
-          margin: 8px 0 4px 0 !important;
+          margin: var(--cm-space-2) 0 var(--cm-space-1) 0 !important;
           cursor: default !important;
           pointer-events: none !important;
           user-select: none !important;
@@ -321,11 +326,11 @@ ui <- dashboardPage(
         .sidebar-menu > li > a {
           color: #bdc3c7 !important;
           background-color: transparent !important;
-          padding: 10px 15px !important;
+          padding: var(--cm-space-3) var(--cm-space-4) !important;
           text-decoration: none;
           border-left: 3px solid transparent;
-          font-size: 14px;
-          line-height: 1.4;
+          font-size: var(--cm-text-md);
+          line-height: var(--cm-leading-normal);
         }
         .sidebar-menu > li > a:hover {
           color: #ffffff !important;
@@ -335,120 +340,39 @@ ui <- dashboardPage(
         .sidebar-menu > li.active > a {
           color: #ffffff !important;
           background-color: rgba(52, 152, 219, 0.3) !important;
-          font-weight: 500;
+          font-weight: var(--cm-font-medium);
           border-left: 3px solid #3498db;
           text-decoration: none;
         }
 
-        /* Content area background - very subtle gray */
+        /* Content area background */
         .content-wrapper, .right-side {
-          padding-top: 10px !important;
-          background-color: #fafafa !important;
+          padding-top: var(--cm-space-3) !important;
+          background-color: var(--cm-bg-page) !important;
         }
         .main-sidebar { padding-top: 0 !important; margin-top: 0 !important; }
-        .sidebar { padding-top: 10px !important; }
+        .sidebar { padding-top: var(--cm-space-3) !important; }
 
-        /* ===== KPI CARD STYLES (RSP & OBSERVED) ===== */
-        .header {
-          margin-bottom: 24px;
-          padding-bottom: 0;
-        }
-        .header h1 {
-          margin: 0 0 12px 0;
-          font-size: 18px;
-          font-weight: 700;
-          color: #4472C4;
-          letter-spacing: -0.5px;
-        }
-        .header .subtitle {
-          margin: 0;
-          font-size: 16px;
-          color: #6b7280;
-          line-height: 1.6;
-          font-weight: 400;
-        }
-
-        .kpi-grid-row {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 350px));
-          gap: 16px;
-          margin-bottom: 16px;
-          justify-content: start;
-          align-items: start;
-        }
-
-        .kpi-box {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          padding: 16px 16px 10px 16px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-          max-width: 100%;
-          position: relative;
-        }
-
+        /* ===== KPI CARD EXTENSIONS (app-specific) ===== */
         .kpi-status-indicator {
           position: absolute;
-          top: 12px;
-          right: 12px;
+          top: var(--cm-space-3);
+          right: var(--cm-space-3);
           width: 12px;
           height: 12px;
-          border-radius: 50%;
+          border-radius: var(--cm-radius-full);
           flex-shrink: 0;
         }
-        .kpi-status-indicator.better { background: #4472C4; }
-        .kpi-status-indicator.worse { background: #ef4444; }
-        .kpi-status-indicator.nodiff { background: #6b7280; }
-        .kpi-status-indicator.dq { background: #f59e0b; }
+        .kpi-status-indicator.better { background: var(--cm-status-better); }
+        .kpi-status-indicator.worse { background: var(--cm-status-worse); }
+        .kpi-status-indicator.nodiff { background: var(--cm-status-nodiff); }
+        .kpi-status-indicator.dq { background: var(--cm-status-dq); }
 
-        .interpretation-kpi {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          padding: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-        .interpretation-kpi .kpi-title {
-          background: #4472C4;
-          color: white;
-          margin: -12px -12px 10px -12px;
-          padding: 10px 12px;
-          border-radius: 10px 10px 0 0;
-          font-size: 1.40rem;
-          font-weight: 600;
-          line-height: 1.3;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .kpi-title {
-          font-size: 1.40rem;
-          font-weight: 600;
-          color: #111827;
-          margin-bottom: 4px;
-          line-height: 1.3;
-        }
-        .kpi-subtitle {
-          font-size: 0.8rem;
-          color: #6b7280;
-          margin-bottom: 10px;
-          line-height: 1.4;
-        }
         .kpi-metrics {
           display: flex;
           align-items: baseline;
           gap: 6px;
           margin-bottom: 6px;
-        }
-        .kpi-value {
-          font-size: 1.6rem;
-          font-weight: 700;
-          color: #111827;
-        }
-        .kpi-unit {
-          font-size: 0.85rem;
-          color: #6b7280;
         }
         .kpi-separator {
           font-size: 1.2rem;
@@ -456,25 +380,90 @@ ui <- dashboardPage(
           margin: 0 4px;
         }
         .kpi-national-label {
-          color: #6b7280;
+          color: var(--cm-text-muted);
           font-size: 0.9rem;
         }
         .kpi-national-value {
-          font-weight: 700;
-          color: #10b981;
+          font-weight: var(--cm-font-bold);
+          color: var(--cm-status-national);
           margin-left: 4px;
         }
         .kpi-direction {
           font-size: 0.7rem;
-          color: #6b7280;
-          margin-bottom: 8px;
+          color: var(--cm-text-muted);
+          margin-bottom: var(--cm-space-2);
         }
         .kpi-chart-container {
           height: 110px;
-          margin: 8px -8px 0px -8px;
+          margin: var(--cm-space-2) -8px 0px -8px;
         }
 
-        /* Info icon popup */
+        /* ===== INTERPRETATION CARD (RSP & OBSERVED) ===== */
+        .interpretation-kpi {
+          background: var(--cm-bg-card);
+          border: 1px solid var(--cm-border);
+          border-radius: var(--cm-radius-lg);
+          padding: var(--cm-space-3);
+          box-shadow: var(--cm-shadow-sm);
+        }
+        .interpretation-kpi .kpi-title {
+          background: var(--cm-primary);
+          color: white;
+          margin: calc(-1 * var(--cm-space-3)) calc(-1 * var(--cm-space-3)) var(--cm-space-3) calc(-1 * var(--cm-space-3));
+          padding: var(--cm-space-3);
+          border-radius: var(--cm-radius-lg) var(--cm-radius-lg) 0 0;
+          font-size: var(--cm-kpi-title-size);
+          font-weight: var(--cm-font-semibold);
+          line-height: var(--cm-leading-tight);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .interpretation-legend {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: var(--cm-space-2);
+          margin-bottom: var(--cm-space-3);
+          padding-bottom: var(--cm-space-3);
+          border-bottom: 1px solid var(--cm-border);
+        }
+        .interpretation-legend-item {
+          display: flex;
+          align-items: center;
+          gap: var(--cm-space-2);
+          font-size: 0.9rem;
+          color: var(--cm-text-light);
+          font-weight: var(--cm-font-medium);
+          white-space: nowrap;
+        }
+        .interpretation-bar, .interpretation-point {
+          width: 12px;
+          height: 12px;
+          border-radius: var(--cm-radius-full);
+          flex-shrink: 0;
+        }
+        .interpretation-bar.better, .interpretation-point.better { background: var(--cm-status-better); }
+        .interpretation-bar.worse, .interpretation-point.worse { background: var(--cm-status-worse); }
+        .interpretation-bar.nodiff, .interpretation-point.nodiff { background: var(--cm-status-nodiff); }
+        .interpretation-bar.dq, .interpretation-point.dq { background: var(--cm-status-dq); }
+        .interpretation-bar.national, .interpretation-line.national {
+          width: 20px;
+          height: 0;
+          background: none;
+          border-bottom: 2px dashed var(--cm-status-national);
+          border-radius: 0;
+        }
+        .interpretation-guide, .interpretation-notes {
+          font-size: 0.95rem;
+          color: var(--cm-text-light);
+          line-height: var(--cm-leading-relaxed);
+        }
+        .interpretation-guide p, .interpretation-notes p {
+          margin: 0 0 6px 0;
+        }
+
+        /* ===== INFO ICON POPUP ===== */
         .info-icon {
           font-size: 1.5rem;
           cursor: pointer;
@@ -491,9 +480,9 @@ ui <- dashboardPage(
           left: 50%;
           transform: translate(-50%, -50%);
           z-index: 10000;
-          background: white;
+          background: var(--cm-bg-card);
           padding: 0;
-          border-radius: 12px;
+          border-radius: var(--cm-radius-pill);
           box-shadow: 0 20px 60px rgba(0,0,0,0.3);
           max-width: 90vw;
           max-height: 90vh;
@@ -501,8 +490,8 @@ ui <- dashboardPage(
         }
         .info-popup img {
           display: block;
-          background: white;
-          border-radius: 12px;
+          background: var(--cm-bg-card);
+          border-radius: var(--cm-radius-pill);
         }
         .info-icon:hover .info-popup { display: block; }
         .info-popup::before {
@@ -516,164 +505,10 @@ ui <- dashboardPage(
           z-index: -1;
         }
 
-        /* Interpretation legend */
-        .interpretation-legend {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 8px;
-          margin-bottom: 10px;
-          padding-bottom: 10px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        .interpretation-legend-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.9rem;
-          color: #374151;
-          font-weight: 500;
-          white-space: nowrap;
-        }
-        .interpretation-bar, .interpretation-point {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .interpretation-bar.better, .interpretation-point.better { background: #4472C4; }
-        .interpretation-bar.worse, .interpretation-point.worse { background: #ef4444; }
-        .interpretation-bar.nodiff, .interpretation-point.nodiff { background: #6b7280; }
-        .interpretation-bar.dq, .interpretation-point.dq { background: #f59e0b; }
-        .interpretation-bar.national, .interpretation-line.national {
-          width: 20px;
-          height: 0;
-          background: none;
-          border-bottom: 2px dashed #10b981;
-          border-radius: 0;
-        }
-        .interpretation-guide, .interpretation-notes {
-          font-size: 0.95rem;
-          color: #374151;
-          line-height: 1.6;
-        }
-        .interpretation-guide p, .interpretation-notes p {
-          margin: 0 0 6px 0;
-        }
-
-        /* ===== NATIONAL VIEW STYLES ===== */
-        .chart-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-        .chart-period { font-size: 16px; font-style: italic; color: #666; margin-bottom: 10px; }
-        .chart-description { font-size: 13px; color: #333; margin-bottom: 10px; line-height: 1.5; }
-        .chart-target { font-size: 13px; color: #666; margin-bottom: 10px; }
-        .chart-footnote { font-size: 11px; color: #666; margin-top: 5px; }
-
-        /* ===== OBSERVED INDICATOR DETAIL STYLES ===== */
-        .indicator-detail-container {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          padding: 20px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .viz-export-container {
-          position: relative;
-          background: transparent;
-          padding: 8px 20px 20px 8px;
-          margin-bottom: 16px;
-        }
-        .viz-download-button {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          z-index: 100;
-        }
-        .viz-download-button .btn-clicked {
+        /* ===== EXPORT BUTTON STATE ===== */
+        .cm-download-btn .btn-clicked {
           background-color: #2c5aa0 !important;
           transform: scale(0.95);
-        }
-        .viz-export-container.exporting .viz-download-button {
-          display: none !important;
-        }
-        .viz-context-header {
-          border-bottom: 1px solid #e5e7eb;
-          padding-bottom: 12px;
-          margin-bottom: 16px;
-        }
-        .viz-title {
-          font-size: 15px;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 4px;
-        }
-        .viz-description {
-          font-size: 13px;
-          font-weight: 400;
-          color: #6b7280;
-          line-height: 1.4;
-          margin-bottom: 8px;
-        }
-        .viz-pills-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
-          flex-wrap: wrap;
-        }
-        .viz-period-pill {
-          display: inline-block;
-          background: #4472C4;
-          color: white;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 4px 12px;
-          border-radius: 12px;
-        }
-        .viz-state-pill {
-          display: inline-block;
-          background: #f59e0b;
-          color: white;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 4px 12px;
-          border-radius: 12px;
-          margin-right: 16px;
-        }
-        .viz-legend-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          font-weight: 500;
-          color: #374151;
-        }
-        .viz-legend-pill .legend-line {
-          width: 20px;
-          height: 0;
-          border-top: 2px dashed #10b981;
-          display: inline-block;
-        }
-        .viz-source {
-          font-size: 11px;
-          color: #6b7280;
-          margin-top: 4px;
-          padding-top: 4px;
-          border-top: 1px solid #e5e7eb;
-        }
-        .viz-notes {
-          font-size: 11px;
-          color: #6b7280;
-          margin-top: 12px;
-        }
-
-        /* ===== OVERVIEW PAGE CONTAINER ===== */
-        .indicator-page-container {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          padding: 20px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-          margin-bottom: 16px;
         }
       "))
     ),
@@ -685,13 +520,12 @@ ui <- dashboardPage(
         fluidRow(
           column(12,
             # White container box (like indicator pages)
-            div(class = "indicator-page-container",
+            div(class = "cm-page-container",
               # Title
               div(
-                class = "indicator-header",
-                style = "padding-top: 4px; margin-bottom: 28px;",
+                class = "cm-indicator-header",
                 h2(
-                  style = "color: #4472C4; font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.5px;",
+                  class = "cm-page-title",
                   textOutput("overview_title", inline = TRUE)
                 )
               ),
@@ -703,12 +537,12 @@ ui <- dashboardPage(
 
                 tabPanel(
                   "Risk Standardized Performance",
-                  div(style = "margin-top: 22px;", uiOutput("rsp_content"))
+                  div(class = "cm-tab-content", uiOutput("rsp_content"))
                 ),
 
                 tabPanel(
                   "Observed Performance",
-                  div(style = "margin-top: 22px;", uiOutput("obs_overview_content"))
+                  div(class = "cm-tab-content", uiOutput("obs_overview_content"))
                 )
               )
             )
@@ -804,26 +638,26 @@ server <- function(input, output, session) {
     data <- rsp_data()
 
     tagList(
-      div(class = "viz-context-header",
-        div(class = "viz-title", "Risk-Standardized Performance — CFSR Statewide Data Indicators"),
-        div(class = "viz-description",
+      div(class = "cm-context-header",
+        div(class = "cm-section-title", "Risk-Standardized Performance — CFSR Statewide Data Indicators"),
+        div(class = "cm-section-description",
           "RSP is the state's observed performance, with risk-adjustment"
         ),
-        div(class = "viz-pills-row",
+        div(class = "cm-pills-row",
           if (is.null(data) || nrow(data) == 0) {
-            div(class = "viz-period-pill", "No data available")
+            div(class = "cm-pill cm-pill--period", "No data available")
           } else {
             profile_ver <- unique(data$profile_version)[1]
             tagList(
-              div(class = "viz-period-pill", paste0("CFSR Round 4 Data Profile | ", profile_ver)),
-              div(class = "viz-state-pill", state_name_rv())
+              div(class = "cm-pill cm-pill--period", paste0("CFSR Round 4 Data Profile | ", profile_ver)),
+              div(class = "cm-pill cm-pill--state", state_name_rv())
             )
           }
         )
       ),
 
       # Row 1: Interpretation + Safety
-      div(class = "kpi-grid-row",
+      div(class = "cm-kpi-grid",
         div(class = "interpretation-kpi",
           div(class = "kpi-title",
             span("How to Interpret RSP Charts"),
@@ -869,14 +703,14 @@ server <- function(input, output, session) {
       ),
 
       # Row 2: Permanency
-      div(class = "kpi-grid-row",
+      div(class = "cm-kpi-grid",
         uiOutput("rsp_kpi_3"),
         uiOutput("rsp_kpi_4"),
         uiOutput("rsp_kpi_5")
       ),
 
       # Row 3: Reentry + Placement
-      div(class = "kpi-grid-row",
+      div(class = "cm-kpi-grid",
         uiOutput("rsp_kpi_6"),
         uiOutput("rsp_kpi_7")
       )
@@ -887,12 +721,12 @@ server <- function(input, output, session) {
   build_rsp_kpi_output <- function(indicator_sort_val) {
     data <- rsp_data()
     if (is.null(data) || nrow(data) == 0) {
-      return(div(class = "kpi-box", p("No data available")))
+      return(div(class = "cm-kpi-card", p("No data available")))
     }
 
     ind_data <- data %>% filter(indicator_sort == indicator_sort_val)
     if (nrow(ind_data) == 0) {
-      return(div(class = "kpi-box", p("No data for this indicator")))
+      return(div(class = "cm-kpi-card", p("No data for this indicator")))
     }
 
     ind_short <- ind_data$indicator_short[1]
@@ -930,16 +764,16 @@ server <- function(input, output, session) {
       "#111827"
     )
 
-    div(class = "kpi-box",
+    div(class = "cm-kpi-card",
       div(class = paste("kpi-status-indicator", status_val)),
-      div(class = "kpi-title", ind_short),
-      div(class = "kpi-subtitle", ind_desc),
+      div(class = "cm-kpi-title", ind_short),
+      div(class = "cm-kpi-subtitle", ind_desc),
       div(class = "kpi-metrics",
-        span(class = "kpi-value", style = paste0("color: ", value_color), display_val),
-        span(class = "kpi-unit", unit_label),
+        span(class = "cm-kpi-value", style = paste0("color: ", value_color), display_val),
+        span(class = "cm-kpi-unit", unit_label),
         span(class = "kpi-separator", "|"),
         span(class = "kpi-national-value", national_display),
-        span(class = "kpi-unit", national_unit),
+        span(class = "cm-kpi-unit", national_unit),
         span(class = "kpi-national-label", "(National Performance)")
       ),
       div(class = "kpi-direction", paste(arrow, direction_legend)),
@@ -973,18 +807,18 @@ server <- function(input, output, session) {
     }
 
     tagList(
-      div(class = "viz-context-header",
-        div(class = "viz-title", "Observed Performance — CFSR Statewide Data Indicators"),
-        div(class = "viz-description",
+      div(class = "cm-context-header",
+        div(class = "cm-section-title", "Observed Performance — CFSR Statewide Data Indicators"),
+        div(class = "cm-section-description",
           "Observed performance is the state's performance, without risk-adjustment"
         ),
-        div(class = "viz-pills-row",
-          div(class = "viz-period-pill", paste0("CFSR Round 4 Data Profile | ", profile_version)),
-          div(class = "viz-state-pill", state_name_rv())
+        div(class = "cm-pills-row",
+          div(class = "cm-pill cm-pill--period", paste0("CFSR Round 4 Data Profile | ", profile_version)),
+          div(class = "cm-pill cm-pill--state", state_name_rv())
         )
       ),
 
-      div(class = "kpi-grid-row",
+      div(class = "cm-kpi-grid",
         div(class = "interpretation-kpi",
           div(class = "kpi-title",
             span("How to Interpret Observed Performance Charts"),
@@ -1030,13 +864,13 @@ server <- function(input, output, session) {
         uiOutput("obs_kpi_2")
       ),
 
-      div(class = "kpi-grid-row",
+      div(class = "cm-kpi-grid",
         uiOutput("obs_kpi_3"),
         uiOutput("obs_kpi_4"),
         uiOutput("obs_kpi_5")
       ),
 
-      div(class = "kpi-grid-row",
+      div(class = "cm-kpi-grid",
         uiOutput("obs_kpi_6"),
         uiOutput("obs_kpi_7"),
         div()
@@ -1048,12 +882,12 @@ server <- function(input, output, session) {
   build_obs_kpi_output <- function(indicator_sort_val) {
     data <- observed_data()
     if (is.null(data) || nrow(data) == 0) {
-      return(div(class = "kpi-box", p("No data available")))
+      return(div(class = "cm-kpi-card", p("No data available")))
     }
 
     ind_data <- data %>% filter(indicator_sort == indicator_sort_val)
     if (nrow(ind_data) == 0) {
-      return(div(class = "kpi-box", p("No data for this indicator")))
+      return(div(class = "cm-kpi-card", p("No data for this indicator")))
     }
 
     ind_short <- ind_data$indicator_short[1]
@@ -1090,16 +924,16 @@ server <- function(input, output, session) {
       "#6b7280"
     )
 
-    div(class = "kpi-box",
+    div(class = "cm-kpi-card",
       div(class = paste("kpi-status-indicator", status_val)),
-      div(class = "kpi-title", ind_short),
-      div(class = "kpi-subtitle", ind_desc),
+      div(class = "cm-kpi-title", ind_short),
+      div(class = "cm-kpi-subtitle", ind_desc),
       div(class = "kpi-metrics",
-        span(class = "kpi-value", style = paste0("color: ", value_color), display_val),
-        span(class = "kpi-unit", unit_label),
+        span(class = "cm-kpi-value", style = paste0("color: ", value_color), display_val),
+        span(class = "cm-kpi-unit", unit_label),
         span(class = "kpi-separator", "|"),
         span(class = "kpi-national-value", national_display),
-        span(class = "kpi-unit", national_unit),
+        span(class = "cm-kpi-unit", national_unit),
         span(class = "kpi-national-label", "(National Performance)")
       ),
       div(class = "kpi-direction", paste(arrow, direction_legend)),

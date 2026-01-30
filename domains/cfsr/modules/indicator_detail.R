@@ -1,5 +1,7 @@
 # indicator_detail.R - Simplified module for Observed Performance app indicator detail pages
 # Shows ONLY national comparison bar chart (no KPI cards)
+#
+# Uses ChildMetrix design system classes (cm-*) from shared/css/components.css
 
 #####################################
 # UI FUNCTION ----
@@ -9,56 +11,21 @@ indicator_detail_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # Add CSS for header styling
-    tags$head(
-      tags$style(HTML("
-        .indicator-page-container {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          padding: 20px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-          margin-bottom: 16px;
-        }
-        .indicator-header {
-          margin-bottom: 24px;
-          padding-bottom: 0;
-        }
-        .indicator-header .indicator-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #4472C4;
-          margin: 0 0 12px 0;
-          letter-spacing: -0.5px;
-        }
-        .indicator-header .indicator-subtitle {
-          font-size: 16px;
-          color: #6b7280;
-          margin: 0 0 8px 0;
-          line-height: 1.6;
-          font-weight: 400;
-        }
-        .indicator-header .indicator-subtitle:last-child {
-          margin-bottom: 0;
-        }
-      "))
-    ),
-
     fluidRow(
       column(12,
         # Wrap entire indicator page in white container
-        div(class = "indicator-page-container",
+        div(class = "cm-page-container",
         # Indicator title (always shown)
-        div(class = "indicator-header",
-          div(class = "indicator-title", textOutput(ns("title")))
+        div(class = "cm-indicator-header",
+          div(class = "cm-page-title", textOutput(ns("title")))
         ),
 
         # Additional metadata (only shown when feature flag is OFF)
         if (!exists("USE_VIZ_CONTAINERS") || !USE_VIZ_CONTAINERS) {
-          div(class = "indicator-header",
+          div(class = "cm-indicator-header",
             htmlOutput(ns("description")),
             htmlOutput(ns("metadata")),
-            div(style = "margin-top: 12px;", uiOutput(ns("target")))
+            div(class = "cm-mt-3", uiOutput(ns("target")))
           )
         },
 
@@ -71,7 +38,7 @@ indicator_detail_ui <- function(id) {
           tabPanel(
             "By State",
             value = "state",
-            div(style = "margin-top: 20px;",
+            div(class = "cm-tab-content",
                 if (exists("USE_VIZ_CONTAINERS") && USE_VIZ_CONTAINERS) {
                   uiOutput(ns("viz_by_state"))
                 } else {
@@ -84,13 +51,13 @@ indicator_detail_ui <- function(id) {
           tabPanel(
             "By County",
             value = "county",
-            div(style = "margin-top: 20px;",
+            div(class = "cm-tab-content",
                 if (exists("USE_VIZ_CONTAINERS") && USE_VIZ_CONTAINERS) {
                   uiOutput(ns("viz_by_county"))
                 } else {
-                  div(style = "padding: 40px; text-align: center; color: #6b7280;",
-                      p(style = "font-size: 18px; margin-bottom: 10px;", "County-level data coming soon"),
-                      p(style = "font-size: 14px;", "This will show performance broken down by county within the state.")
+                  div(class = "cm-empty-state",
+                      p(class = "cm-text-lg cm-mb-2", "County-level data coming soon"),
+                      p(class = "cm-text-md", "This will show performance broken down by county within the state.")
                   )
                 }
             )
@@ -100,13 +67,13 @@ indicator_detail_ui <- function(id) {
           tabPanel(
             "By Age",
             value = "age",
-            div(style = "margin-top: 20px;",
+            div(class = "cm-tab-content",
                 if (exists("USE_VIZ_CONTAINERS") && USE_VIZ_CONTAINERS) {
                   uiOutput(ns("viz_by_age"))
                 } else {
-                  div(style = "padding: 40px; text-align: center; color: #6b7280;",
-                      p(style = "font-size: 18px; margin-bottom: 10px;", "Age breakdown coming soon"),
-                      p(style = "font-size: 14px;", "This will show performance broken down by age groups.")
+                  div(class = "cm-empty-state",
+                      p(class = "cm-text-lg cm-mb-2", "Age breakdown coming soon"),
+                      p(class = "cm-text-md", "This will show performance broken down by age groups.")
                   )
                 }
             )
@@ -116,13 +83,13 @@ indicator_detail_ui <- function(id) {
           tabPanel(
             "By Race & Ethnicity",
             value = "race",
-            div(style = "margin-top: 20px;",
+            div(class = "cm-tab-content",
               if (exists("USE_VIZ_CONTAINERS") && USE_VIZ_CONTAINERS) {
                 uiOutput(ns("viz_by_race"))
               } else {
-                div(style = "padding: 40px; text-align: center; color: #6b7280;",
-                  p(style = "font-size: 18px; margin-bottom: 10px;", "Race & ethnicity breakdown coming soon"),
-                  p(style = "font-size: 14px;", "This will show performance broken down by race and ethnicity.")
+                div(class = "cm-empty-state",
+                  p(class = "cm-text-lg cm-mb-2", "Race & ethnicity breakdown coming soon"),
+                  p(class = "cm-text-md", "This will show performance broken down by race and ethnicity.")
                 )
               }
             )
@@ -131,9 +98,9 @@ indicator_detail_ui <- function(id) {
 
         # Footnote (appears below all tabs, only when feature flag is OFF)
         if (!exists("USE_VIZ_CONTAINERS") || !USE_VIZ_CONTAINERS) {
-          div(class = "chart-footnote", style = "margin-top: 20px;", textOutput(ns("source")))
+          div(class = "cm-footnote cm-mt-5", textOutput(ns("source")))
         }
-        ) # Close indicator-page-container div
+        ) # Close cm-page-container div
       )
     )
   )

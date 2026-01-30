@@ -1,4 +1,6 @@
 # viz_container.R - Reusable visualization container with self-contained context
+#
+# Uses ChildMetrix design system classes (cm-*) from shared/css/components.css
 
 #' Build self-contained visualization container
 #'
@@ -27,11 +29,11 @@ build_viz_container <- function(ns, viz_id, title, description,
   tagList(
     div(
       id = container_id,
-      class = "viz-export-container",
+      class = "cm-viz-container",
 
       # Download button (top-right corner, hidden during export)
       div(
-        class = "viz-download-button",
+        class = "cm-download-btn",
         actionButton(
           ns(paste0("download_", viz_id)),
           "Download",
@@ -43,38 +45,38 @@ build_viz_container <- function(ns, viz_id, title, description,
 
       # Context header (embedded in visualization)
       div(
-        class = "viz-context-header",
+        class = "cm-context-header",
 
         # Title (smaller and gray to differentiate from page-level title)
-        div(class = "viz-title", title),
+        div(class = "cm-section-title", title),
 
         # Description
-        div(class = "viz-description", description),
+        div(class = "cm-section-description", description),
 
         # Pills and legend row (all on same line)
         div(
-          class = "viz-pills-row",
-          div(class = "viz-period-pill", period),
+          class = "cm-pills-row",
+          div(class = "cm-pill cm-pill--period", period),
           if (!is.null(state) && state != "") {
-            div(class = "viz-state-pill", state)
+            div(class = "cm-pill cm-pill--state", state)
           },
           if (!is.null(legend) && as.character(legend) != "" && as.character(legend) != "<span></span>") {
-            div(class = "viz-legend-pill", legend)
+            div(class = "cm-pill cm-pill--legend", legend)
           }
         )
       ),
 
       # Chart area
-      div(class = "viz-chart-area", chart_output),
+      div(class = "cm-chart-container", chart_output),
 
       # Source footnote (at bottom)
       if (!is.null(source) && source != "") {
-        div(class = "viz-source", HTML(paste0("Source: ", source)))
+        div(class = "cm-source", HTML(paste0("Source: ", source)))
       },
 
       # Notes (on separate line if provided)
       if (!is.null(notes) && notes != "") {
-        div(class = "viz-notes", HTML(notes))
+        div(class = "cm-viz-notes", HTML(notes))
       }
     )
   )
