@@ -18,7 +18,7 @@ ui <- fluidPage(
     tags$script(HTML("
       function downloadSummary(containerId, filename) {
         const element = document.getElementById(containerId);
-        const button = element.querySelector('.summary-download-button .btn');
+        const button = element.querySelector('.cm-download-btn .btn');
 
         if (!button) return;
 
@@ -60,127 +60,47 @@ ui <- fluidPage(
       }
     ")),
 
+    # Import ChildMetrix design system
+    tags$link(
+      rel = "stylesheet",
+      type = "text/css",
+      href = "../../../../shared/css/design-tokens.css"
+    ),
+    tags$link(
+      rel = "stylesheet",
+      type = "text/css",
+      href = "../../../../shared/css/components.css"
+    ),
+
+    # App-specific CSS (indicator table grid layout)
     tags$style(HTML("
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background-color: #f9fafb;
+        font-family: var(--cm-font-family);
+        background-color: var(--cm-bg-page);
         margin: 0;
         padding: 0;
       }
       .container-fluid {
-        padding: 24px;
+        padding: var(--cm-space-6);
         max-width: 1200px;
         margin-left: 0;
         margin-right: auto;
       }
 
-      /* Header (now inside card) */
-      .summary-header {
-        margin-bottom: 20px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #e5e7eb;
-      }
-      .summary-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: #4472C4;
-        margin: 0 0 8px 0;
-        letter-spacing: -0.5px;
-      }
-      .summary-subtitle {
-        font-size: 14px;
-        color: #6b7280;
-        margin: 0;
-        line-height: 1.6;
-        font-weight: 400;
-      }
-
-      /* Summary table card */
-      .summary-card {
-        position: relative;
-        background: white;
-        padding: 20px 24px;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-      }
-
-      /* Download button */
-      .summary-download-button {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        z-index: 10;
-      }
-      .summary-card.exporting .summary-download-button {
-        display: none;
-      }
-
-      .summary-source {
-        margin-top: 16px;
-        padding-top: 12px;
-        border-top: 1px solid #e5e7eb;
-        font-size: 11px;
-        color: #6b7280;
-      }
-
-      /* Status pill badges */
-      .status-pill {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-      .status-pill.better {
-        color: white;
-        background-color: #4472C4;
-      }
-      .status-pill.worse {
-        color: #dc2626;
-        background-color: #fee2e2;
-      }
-      .status-pill.nodiff {
-        color: #6b7280;
-        background-color: #f3f4f6;
-      }
-      .status-pill.dq {
-        color: #f59e0b;
-        background-color: #fef3c7;
-      }
-
-      /* Rank pill badge */
-      .rank-pill {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 600;
-        white-space: nowrap;
-        color: #374151;
-        background-color: #e5e7eb;
-      }
-
-      /* Period value */
-      .period-value {
-        font-size: 13px;
-        color: #374151;
-      }
-
+      /* Indicator table grid - unique 6-column layout */
       .indicator-table {
-        margin: 8px 0 0 0;
+        margin: var(--cm-space-2) 0 0 0;
       }
       .indicator-header {
         display: grid;
         grid-template-columns: 2fr 1fr 1fr 140px 80px 120px;
-        gap: 12px;
-        padding: 8px 0;
-        font-size: 13px;
-        font-weight: 600;
-        color: #6b7280;
-        border-bottom: 2px solid #e5e7eb;
-        margin-bottom: 8px;
+        gap: var(--cm-space-3);
+        padding: var(--cm-space-2) 0;
+        font-size: var(--cm-text-base);
+        font-weight: var(--cm-font-semibold);
+        color: var(--cm-text-muted);
+        border-bottom: 2px solid var(--cm-border);
+        margin-bottom: var(--cm-space-2);
       }
       .indicator-list {
         list-style: none;
@@ -190,65 +110,40 @@ ui <- fluidPage(
       .indicator-row {
         display: grid;
         grid-template-columns: 2fr 1fr 1fr 140px 80px 120px;
-        gap: 12px;
-        padding: 8px 0;
-        font-size: 15px;
-        color: #374151;
-        line-height: 1.5;
-        border-bottom: 1px solid #f3f4f6;
+        gap: var(--cm-space-3);
+        padding: var(--cm-space-2) 0;
+        font-size: var(--cm-text-lg);
+        color: var(--cm-text-light);
+        line-height: var(--cm-leading-normal);
+        border-bottom: 1px solid var(--cm-border-light);
         align-items: center;
       }
       .indicator-row:last-child {
         border-bottom: none;
       }
       .indicator-name {
-        font-weight: 500;
+        font-weight: var(--cm-font-medium);
       }
-
       .indicator-value {
-        font-weight: 600;
+        font-weight: var(--cm-font-semibold);
       }
-
       .national-standard {
-        font-weight: 600;
+        font-weight: var(--cm-font-semibold);
+      }
+      .period-value {
+        font-size: var(--cm-text-base);
+        color: var(--cm-text-light);
       }
 
-      /* Table footnote */
-      .table-footnote {
-        margin-top: 12px;
-        font-size: 11px;
-        color: #6b7280;
-        font-style: italic;
-      }
-
-      /* Footer */
-      .footer-note {
-        margin-top: 24px;
-        padding: 16px 20px;
-        background: white;
-        border-radius: 8px;
-        font-size: 13px;
-        color: #6b7280;
-        text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      /* Hide download button during export */
+      .cm-summary-card.exporting .cm-download-btn {
+        display: none;
       }
 
       /* Responsive */
       @media (max-width: 768px) {
         .container-fluid {
-          padding: 16px;
-        }
-        .summary-title {
-          font-size: 24px;
-        }
-        .summary-subtitle {
-          font-size: 14px;
-        }
-        .status-title {
-          font-size: 16px;
-        }
-        .card-grid {
-          grid-template-columns: 1fr;
+          padding: var(--cm-space-4);
         }
       }
     "))
@@ -372,14 +267,14 @@ server <- function(input, output, session) {
         TRUE ~ "Data Quality"
       )
 
-      span(class = paste("status-pill", status_val), pill_text)
+      span(class = paste("cm-pill cm-pill--status cm-pill--", status_val, sep = ""), pill_text)
     }
 
     # Helper function to format rank
     format_rank <- function(ind_data) {
       if (!is.null(ind_data$state_rank) && !is.null(ind_data$reporting_states) &&
           !is.na(ind_data$state_rank) && !is.na(ind_data$reporting_states)) {
-        span(class = "rank-pill",
+        span(class = "cm-pill cm-pill--rank",
           paste0(ind_data$state_rank, " of ", ind_data$reporting_states)
         )
       } else {
@@ -390,10 +285,10 @@ server <- function(input, output, session) {
     # Build single consolidated table with header
     div(
       id = "summary-container",
-      class = "summary-card",
+      class = "cm-summary-card",
 
       # Download button
-      div(class = "summary-download-button",
+      div(class = "cm-download-btn",
         actionButton(
           "download_summary",
           "Download",
@@ -407,11 +302,11 @@ server <- function(input, output, session) {
       ),
 
       # Header (title and subtitle inside container for download capture)
-      div(class = "summary-header",
-        div(class = "summary-title",
+      div(class = "cm-header-divider",
+        div(class = "cm-page-title cm-mb-2",
           paste("CFSR Performance Summary —", state_name_rv())
         ),
-        div(class = "summary-subtitle",
+        div(class = "cm-page-subtitle cm-mt-0",
           paste0("CFSR Round 4 Data Profile | ", data$profile_version[1])
         )
       ),
@@ -446,12 +341,12 @@ server <- function(input, output, session) {
       ),
 
       # Source footnote (from data)
-      div(class = "summary-source",
+      div(class = "cm-source",
         paste0("Source: ", data$source[1])
       ),
 
       # Explanatory footnotes
-      div(class = "table-footnote",
+      div(class = "cm-footnote",
         div("* Based on the state's risk-standardized performance, which is its observed performance after risk-adjustment."),
         div("** Based on the state's observed performance among states whose performance could be calculated.")
       )
