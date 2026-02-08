@@ -1,100 +1,149 @@
 # PRODUCT REQUIREMENTS DOCUMENT (PRD)
-## ChildMetrix Reports Platform - Monorepo Consolidation & Architecture Refactor
+## ChildMetrix Reports Platform - Monorepo Architecture & Roadmap
 
-**Version**: 1.0
-**Date**: 2026-01-22
+**Version**: 2.0
+**Date**: 2026-02-08
 **Author**: Kurt Heisler, Child Metrix
-**Status**: Draft for Architectural Review
+**Status**: Current Architecture & Future Roadmap
 
 ---
 
 ## Executive Summary
 
-The ChildMetrix Reports Platform currently operates across two repositories (cfsr-profile and cm-reports) with tight coupling but complex deployment coordination. This PRD outlines the consolidation into a single monorepo with scalable, DRY architecture to support multiple child welfare data types (CFSR, In-Home Services, Out-of-Home Care, CPS, Community Services) across 2-50 states.
+The ChildMetrix Reports Platform is a **consolidated monorepo** providing multi-state child welfare reporting with interactive Shiny dashboards. The platform was successfully consolidated from two repositories (cfsr-profile + cm-reports) in January 2026 and now operates as a single, unified codebase.
 
-**Key Goals**:
-- Consolidate cfsr-profile and cm-reports into single monorepo
-- Establish reusable data processing patterns for new data types
-- Architect for horizontal scaling (2 states -> 50+ states)
-- Simplify deployment coordination
-- Maintain moderate code reuse without over-engineering
+**Current State** (February 2026):
+- ✅ Single monorepo with unified deployment
+- ✅ CFSR domain fully implemented (8 indicators, 2 states)
+- ✅ Design system for consistent UI/UX
+- ✅ Standardized data extraction pipeline
+- ✅ Self-contained domain architecture
+
+**Key Architecture Goals**:
+- Domain-based organization (cfsr, cps, in_home, ooh, community)
+- Shared utilities internalized (no external dependencies)
+- Horizontal scaling from 2 states → 50+ states
+- Design system for rapid UI development
+- Moderate code reuse without over-engineering
 
 ---
 
-## 1. Current State Analysis
+## 1. Current Architecture (Post-Consolidation)
 
-### 1.1 Existing Architecture
+### 1.1 Monorepo Structure
 
-**Two Repositories**:
-1. **cfsr-profile** (D:/repo_childmetrix/cfsr-profile/)
-   - Purpose: Extract CFSR data from PDFs and Excel files
-   - Inputs: ShareFile PDFs (S:/Shared Folders/{state}/cfsr/uploads/)
-   - Outputs: RDS files -> cm-reports/shared/cfsr/data/
-   - Key scripts: run_profile.R, profile_pdf_rsp.R, profile_pdf_observed.R, profile_excel_national.R
-
-2. **cm-reports** (d:/repo_childmetrix/cm-reports/)
-   - Purpose: Frontend platform + Shiny dashboards
-   - Components: Static HTML pages + 4 Shiny apps (ports 3838-3841)
-   - Data consumption: Loads RDS files from shared/cfsr/data/
-   - Multi-state support: MD, KY (with placeholders for in_home, ooh, cps, community)
+**Single Repository** (`D:/repo_childmetrix/cm-reports/`):
+```
+cm-reports/
+├── domains/                   # Self-contained domain modules
+│   ├── cfsr/                  # CFSR data type (fully implemented)
+│   │   ├── apps/              # Shiny apps (app_measures, app_summary)
+│   │   ├── extraction/        # Data extraction pipeline
+│   │   ├── functions/         # Domain-specific utilities
+│   │   ├── modules/           # Shiny modules
+│   │   └── data/rds/          # Extracted RDS files
+│   ├── cps/                   # CPS domain (planned)
+│   ├── in_home/               # In-Home Services (planned)
+│   ├── ooh/                   # Out-of-Home Care (planned)
+│   └── community/             # Community Services (planned)
+├── shared/                    # Cross-domain utilities
+│   ├── css/                   # Design system (design-tokens.css, components.css)
+│   └── utils/                 # Shared R utilities (state_utils.R, file_discovery.R)
+├── states/                    # State-specific frontend hubs
+│   ├── md/                    # Maryland hub
+│   └── ky/                    # Kentucky hub
+└── index.html                 # Landing page with state selector
+```
 
 ### 1.2 Current Data Flow
 
 ```
-ShareFile PDFs/Excel
+ShareFile PDFs/Excel (S:/Shared Folders/{state}/cfsr/uploads/)
       |
-cfsr-profile (extraction scripts)
+domains/cfsr/extraction/ (run_profile.R, profile_pdf_*.R)
       |
-RDS files -> cm-reports/shared/cfsr/data/
+domains/cfsr/data/rds/ (RDS files organized by state/period)
       |
-Shiny Apps (global.R loads data)
+domains/cfsr/apps/ (Shiny apps load data via utils.R)
       |
-Static HTML (iframes embed apps)
+states/{state}/{category}/ (Static HTML embeds apps via iframes)
 ```
 
-### 1.3 Pain Points
+### 1.3 Implemented Features
 
-- **Complex deployment coordination**: Must deploy both repos in correct order
-- **Version synchronization**: Changes in one repo may break the other
-- **Code duplication emerging**: Similar patterns across extraction scripts
-- **Unclear boundaries**: Tight coupling despite separate repos
+**CFSR Domain**:
+- ✅ Data extraction pipeline (PDFs → RDS)
+- ✅ 2 Shiny apps (app_measures, app_summary)
+- ✅ 8 statewide data indicators
+- ✅ 2 states (Maryland, Kentucky)
+- ✅ Design system with standardized UI components
+- ✅ Download buttons for PNG export (html2canvas)
 
-### 1.4 Current Data Type Coverage
+**Platform Features**:
+- ✅ Static HTML frontend with state-specific hubs
+- ✅ Design system (CSS tokens + reusable components)
+- ✅ Shared utilities internalized (no external dependencies)
+- ✅ Client-side routing for state selection
 
-**Implemented**: CFSR (8 indicators, 2 states, 4 Shiny apps)
-**Planned**: In-Home Services, Out-of-Home Care, CPS, Community Services (placeholder pages exist)
+### 1.4 Active States
+
+**Implemented**: Maryland (MD), Kentucky (KY)
+**Placeholder pages**: Additional states ready for data integration
+
+### 1.5 Benefits of Consolidation (Achieved)
+
+- ✅ **Unified deployment**: Single repo to staging/production
+- ✅ **Simplified versioning**: All components version together
+- ✅ **No coordination overhead**: Extraction + frontend in same codebase
+- ✅ **Self-contained domains**: Each data type encapsulated in domains/{type}/
+- ✅ **Faster iteration**: Changes deploy atomically
 
 ---
 
-## 2. Project Goals & Success Criteria
+## 2. Roadmap & Future Goals
 
-### 2.1 Primary Goals
+### 2.1 Near-Term Goals (Q1 2026)
 
-1. **Consolidate repositories** into single monorepo for simplified deployment
-2. **Establish scalable patterns** for adding new data types (in-home, out-of-home, community, CPS)
-3. **Implement DRY principles** with shared utilities and consistent patterns
-4. **Design for growth** from 2-3 states to 50+ states without architectural changes
-5. **Maintain code quality** with automated testing (data validation, unit tests, integration tests)
+1. ✅ **Complete design system documentation** (Issue #13) - DONE
+2. **Standardize R script structure** (Issue #14) - IN PROGRESS
+3. **Add trend visualizations** (Issue #8) - Sparklines and historical comparisons
+4. **Expand state coverage** - Add 2-3 additional states to CFSR domain
+5. **Clean up data quality warnings** (Issue #12) - Address 'dq' column handling
 
-### 2.2 Success Criteria
+### 2.2 Medium-Term Goals (Q2-Q3 2026)
 
-**Must Have**:
-- Single repository with unified versioning
-- Add new data types with minimal code duplication
-- Consistent Shiny app UI patterns across data types
-- Single source of truth for data schemas
-- Automated data validation (schema checks, range validation)
-- Simplified deployment (one repo -> staging/production)
+1. **Implement additional domains**:
+   - CPS (Child Protective Services)
+   - In-Home Services
+   - Out-of-Home Care
+   - Community Services
+2. **PowerPoint generation** (Issue #9) - Automated presentation exports
+3. **Enhanced testing** - Increase test coverage to 80%+
+4. **Performance optimization** - Sub-second page loads
 
-**Should Have**:
-- Configuration-driven state onboarding (add state without code changes)
-- Comprehensive testing suite (unit + integration)
-- Documentation for adding new data types
+### 2.3 Long-Term Goals (Q4 2026+)
 
-**Nice to Have**:
-- Automated data ingestion pipelines
-- Real-time monitoring and alerting
-- Historical data versioning and rollback
+1. **Horizontal scaling** - Support 10-20 states across multiple domains
+2. **Real-time data ingestion** - Automated pipeline from ShareFile → Platform
+3. **Historical trending** - Year-over-year comparisons and trend analysis
+4. **Advanced visualizations** - Interactive drill-downs, custom filtering
+5. **User management** - Role-based access control per state/domain
+
+### 2.4 Success Metrics
+
+**Platform Maturity**:
+- ✅ Single monorepo deployment (achieved)
+- ✅ Design system standardization (achieved)
+- ⏳ 80%+ test coverage (in progress)
+- ⏳ < 2 second page load times
+- ⏳ 5+ domains implemented
+- ⏳ 10+ states supported
+
+**Development Velocity**:
+- ✅ New state onboarding: < 1 day (achieved)
+- ⏳ New domain implementation: < 2 weeks
+- ⏳ New indicator addition: < 1 day
+- ⏳ Bug fix deployment: < 1 hour
 
 ---
 
