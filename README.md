@@ -2,7 +2,7 @@
 
 Web-based reporting platform for child welfare data visualization and analysis across multiple states.
 
-**Last Updated**: January 2026
+**Last Updated**: February 2026
 
 ## Overview
 
@@ -15,42 +15,39 @@ cm-reports/
 ├── _assets/
 │   ├── css/               # Platform CSS
 │   └── logo.png           # Platform branding
-├── cfsr/                   # CFSR domain (self-contained)
-│   ├── apps/              # 4 Shiny dashboards
-│   │   ├── app_national/  # National comparison (port 3838)
-│   │   ├── app_rsp/       # Risk-Standardized Performance (port 3839)
-│   │   ├── app_summary/   # Performance summary (port 3840)
-│   │   └── app_observed/  # Observed Performance (port 3841)
-│   ├── data/
-│   │   ├── csv/           # CSV archives
-│   │   └── rds/           # RDS files for Shiny apps
-│   ├── extraction/        # Data extraction scripts
-│   │   ├── run.R          # User-friendly entry point
-│   │   ├── run_profile.R  # Main orchestrator function
-│   │   ├── config.R       # Discovery + validation
-│   │   ├── paths.R        # Centralized path configuration
-│   │   ├── profile_pdf_rsp.R        # RSP PDF extraction
-│   │   ├── profile_pdf_observed.R   # Observed PDF extraction
-│   │   ├── profile_excel_national.R # National Excel extraction
-│   │   ├── profile_excel_state.R    # State Excel extraction
-│   │   └── cfsr_round4_indicators_dictionary.csv
-│   ├── functions/         # CFSR-specific R functions
-│   │   ├── functions_cfsr_profile_shared.R      # Shared utilities
-│   │   ├── functions_cfsr_profile_pdf_rsp.R     # RSP parsing
-│   │   ├── functions_cfsr_profile_pdf_observed.R # Observed parsing
-│   │   ├── functions_cfsr_profile_excel.R       # Excel parsing
-│   │   ├── period_utils.R # Period format validation
-│   │   ├── utils.R        # Shiny app data loading
-│   │   ├── chart_builder.R # Chart generation
-│   │   └── data_prep.R    # Data transformation
-│   ├── modules/           # Shiny modules
-│   │   ├── indicator_detail.R  # Indicator detail module
-│   │   └── indicator_page.R    # Indicator page module
-│   └── scripts/           # Utilities
-│       ├── launch_cfsr_dashboard.R  # Multi-app launcher
-│       └── move_period_selector.py  # HTML manipulation utility
+├── domains/               # Self-contained domain modules
+│   ├── cfsr/              # CFSR domain (fully implemented)
+│   │   ├── apps/          # 2 consolidated Shiny apps
+│   │   │   ├── app_measures/   # Measures + indicators (port 3838)
+│   │   │   └── app_summary/    # Performance summary (port 3840)
+│   │   ├── data/
+│   │   │   ├── csv/       # CSV archives
+│   │   │   └── rds/       # RDS files for Shiny apps
+│   │   ├── extraction/    # Data extraction pipeline
+│   │   │   ├── run_profile.R   # Main orchestrator
+│   │   │   ├── config.R        # Discovery + validation
+│   │   │   ├── paths.R         # Path configuration
+│   │   │   ├── profile_pdf_rsp.R        # RSP PDF extraction
+│   │   │   ├── profile_pdf_observed.R   # Observed PDF extraction
+│   │   │   ├── profile_excel_national.R # National Excel
+│   │   │   └── profile_excel_state.R    # State Excel
+│   │   ├── functions/     # CFSR-specific R functions
+│   │   │   ├── utils.R         # Data loading
+│   │   │   ├── chart_builder.R # Chart generation
+│   │   │   ├── viz_container.R # Viz wrapper
+│   │   │   └── data_prep.R     # Data transformation
+│   │   └── modules/       # Shiny modules
+│   │       └── indicator_detail.R  # Indicator detail module
+│   ├── cps/               # CPS domain (planned)
+│   ├── in_home/           # In-Home Services (planned)
+│   ├── ooh/               # Out-of-Home Care (planned)
+│   └── community/         # Community Services (planned)
 ├── shared/
-│   └── utils/             # Cross-domain utilities
+│   ├── css/               # Design system
+│   │   ├── design-tokens.css  # CSS variables
+│   │   ├── components.css     # Reusable components
+│   │   └── README.md          # Design system guide
+│   └── utils/             # Cross-domain R utilities
 │       ├── file_discovery.R
 │       ├── file_utils.R
 │       └── state_utils.R
@@ -60,7 +57,6 @@ cm-reports/
 ├── docs/                  # Documentation
 │   └── PRD.md            # Product Requirements Document
 ├── index.html            # Landing page (state selector)
-├── app.html              # Main app shell
 ├── README.md             # This file
 └── CLAUDE.md             # AI assistant guide
 ```
@@ -73,37 +69,42 @@ cm-reports/
 - State-specific branding and customization
 
 ### CFSR Data Profile Dashboard
-- Interactive Shiny applications for CFSR statewide data indicators
+- 2 consolidated Shiny applications for CFSR statewide data indicators
 - 8 indicators across Safety, Permanency, and Well-Being domains
 - State-by-state rankings and comparisons
 - Risk-Standardized Performance (RSP) analysis
+- Interactive visualizations with PNG export capability
+
+### Design System
+- Centralized CSS with design tokens and reusable components
+- Consistent spacing, typography, and colors across all pages
+- Standardized UI patterns for rapid development
+- Comprehensive documentation in `shared/css/README.md`
 
 ### Domain-Specific Reports
 Each state site includes:
-- **CFSR**: Child and Family Services Review data profiles
+- **CFSR**: Child and Family Services Review data profiles (implemented)
 - **CPS**: Child Protective Services reports (planned)
 - **In-Home**: In-home services tracking (planned)
 - **OOH**: Out-of-home care (foster care) reports (planned)
+- **Community**: Community services tracking (planned)
 
 ## Data Integration
 
 ### CFSR Data Pipeline
 
-The CFSR extraction pipeline is now integrated into this monorepo:
+The CFSR extraction pipeline is integrated into the monorepo:
 
 1. **Source**: CFSR 4 Data Profile PDFs from ShareFile (`S:/Shared Folders/{state}/cfsr/uploads/`)
-2. **Extraction**: Run `cfsr/extraction/run.R` (user-friendly entry point with examples)
-3. **Output**: RDS files saved to `cfsr/data/rds/`
-4. **Consumption**: Shiny apps load data from `cfsr/data/rds/`
-5. **Archive**: CSV copies saved to `cfsr/data/csv/`
+2. **Extraction**: Run `domains/cfsr/extraction/run_profile.R`
+3. **Output**: RDS files saved to `domains/cfsr/data/rds/`
+4. **Consumption**: Shiny apps load data from `domains/cfsr/data/rds/`
+5. **Archive**: CSV copies saved to `domains/cfsr/data/csv/`
 
 To extract CFSR data:
 ```r
-# Easy way - use run.R with pre-configured examples
-source("D:/repo_childmetrix/cm-reports/cfsr/extraction/run.R")
-
-# Or call run_profile() directly with custom parameters
-source("D:/repo_childmetrix/cm-reports/cfsr/extraction/run_profile.R")
+# Call run_profile() with parameters
+source("D:/repo_childmetrix/cm-reports/domains/cfsr/extraction/run_profile.R")
 run_profile(state = "md", period = "2025_02", source = "all")
 ```
 
@@ -120,14 +121,12 @@ file:///D:/repo_childmetrix/cm-reports/index.html
 **With Shiny Apps:**
 ```r
 # Launch all CFSR apps simultaneously
-source("D:/repo_childmetrix/cm-reports/cfsr/scripts/launch_cfsr_dashboard.R")
+source("D:/repo_childmetrix/cm-reports/domains/cfsr/launch_cfsr_apps.R")
 ```
 
 This starts:
-- **National comparison**: http://localhost:3838
-- **RSP app**: http://localhost:3839
-- **Summary app**: http://localhost:3840
-- **Observed Performance**: http://localhost:3841
+- **app_measures** (Measures + Indicators): http://localhost:3838
+- **app_summary** (Performance Summary): http://localhost:3840
 
 ### Staging Deployment
 
@@ -162,15 +161,23 @@ This starts:
 
 ## Recent Changes
 
+**February 2026**
+- Completed design system implementation (`shared/css/`)
+- Consolidated 4 CFSR apps into 2 (app_measures + app_summary)
+- Standardized spacing and UI patterns across all pages
+- Added download buttons to Overview tabs
+- Updated PRD to reflect current architecture
+
 **January 2026**
 - Consolidated cfsr-profile repository into monorepo
-- Moved Shiny apps to `cfsr/apps/`
-- Moved data to `cfsr/data/rds/` and `cfsr/data/csv/`
+- Reorganized into `domains/` structure for scalability
+- Moved Shiny apps to `domains/cfsr/apps/`
+- Moved data to `domains/cfsr/data/rds/` and `data/csv/`
 - Extracted shared utilities to `shared/utils/`
 - Removed dependency on external utilities-core repository
 
 **November 2025**
-- Reorganized into `states/` folder structure for scalability
+- Reorganized into `states/` folder structure
 - Integrated CFSR interactive Shiny dashboard
 
 ---
