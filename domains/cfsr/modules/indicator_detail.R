@@ -258,7 +258,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       data <- county_data()
 
       # Check if DQ flag set (data quality issues)
-      if (is.list(data) && !is.null(data$dq) && data$dq) {
+      if (!is.data.frame(data) && is.list(data) && isTRUE(data$dq)) {
         # Return empty plot with message
         plot_ly() %>%
           layout(
@@ -406,7 +406,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       data <- age_data()
 
       # Check if DQ flag set (data quality issues)
-      if (is.list(data) && !is.null(data$dq) && data$dq) {
+      if (!is.data.frame(data) && is.list(data) && isTRUE(data$dq)) {
         # Return empty plot with message
         plot_ly() %>%
           layout(
@@ -535,7 +535,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       data <- race_data()
 
       # Check if DQ flag set (data quality issues)
-      if (is.list(data) && !is.null(data$dq) && data$dq) {
+      if (!is.data.frame(data) && is.list(data) && isTRUE(data$dq)) {
         # Return empty plot with message
         plot_ly() %>%
           layout(
@@ -733,7 +733,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       }
 
       # Check if performance couldn't be calculated (status == "dq")
-      if (!is.null(counties$status) && any(counties$status == "dq", na.rm = TRUE)) {
+      if ("status" %in% names(counties) && any(counties$status == "dq", na.rm = TRUE)) {
         return(list(dq = TRUE))
       }
 
@@ -789,7 +789,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       }
 
       # Check if performance couldn't be calculated (status == "dq")
-      if (!is.null(data$status) && any(data$status == "dq", na.rm = TRUE)) {
+      if ("status" %in% names(data) && any(data$status == "dq", na.rm = TRUE)) {
         return(list(dq = TRUE))
       }
 
@@ -856,7 +856,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       }
 
       # Check if performance couldn't be calculated (status == "dq")
-      if (!is.null(data$status) && any(data$status == "dq", na.rm = TRUE)) {
+      if ("status" %in% names(data) && any(data$status == "dq", na.rm = TRUE)) {
         return(list(dq = TRUE))
       }
 
@@ -1066,6 +1066,15 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       nat_data <- ind_data()
       county <- county_data()
 
+      # Guard: if DQ flag, show DQ message instead of viz container
+      if (!is.data.frame(county) && is.list(county) && isTRUE(county$dq)) {
+        return(div(
+          class = "cm-empty-state",
+          p(class = "cm-text-lg cm-mb-2",
+            "The Children's Bureau could not calculate performance due to data quality issues with the state's AFCARS and/or NCANDS submissions.")
+        ))
+      }
+
       ind_title <- paste0(nat_data$indicator[1], " \u2014 By County")
       ind_desc <- nat_data$description[1]
       profile_ver <- county$profile_version[1]
@@ -1093,6 +1102,15 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       nat_data <- ind_data()
       age <- age_data()
 
+      # Guard: if DQ flag, show DQ message instead of viz container
+      if (!is.data.frame(age) && is.list(age) && isTRUE(age$dq)) {
+        return(div(
+          class = "cm-empty-state",
+          p(class = "cm-text-lg cm-mb-2",
+            "The Children's Bureau could not calculate performance due to data quality issues with the state's AFCARS and/or NCANDS submissions.")
+        ))
+      }
+
       ind_title <- paste0(nat_data$indicator[1], " \u2014 By Age")
       ind_desc <- nat_data$description[1]
       profile_ver <- age$profile_version[1]
@@ -1119,6 +1137,15 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       req(ind_data(), race_data())
       nat_data <- ind_data()
       race <- race_data()
+
+      # Guard: if DQ flag, show DQ message instead of viz container
+      if (!is.data.frame(race) && is.list(race) && isTRUE(race$dq)) {
+        return(div(
+          class = "cm-empty-state",
+          p(class = "cm-text-lg cm-mb-2",
+            "The Children's Bureau could not calculate performance due to data quality issues with the state's AFCARS and/or NCANDS submissions.")
+        ))
+      }
 
       ind_title <- paste0(nat_data$indicator[1], " \u2014 By Race")
       ind_desc <- nat_data$description[1]
