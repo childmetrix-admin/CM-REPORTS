@@ -510,6 +510,28 @@ ui <- dashboardPage(
           background-color: #2c5aa0 !important;
           transform: scale(0.95);
         }
+
+        /* ===== TAB CONTENT STANDARDIZATION ===== */
+        /* Remove Bootstrap's default tab padding so we control it via .cm-tab-content */
+        .tab-content {
+          padding: 0 !important;
+        }
+        .tab-pane {
+          padding: 0 !important;
+        }
+
+        /* .cm-tab-content padding - Overview page has correct amount now */
+        .cm-tab-content {
+          padding-left: 15px !important;
+          padding-right: 15px !important;
+          margin-top: var(--cm-space-5) !important;
+        }
+
+        /* Remove viz-container padding when inside tab content to prevent double-padding */
+        .cm-tab-content .cm-viz-container {
+          padding: 0 !important;
+          margin-bottom: 0 !important;
+        }
       "))
     ),
 
@@ -524,7 +546,7 @@ ui <- dashboardPage(
               # Title
               div(
                 class = "cm-indicator-header",
-                h2(
+                div(
                   class = "cm-page-title",
                   textOutput("overview_title", inline = TRUE)
                 )
@@ -638,7 +660,22 @@ server <- function(input, output, session) {
     data <- rsp_data()
 
     tagList(
-      div(class = "cm-context-header",
+      div(
+        id = "viz-container-rsp-overview",
+        style = "position: relative;",
+
+        # Download button (top-right corner)
+        div(
+          class = "cm-download-btn",
+          actionButton(
+            "download_rsp_overview",
+            "Download",
+            icon = icon("download"),
+            onclick = "downloadViz('viz-container-rsp-overview', 'cfsr_rsp_overview.png')"
+          )
+        ),
+
+        div(class = "cm-context-header",
         div(class = "cm-section-title", "Risk-Standardized Performance — CFSR Statewide Data Indicators"),
         div(class = "cm-section-description",
           "RSP is the state's observed performance, with risk-adjustment"
@@ -714,6 +751,7 @@ server <- function(input, output, session) {
         uiOutput("rsp_kpi_6"),
         uiOutput("rsp_kpi_7")
       )
+      ) # Close viz-container-rsp-overview wrapper
     )
   })
 
@@ -807,7 +845,22 @@ server <- function(input, output, session) {
     }
 
     tagList(
-      div(class = "cm-context-header",
+      div(
+        id = "viz-container-observed-overview",
+        style = "position: relative;",
+
+        # Download button (top-right corner)
+        div(
+          class = "cm-download-btn",
+          actionButton(
+            "download_observed_overview",
+            "Download",
+            icon = icon("download"),
+            onclick = "downloadViz('viz-container-observed-overview', 'cfsr_observed_overview.png')"
+          )
+        ),
+
+        div(class = "cm-context-header",
         div(class = "cm-section-title", "Observed Performance — CFSR Statewide Data Indicators"),
         div(class = "cm-section-description",
           "Observed performance is the state's performance, without risk-adjustment"
@@ -875,6 +928,7 @@ server <- function(input, output, session) {
         uiOutput("obs_kpi_7"),
         div()
       )
+      ) # Close viz-container-observed-overview wrapper
     )
   })
 

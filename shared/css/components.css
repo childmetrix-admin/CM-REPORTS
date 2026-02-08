@@ -302,6 +302,8 @@
 
 .cm-tab-content {
   margin-top: var(--cm-space-5);
+  padding-left: 15px !important;
+  padding-right: 15px !important;
 }
 
 /* ===== CHART CONTAINERS ===== */

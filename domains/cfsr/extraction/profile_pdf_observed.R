@@ -50,8 +50,9 @@ commitment_description <- "observed"
 # EXTRACT OBSERVED PERFORMANCE DATA FROM PDF ----
 ########################################
 
+# --------------------------------------
 # Rough extraction
-########################################
+# --------------------------------------
 
 # Use pdftools to extract text & coordinates from page 4 of PDF
 raw_data_original <- suppressMessages(pdf_data(pdf_path))[[4]]
@@ -62,8 +63,9 @@ raw_data <- raw_data_original %>%
   mutate(text = str_replace_all(text, "[^[:graph:]]", "")) %>%
   filter(text != "")
 
+# --------------------------------------
 # Extract and clean up top table (non-safety indicators) ----
-########################################
+# --------------------------------------
 
 # Page 4 x coordinates - different structure from page 2
 # Page 4 has NO National_Perf column
@@ -118,8 +120,9 @@ if (nrow(df_top_processed) %% 3 == 0) {
        "Check PDF coordinates and extraction logic.")
 }
 
+# --------------------------------------
 # Extract and clean up bottom table (safety indicators) ----
-########################################
+# --------------------------------------
 
 # Bottom table period headers are at y=403 in a different format:
 # - Maltreatment in care: "20AB, FY20", "21AB, FY21", "22AB, FY22"
@@ -160,9 +163,9 @@ if (nrow(df_bottom_processed) == 6) {
   final_bottom <- df_bottom_processed
 }
 
-########################################
+# --------------------------------------
 # RESHAPE WIDE TO LONG & COMBINE ----
-########################################
+# --------------------------------------
 
 # Reshape both tables
 top_long <- reshape_observed_wide_to_long(final_top)
@@ -175,9 +178,9 @@ if (nrow(final_bottom) > 0) {
 # Combine top and bottom
 observed_data <- bind_rows(top_long, bottom_long)
 
-########################################
+# --------------------------------------
 # ADD METADATA AND JOIN DICTIONARY ----
-########################################
+# --------------------------------------
 
 # Load RSP RDS file to get pre-calculated status and data_used
 # Use new hierarchical structure
@@ -216,9 +219,9 @@ observed_data <- add_extraction_metadata(
 # Join dictionary metadata using shared function
 observed_data <- join_indicator_dictionary(observed_data)
 
-########################################
+# --------------------------------------
 # VALIDATION ----
-########################################
+# --------------------------------------
 
 # Validate using shared function
 validation_results_obs <- validate_extraction_results(
@@ -230,9 +233,9 @@ validation_results_obs <- validate_extraction_results(
 # Save validation results for orchestrator
 assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 
-########################################
+# --------------------------------------
 # ADD RANK COLUMNS FROM NATIONAL DATA ----
-########################################
+# --------------------------------------
 
 # Load national data to add state_rank and reporting_states columns
 # Use new hierarchical structure: domains/cfsr/data/rds/national/
@@ -277,9 +280,9 @@ observed_data <- observed_data %>%
     risk_adjustment, exclusions, notes
   )
 
-########################################
+# --------------------------------------
 # SAVE OUTPUT (CSV + RDS) ----
-########################################
+# --------------------------------------
 
 # Save using shared function (handles both CSV and RDS)
 save_extraction_output(
