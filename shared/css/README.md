@@ -407,9 +407,232 @@ When you need to add new patterns:
 3. **Document usage** - Update this README with examples
 4. **Refactor existing code** - Replace inline styles with new class
 
+## Common Patterns
+
+### Full Page Structure
+
+Complete example of a standardized indicator page:
+
+```r
+tabItem(
+  tabName = "my_indicator",
+  fluidRow(
+    column(12,
+      # Page container (white box with padding)
+      div(class = "cm-page-container",
+
+        # Page title
+        div(class = "cm-indicator-header",
+          div(class = "cm-page-title", "Indicator Title — State Name")
+        ),
+
+        # Tabs
+        tabsetPanel(
+          id = "tabs",
+          type = "tabs",
+
+          tabPanel(
+            "By State",
+            div(class = "cm-tab-content",
+              # Context header
+              div(class = "cm-context-header",
+                div(class = "cm-section-title", "Section Title"),
+                div(class = "cm-section-description", "Description text"),
+                div(class = "cm-pills-row",
+                  div(class = "cm-pill cm-pill--period", "Period"),
+                  div(class = "cm-pill cm-pill--state", "State")
+                )
+              ),
+
+              # Chart
+              plotlyOutput("my_chart", height = "auto"),
+
+              # Source
+              div(class = "cm-source", HTML("Source: Data source"))
+            )
+          )
+        )
+      )
+    )
+  )
+)
+```
+
+### Download Button with HTML2Canvas
+
+For exporting visualizations as PNG images:
+
+**1. Add html2canvas library** (in `tags$head`):
+
+```r
+tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js")
+```
+
+**2. Add download JavaScript function**:
+
+```r
+tags$script(HTML("
+  function downloadViz(containerId, filename) {
+    const element = document.getElementById(containerId);
+    const button = element.querySelector('.cm-download-btn .btn');
+
+    if (!element) {
+      console.error('Container not found:', containerId);
+      return;
+    }
+
+    if (button) {
+      button.classList.add('btn-clicked');
+      button.disabled = true;
+    }
+
+    element.classList.add('cm-exporting');
+
+    html2canvas(element, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+      useCORS: true
+    }).then(canvas => {
+      element.classList.remove('cm-exporting');
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      if (button) {
+        button.classList.remove('btn-clicked');
+        button.disabled = false;
+      }
+    }).catch(error => {
+      element.classList.remove('cm-exporting');
+      if (button) {
+        button.classList.remove('btn-clicked');
+        button.disabled = false;
+      }
+      console.error('Screenshot failed:', error);
+      alert('Failed to generate screenshot. Please try again.');
+    });
+  }
+"))
+```
+
+**3. Wrap content in exportable container**:
+
+```r
+div(
+  id = "viz-container-my-chart",
+  style = "position: relative;",
+
+  # Download button (hidden during export)
+  div(
+    class = "cm-download-btn",
+    actionButton(
+      "download_btn",
+      "Download",
+      icon = icon("download"),
+      onclick = "downloadViz('viz-container-my-chart', 'my_chart.png')"
+    )
+  ),
+
+  # Your visualization content
+  div(class = "cm-context-header", ...),
+  plotlyOutput("my_chart"),
+  div(class = "cm-source", ...)
+)
+```
+
+**4. Add CSS for export states** (hides download button in screenshot):
+
+```css
+.cm-download-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.cm-exporting .cm-download-btn {
+  display: none !important;
+}
+
+.cm-download-btn .btn-clicked {
+  background-color: #2c5aa0 !important;
+  transform: scale(0.95);
+}
+```
+
+## Troubleshooting
+
+### Issue: Spacing inconsistent between Overview and detail pages
+
+**Symptom**: Content on one page is indented more than another, even though both use `.cm-tab-content`.
+
+**Cause**: Double-padding from nested containers. If your content is wrapped in `.cm-viz-container` inside `.cm-tab-content`, padding stacks.
+
+**Solution**: Remove padding from nested containers:
+
+```css
+.cm-tab-content .cm-viz-container {
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+```
+
+### Issue: Bootstrap's default tab padding interfering
+
+**Symptom**: Tab content has unexpected left/right padding.
+
+**Cause**: Bootstrap's `.tab-content` and `.tab-pane` classes add default padding.
+
+**Solution**: Zero out Bootstrap padding, control via design system:
+
+```css
+.tab-content {
+  padding: 0 !important;
+}
+.tab-pane {
+  padding: 0 !important;
+}
+
+.cm-tab-content {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+  margin-top: var(--cm-space-5) !important;
+}
+```
+
+### Issue: CSS changes not reflecting after app restart
+
+**Symptom**: Updated CSS classes don't apply even after restarting Shiny app.
+
+**Possible causes**:
+1. **Browser cache** - Do hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+2. **Wrong CSS file loaded** - Check that `addResourcePath()` points to correct directory in `global.R`
+3. **CSS specificity** - Another rule with `!important` or higher specificity is overriding
+
+**Debug**: Use browser DevTools (F12) to inspect element and see which CSS rules are applied.
+
+### Issue: Download button not visible
+
+**Symptom**: Download button doesn't appear in exported visualization.
+
+**Cause**: Button needs `position: relative` parent container and proper z-index.
+
+**Solution**: Ensure parent div has:
+```r
+div(
+  id = "viz-container-...",
+  style = "position: relative;",  # Required!
+  div(class = "cm-download-btn", ...)
+)
+```
+
 ## Questions?
 
 See examples in:
-- `domains/cfsr/apps/app_measures/app.R` (after refactoring)
-- `domains/cfsr/apps/app_summary/app.R` (after refactoring)
-- `domains/cfsr/modules/indicator_detail.R` (after refactoring)
+- `domains/cfsr/apps/app_measures/app.R` - Overview tabs with download buttons
+- `domains/cfsr/apps/app_summary/app.R` - Summary page patterns
+- `domains/cfsr/modules/indicator_detail.R` - Indicator detail structure
+- `domains/cfsr/functions/viz_container.R` - Reusable viz container builder
