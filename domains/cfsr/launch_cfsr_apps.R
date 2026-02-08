@@ -1,15 +1,39 @@
-# launch_cfsr_apps.R - Launch both CFSR Shiny apps
-#
-# This script launches:
-# 1. app_summary (port 3840) - Summary tab content
-# 2. app_measures (port 3838) - Measures tab content (RSP, Observed Overview, Indicator details)
-#
-# Usage:
-#   source("D:/repo_childmetrix/cm-reports/domains/cfsr/launch_cfsr_apps.R")
+#####################################
+#####################################
+# CFSR Apps Launcher ----
+#####################################
+#####################################
 
-cat("========================================\n")
-cat("Launching CFSR Shiny Apps\n")
-cat("========================================\n\n")
+# Purpose: Launch both consolidated CFSR Shiny apps (app_measures and app_summary)
+# on separate ports for embedding in the CFSR frontend.
+#
+# Inputs: None (hardcoded paths to app directories)
+# Outputs: Two running Shiny apps on ports 3838 and 3840
+
+#####################################
+# NOTES ----
+#####################################
+
+# This launcher starts two Shiny apps:
+# 1. app_summary (port 3840) - Performance summary KPI cards
+# 2. app_measures (port 3838) - Measures tab with RSP, Observed Overview, and Indicator details
+#
+# app_summary runs in background using callr::r_bg()
+# app_measures runs in foreground (blocking) to keep console alive
+#
+# Both apps are embedded via iframes in the CFSR frontend (app.html)
+# When app_measures is stopped (Ctrl+C), app_summary is automatically killed
+
+#####################################
+# LIBRARIES & CONFIGURATION ----
+#####################################
+
+# Check/install callr for background process management
+if (!requireNamespace("callr", quietly = TRUE)) {
+  install.packages("callr")
+}
+
+library(callr)
 
 # App directories
 app_summary_dir <- "D:/repo_childmetrix/cm-reports/domains/cfsr/apps/app_summary"
@@ -23,17 +47,21 @@ if (!dir.exists(app_measures_dir)) {
   stop("app_measures directory not found at: ", app_measures_dir)
 }
 
-# Launch app_summary on port 3840 in background
+#####################################
+# LAUNCH APPS ----
+#####################################
+
+cat("========================================\n")
+cat("Launching CFSR Shiny Apps\n")
+cat("========================================\n\n")
+
+# --------------------------------------
+# Launch app_summary in background (port 3840) ----
+# --------------------------------------
+
 cat("Starting app_summary on port 3840 (background)...\n")
 cat("  Directory: ", app_summary_dir, "\n")
 cat("  URL: http://localhost:3840\n\n")
-
-# Use callr to run app_summary in background
-if (!requireNamespace("callr", quietly = TRUE)) {
-  install.packages("callr")
-}
-
-library(callr)
 
 # Start app_summary in background process
 summary_process <- r_bg(
@@ -64,10 +92,13 @@ summary_process <- r_bg(
 
 cat("✓ app_summary started (PID: ", summary_process$get_pid(), ")\n\n")
 
-# Wait a moment for app_summary to initialize
+# Wait for app_summary to initialize
 Sys.sleep(2)
 
-# Launch app_measures on port 3838 (foreground - main window)
+# --------------------------------------
+# Launch app_measures in foreground (port 3838) ----
+# --------------------------------------
+
 cat("Starting app_measures on port 3838 (foreground)...\n")
 cat("  Directory: ", app_measures_dir, "\n")
 cat("  URL: http://localhost:3838\n\n")
@@ -95,14 +126,18 @@ cat("Loading app_measures environment...\n")
 source(file.path(app_measures_dir, "global.R"))
 cat("✓ Modules loaded\n\n")
 
-# Launch app_measures
+# Launch app_measures (blocks until stopped)
 shiny::runApp(
   app_measures_dir,
   port = 3838,
   launch.browser = FALSE  # Don't open browser - use app.html instead
 )
 
-# Cleanup: Kill app_summary when app_measures is stopped
+#####################################
+# CLEANUP ----
+#####################################
+
+# Kill app_summary when app_measures is stopped
 cat("\n\nStopping app_summary...\n")
 summary_process$kill()
 cat("✓ Both apps stopped\n")

@@ -156,8 +156,10 @@ This starts:
 ## Documentation
 
 - **[Product Requirements Document](docs/PRD.md)** - Strategic roadmap and architecture
+- **[R Code Style Guide](docs/R_STYLE_GUIDE.md)** - R script structure and coding standards
 - **[AI Assistant Guide](CLAUDE.md)** - Technical implementation details
 - **[Maryland State](states/md/README.md)** - State-specific notes
+- **[R Script Template](templates/r_script_template.R)** - Standard template for new R scripts
 
 ## Recent Changes
 

@@ -1,9 +1,28 @@
 #####################################
+#####################################
 # CFSR Profile - Main Orchestrator ----
 #####################################
+#####################################
 
-# Sourced from run.R
-# Run CFSR profile processing for any combination of state/period/source
+# Purpose: Main entry point for CFSR profile data extraction pipeline.
+# Processes state CFSR Data Profile PDFs and Excel files from ShareFile,
+# extracting observed performance, RSP, and national comparison data.
+#
+# Inputs: CFSR Data Profile PDFs and Excel files from S:/Shared Folders/{state}/cfsr/uploads/
+# Outputs: RDS files to domains/cfsr/data/rds/{state}/{period}/ for use by Shiny apps
+
+#####################################
+# NOTES ----
+#####################################
+
+# This orchestrator coordinates multiple extraction scripts:
+# - profile_pdf_observed.R: Extract observed performance (pg. 4 of PDF)
+# - profile_pdf_rsp.R: Extract risk-standardized performance (pg. 2 of PDF)
+# - profile_excel_national.R: Extract national comparison data
+# - profile_excel_state.R: Extract state-specific Excel data
+#
+# Each extraction can be run individually or in combination via the 'source' parameter.
+# Supports bulk processing across multiple states and periods.
 
 #####################################
 # LIBRARIES & CONFIGURATION ----

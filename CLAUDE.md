@@ -276,6 +276,39 @@ The `shared/utils/` directory contains cross-domain R utilities that are used by
 - `validate_period(period)` - Check period format (YYYY_MM)
 - Period format conversion utilities
 
+## R Script Structure Standards
+
+**When editing R scripts, check if they follow the standardized structure documented in `docs/R_STYLE_GUIDE.md`.**
+
+### Applies to:
+- Data extraction scripts (`domains/*/extraction/*.R`)
+- Analysis scripts (`states/*/scripts/*.R`)
+- Orchestrator scripts (`launch_*.R`, `run_*.R`)
+
+### Does NOT apply to:
+- Shiny app.R files (different structure needs)
+- Function libraries (`domains/*/functions/*.R`) - these use roxygen2 docs
+- Test files
+- Scripts <50 lines
+
+### Quick Check:
+When editing an eligible script, verify it has:
+1. **Four-line title banner** with Purpose/Inputs/Outputs
+2. **Proper section headings** (NOTES, LIBRARIES & CONFIGURATION, MAIN PROCESSING)
+3. **snake_case** naming for variables and functions
+
+### If Missing Structure:
+- Copy template from `templates/r_script_template.R`
+- Add title banner and purpose statement at top
+- Organize code into logical sections with proper headings
+- Reference examples: `domains/cfsr/extraction/profile_pdf_observed.R`
+
+### For New Scripts:
+- **ALWAYS** start from `templates/r_script_template.R`
+- Fill in title, purpose, inputs/outputs before adding code
+
+See full guide at `docs/R_STYLE_GUIDE.md` for complete standards.
+
 ## Monorepo Consolidation
 
 This repository was consolidated in January 2026 to merge the formerly separate `cfsr-profile` repository. Key changes:
