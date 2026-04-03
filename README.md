@@ -2,7 +2,7 @@
 
 Web-based reporting platform for child welfare data visualization and analysis across multiple states.
 
-**Last Updated**: February 2026
+**Last Updated**: April 2026
 
 ## Overview
 
@@ -108,35 +108,60 @@ source("D:/repo_childmetrix/cm-reports/domains/cfsr/extraction/run_profile.R")
 run_profile(state = "md", period = "2025_02", source = "all")
 ```
 
-## Running the Platform
+## Getting Started (New Contributors)
 
-### Local Development
+### Prerequisites
 
-**Static HTML (no Shiny):**
-```bash
-# Open in browser
-file:///D:/repo_childmetrix/cm-reports/index.html
+- **R** (4.x+) with RStudio or VSCode
+- R packages auto-install on first run (tidyverse, shiny, pdftools, readxl, plotly, DT, etc.)
+
+### 1. Set Up CFSR Source Data
+
+The extraction pipeline reads CFSR Data Profile files (PDFs + Excel) from a shared drive. You need at minimum **3 files for one state and one period**:
+
+- CFSR Data Profile PDF (contains observed + RSP performance data)
+- National Supplemental Context Data (Excel)
+- State Supplemental Context Data (Excel)
+
+**Default path**: `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
+**Example**: `S:/Shared Folders/md/cfsr/uploads/2026_02/` (state = lowercase abbreviation, period = YYYY_MM)
+
+If you don't use ShareFile, place files in the same directory structure and either:
+- Map `S:` to your file location, or
+- Set the `CM_REPORTS_ROOT` environment variable and update `SHAREFILE_BASE` in `domains/cfsr/extraction/paths.R`
+
+### 2. Open the Project
+
+Open `cm-reports.Rproj` in RStudio (or open the folder in VSCode).
+
+### 3. Run Data Extraction
+
+```r
+source("domains/cfsr/extraction/run_profile.R")
+run_profile(source = "all")
 ```
 
-**With Shiny Apps:**
+This discovers available states/periods from the shared drive, extracts data from PDFs and Excel files, and saves RDS files to `domains/cfsr/data/rds/`.
+
+### 4. Launch Shiny Dashboards
+
 ```r
-# Launch all CFSR apps simultaneously
-source("D:/repo_childmetrix/cm-reports/domains/cfsr/launch_cfsr_apps.R")
+source("domains/cfsr/launch_cfsr_apps.R")
 ```
 
 This starts:
 - **app_measures** (Measures + Indicators): http://localhost:3838
 - **app_summary** (Performance Summary): http://localhost:3840
 
-### Staging Deployment
+### 5. View the Platform
 
-```powershell
-# Full site deploy
-.\deploy-stage.ps1
+- **Landing page**: Open `index.html` in a browser (state selector + login preview)
+- **Direct access**: Open `app.html` (loads Maryland by default)
+- Shiny apps are embedded via iframes in the state hub pages
 
-# Maryland only (faster iteration)
-.\deploy-stage.ps1 -MdOnly
-```
+### Deployment
+
+Deployment target TBD (AWS or Azure). Previous DigitalOcean staging setup has been removed.
 
 ## Adding a New State
 
@@ -158,7 +183,6 @@ This starts:
 - **[Product Requirements Document](docs/PRD.md)** - Strategic roadmap and architecture
 - **[R Code Style Guide](docs/R_STYLE_GUIDE.md)** - R script structure and coding standards
 - **[AI Assistant Guide](CLAUDE.md)** - Technical implementation details
-- **[Maryland State](states/md/README.md)** - State-specific notes
 - **[R Script Template](templates/r_script_template.R)** - Standard template for new R scripts
 
 ## Recent Changes

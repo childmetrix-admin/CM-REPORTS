@@ -4,6 +4,22 @@
 #####################################
 #####################################
 
+# library(officer)
+# library(dplyr)
+#
+# # Read the template
+# ppt <- read_pptx("docs/cfsr_presentation_template.pptx")
+#
+# # See all layouts and their placeholders
+# layout_summary(ppt)
+# # Get placeholder info for specific layouts
+# layout_properties(ppt)
+# #%>%
+# #  filter(layout_name %in% c("Title Slide", "Title and Content", "Section Header",
+# #                            "Side Panel with Picture", "Top Banner with Picture")) %>%
+# #  select(layout_name, type, ph_label)
+
+
 # Entry point for all CFSR profile processing workflows
 # This script provides a user-friendly interface to run_profile.R
 
@@ -45,10 +61,10 @@ source(file.path(CFSR_EXTRACTION_DIR, "run_profile.R"))
 # print_available_data()
 
 # Workflow 1: Process everything found (all files for all states and periods in ShareFile)
-run_profile(source = "all")
+# run_profile(source = "all")
 
 # Workflow 2: Specific state + period + all files
-# run_profile(state = "md", period = "2025_02", source = "all")
+run_profile(state = "md", period = "2026_02", source = "all")
 
 # Workflow 3: Specific state + period + specific file
 # run_profile(state = "md", period = "2025_02", source = "national")

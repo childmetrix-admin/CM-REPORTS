@@ -8,6 +8,9 @@ dist/
 *.backup.*
 *.rds
 .Rproj.user
+.env
+*.env
+.claude/
 
 # CFSR extraction outputs (generated data files)
 cfsr/data/csv/

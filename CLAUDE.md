@@ -84,27 +84,7 @@ Each category's `index.html` auto-redirects to `current/` using:
 
 ## Deployment
 
-### Deploy to Staging
-
-```powershell
-# Full site deploy
-.\deploy-stage.ps1
-
-# Maryland only (faster iteration)
-.\deploy-stage.ps1 -MdOnly
-
-# Custom server/path
-.\deploy-stage.ps1 -Server "other.server.com" -RemotePath "/var/www/html"
-```
-
-**What it does:**
-1. Creates timestamped backup on server: `~/deploy-backups/html-{timestamp}.tar.gz`
-2. Uses `scp` to sync files to `stage.childmetrix.com:/var/www/stage.childmetrix.com/html/`
-3. Requires SSH key authentication as `root@stage.childmetrix.com`
-
-### Target Server
-- **Staging URL**: `https://stage.childmetrix.com`
-- **Auth**: Server-level HTTP auth protects staging; app login is UI preview only
+Deployment target TBD (AWS or Azure). Previous DigitalOcean staging setup has been removed.
 
 ## Development Workflow
 
@@ -147,7 +127,6 @@ Line endings normalized to LF in repository via `.gitattributes`:
 
 - **`index.html`** - Landing page with state selector and routing logic
 - **`style.css`** - Shared stylesheet (lightweight ChildMetrix theme)
-- **`deploy-stage.ps1`** - Deployment automation script
 - **`states/md/index.html`** - Maryland hub (reference implementation with advanced UI)
 - **`states/ky/index.html`** - Kentucky hub (simpler tile-based navigation)
 

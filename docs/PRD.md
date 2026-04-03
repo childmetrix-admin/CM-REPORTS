@@ -1,9 +1,8 @@
 # PRODUCT REQUIREMENTS DOCUMENT (PRD)
 ## ChildMetrix Reports Platform - Monorepo Architecture & Roadmap
 
-**Version**: 2.0
-**Date**: 2026-02-08
-**Author**: Kurt Heisler, Child Metrix
+**Version**: 2.1
+**Date**: 2026-04-03
 **Status**: Current Architecture & Future Roadmap
 
 ---
@@ -12,12 +11,14 @@
 
 The ChildMetrix Reports Platform is a **consolidated monorepo** providing multi-state child welfare reporting with interactive Shiny dashboards. The platform was successfully consolidated from two repositories (cfsr-profile + cm-reports) in January 2026 and now operates as a single, unified codebase.
 
-**Current State** (February 2026):
+**Current State** (April 2026):
 - ✅ Single monorepo with unified deployment
 - ✅ CFSR domain fully implemented (8 indicators, 2 states)
 - ✅ Design system for consistent UI/UX
 - ✅ Standardized data extraction pipeline
 - ✅ Self-contained domain architecture
+- ⏳ Cloud hosting migration (AWS or Azure -- TBD)
+- ⏳ Authentication implementation (Auth0)
 
 **Key Architecture Goals**:
 - Domain-based organization (cfsr, cps, in_home, ooh, community)
@@ -102,15 +103,21 @@ states/{state}/{category}/ (Static HTML embeds apps via iframes)
 
 ## 2. Roadmap & Future Goals
 
-### 2.1 Near-Term Goals (Q1 2026)
+### 2.1 Completed (Q1 2026)
 
-1. ✅ **Complete design system documentation** (Issue #13) - DONE
-2. **Standardize R script structure** (Issue #14) - IN PROGRESS
-3. **Add trend visualizations** (Issue #8) - Sparklines and historical comparisons
-4. **Expand state coverage** - Add 2-3 additional states to CFSR domain
-5. **Clean up data quality warnings** (Issue #12) - Address 'dq' column handling
+1. ✅ **Complete design system documentation** (Issue #13)
+2. ✅ **Consolidate CFSR apps** from 4 to 2 (app_measures, app_summary)
 
-### 2.2 Medium-Term Goals (Q2-Q3 2026)
+### 2.2 Near-Term Goals (Q2 2026)
+
+1. **Cloud hosting migration** - Deploy to AWS or Azure (TBD)
+2. **Authentication** - Auth0 integration with MFA and RBAC
+3. **Standardize R script structure** (Issue #14)
+4. **Add trend visualizations** (Issue #8) - Sparklines and historical comparisons
+5. **Expand state coverage** - Add 2-3 additional states to CFSR domain
+6. **Clean up data quality warnings** (Issue #12) - Address 'dq' column handling
+
+### 2.3 Medium-Term Goals (Q3-Q4 2026)
 
 1. **Implement additional domains**:
    - CPS (Child Protective Services)
@@ -120,11 +127,12 @@ states/{state}/{category}/ (Static HTML embeds apps via iframes)
 2. **PowerPoint generation** (Issue #9) - Automated presentation exports
 3. **Enhanced testing** - Increase test coverage to 80%+
 4. **Performance optimization** - Sub-second page loads
+5. **Secure data upload portal** - HTTPS upload to per-state S3 buckets
 
-### 2.3 Long-Term Goals (Q4 2026+)
+### 2.4 Long-Term Goals (2027+)
 
 1. **Horizontal scaling** - Support 10-20 states across multiple domains
-2. **Real-time data ingestion** - Automated pipeline from ShareFile → Platform
+2. **Automated data ingestion** - Pipeline from state upload to platform
 3. **Historical trending** - Year-over-year comparisons and trend analysis
 4. **Advanced visualizations** - Interactive drill-downs, custom filtering
 5. **User management** - Role-based access control per state/domain
@@ -247,10 +255,8 @@ cm-reports/  (consolidated monorepo)
 |   |   +-- rds/                    # RDS for Shiny apps
 |   |
 |   +-- apps/                       # CFSR Shiny apps
-|   |   +-- app_national/
-|   |   +-- app_rsp/
-|   |   +-- app_observed/
-|   |   +-- app_summary/
+|   |   +-- app_measures/           # Measures + indicators
+|   |   +-- app_summary/            # Performance summary
 |   |
 |   +-- modules/                    # Shiny modules
 |   +-- scripts/                    # Utilities (launch_cfsr_dashboard.R)
@@ -429,36 +435,27 @@ test_that("discover_states returns valid state codes", {
 3. Launch Shiny apps on localhost ports
 4. Test in browser (http://localhost:3838-3841)
 
-### 7.2 Staging Environment
+### 7.2 Cloud Hosting (In Progress)
 
-**Server**: stage.childmetrix.com
-**Deploy Script**: deploy-stage.ps1 (already exists)
-**Purpose**: Client preview before production
-
-**Deployment Steps**:
-1. Commit changes to git
-2. Run `.\deploy-stage.ps1` (syncs via scp)
-3. Creates timestamped backup on server
-4. Syncs files to /var/www/stage.childmetrix.com/html/
-
-### 7.3 Production Environment (Future)
-
-**Target**: DigitalOcean Droplet
-**Stack**: Ubuntu + Shiny Server (or ShinyProxy) + nginx
-**Authentication**: Server-level HTTP auth (staging) -> User authentication (production)
+**Target**: AWS or Azure (decision pending)
+**Authentication**: Auth0 with MFA, RBAC, and state-based data isolation
+**Data storage**: Per-state S3 buckets (or equivalent), AES-256 encryption at rest
 
 **Planned Setup**:
-- Single droplet running Shiny Server
-- nginx reverse proxy (ports 3838-3841 -> subdomains or paths)
-- SSL certificates (Let's Encrypt)
+- Cloud-hosted Shiny Server (or ShinyProxy)
+- Reverse proxy with SSL
+- Per-state data isolation at storage and auth layers
 - Automated backups (daily)
 - Monitoring (uptime, error logs)
 
-**Authentication Requirements** (Production):
-- User login system (email + password)
+**Authentication Requirements**:
+- User login via Auth0 (email + password, MFA)
 - State-specific access control (MD users see MD data only)
 - Admin panel for user management
 - Session management (logout, timeout)
+- No shared credentials across state clients
+
+Previous DigitalOcean staging setup has been removed.
 
 ---
 
@@ -474,7 +471,7 @@ test_that("discover_states returns valid state codes", {
 - Updated deployment script
 - cfsr-profile consolidated into cm-reports
 
-### Phase 2: Add In-Home Services (Week 3-4)
+### Phase 2: Add In-Home Services
 
 **Goals**: Implement first new data type using established patterns
 
@@ -491,7 +488,7 @@ test_that("discover_states returns valid state codes", {
 - Functional In-Home Services pipeline
 - Demonstration of reusable patterns
 
-### Phase 3: Testing & Quality (Week 5-6)
+### Phase 3: Testing & Quality
 
 **Goals**: Establish comprehensive testing suite
 
@@ -508,7 +505,7 @@ test_that("discover_states returns valid state codes", {
 - Integration tests for all apps
 - Testing documentation
 
-### Phase 4: Out-of-Home, CPS, Community (Week 7+)
+### Phase 4: Out-of-Home, CPS, Community
 
 **Goals**: Scale to remaining data types
 
@@ -522,13 +519,14 @@ test_that("discover_states returns valid state codes", {
 - Full platform coverage (5 data types)
 - Consistent user experience
 
-### Phase 5: Production Deployment (Future)
+### Phase 5: Production Deployment
 
-**Goals**: Deploy to DigitalOcean with authentication
+**Goals**: Deploy to AWS or Azure with authentication
 
 **Deliverables**:
-- Production-ready platform
-- User authentication
+- Production-ready cloud-hosted platform
+- Auth0 user authentication with state-based RBAC
+- Per-state data isolation (separate storage buckets)
 - Monitoring and backups
 
 ---
@@ -608,7 +606,7 @@ test_that("discover_states returns valid state codes", {
 - **Excel Reading**: readxl, openxlsx
 - **Data Format**: RDS (R Data Serialization)
 - **Frontend**: Static HTML + Tailwind CSS
-- **Deployment**: PowerShell (scp sync to staging), Future: Docker + nginx
+- **Deployment**: AWS or Azure (TBD), Auth0 authentication
 
 ### Appendix D: Architecture Decision Records
 

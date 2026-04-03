@@ -1,8 +1,0 @@
-{
-  "name": "Maryland",
-  "code": "MD",
-  "environment": "Staging",
-  "logo": "../_assets/logo.png",
-  "primaryColor": "#1C7ED6",
-  "defaultRoute": "home"
-}

@@ -30,6 +30,7 @@
 
 # Load configuration (in same directory)
 source(file.path(dirname(sys.frame(1)$ofile), "config.R"))
+source(file.path(dirname(sys.frame(1)$ofile), "update_app.R"))
 
 #####################################
 # MAIN FUNCTION ----
@@ -87,6 +88,41 @@ run_profile <- function(state = NULL, period = NULL, source = "all", verbose = T
     )
 
     results[[paste(combo_state, combo_period, sep = "_")]] <- combo_result
+
+    # Generate PowerPoint presentation if processing was successful
+    if (combo_result$success) {
+      if (verbose) {
+        cat("  Generating PowerPoint presentation...\n")
+      }
+
+      tryCatch({
+        # Source PPT generation functions
+        source(file.path(CFSR_FUNCTIONS_DIR, "functions_cfsr_profile_ppt.R"))
+
+        # Generate presentation
+        ppt_path <- generate_cfsr_presentation(combo_state, combo_period)
+
+        if (verbose) {
+          cat("  ✓ Presentation saved:", ppt_path, "\n")
+        }
+
+        # Add to results
+        results[[paste(combo_state, combo_period, sep = "_")]]$presentation <- ppt_path
+      }, error = function(e) {
+        if (verbose) {
+          cat("  ✗ PPT generation failed:", e$message, "\n")
+        }
+        # Add error to results but don't fail the entire pipeline
+        results[[paste(combo_state, combo_period, sep = "_")]]$presentation_error <- e$message
+      })
+
+      # Keep app.html period selector in sync
+      tryCatch({
+        update_app_html_profiles(combo_state, combo_period)
+      }, error = function(e) {
+        warning("Could not update app.html: ", e$message)
+      })
+    }
   }
 
   if (verbose) {
