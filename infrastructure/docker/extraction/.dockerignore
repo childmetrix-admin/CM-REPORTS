@@ -1,0 +1,6 @@
+*.rds
+*.bak
+*.save
+.git
+.Rproj.user
+node_modules

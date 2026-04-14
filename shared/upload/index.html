@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Data Files</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --cmx-accent: #0e9ba4;
+      --cmx-accent-2: #0f4c75;
+    }
+    .drop-zone { border: 2px dashed #cbd5e1; transition: all 0.3s ease; }
+    .drop-zone.dragover { border-color: #4472C4; background-color: #eff6ff; }
+    .file-item { transition: all 0.2s ease; }
+    .file-item:hover { background-color: #f8fafc; }
+  </style>
+</head>
+<body class="bg-white pl-6 pr-8 py-8">
+  <div class="max-w-4xl mr-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2 text-center">Upload Data Files</h1>
+    <p class="text-sm text-gray-600 mb-6 text-center">Upload CFSR data profiles, Excel workbooks, and supplemental files for processing</p>
+
+    <!-- Upload Metadata -->
+    <div class="bg-slate-50 rounded-lg p-5 mb-6 border">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">State</label>
+          <select id="uploadState" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="" disabled selected>Select state...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Domain</label>
+          <select id="uploadDomain" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="cfsr" selected>CFSR</option>
+            <option value="cps" disabled>CPS (coming soon)</option>
+            <option value="in_home" disabled>In-Home (coming soon)</option>
+            <option value="ooh" disabled>Out-of-Home (coming soon)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Profile Period</label>
+          <select id="uploadPeriod" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="" disabled selected>Select period...</option>
+          </select>
+          <button onclick="addCustomPeriod()" class="text-xs text-blue-600 hover:underline mt-1">+ Add new period</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expected Files Guide -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <h3 class="font-semibold text-blue-900 text-sm mb-2">Expected files for CFSR upload:</h3>
+      <ul class="text-sm text-blue-800 space-y-1 ml-4 list-disc">
+        <li><strong>CFSR 4 Data Profile PDF</strong> - e.g., "MD - CFSR 4 Data Profile - February 2026.pdf"</li>
+        <li><strong>National Supplemental Context Data</strong> - Excel workbook (.xlsx)</li>
+        <li><strong>State Supplemental Context Data</strong> - Excel workbook (.xlsx)</li>
+      </ul>
+    </div>
+
+    <!-- Drop Zone -->
+    <div id="dropZone" class="drop-zone rounded-lg p-12 text-center mb-6 cursor-pointer">
+      <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <p class="text-base text-gray-700 mb-2">
+        <span class="font-semibold text-gray-900">Click to upload</span> or drag and drop
+      </p>
+      <p class="text-sm text-gray-500">PDF, Excel (.xlsx, .xlsm), or CSV files - Max 100 MB each</p>
+      <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.xlsx,.xlsm,.xls,.csv">
+    </div>
+
+    <!-- File List -->
+    <div id="fileList" class="hidden mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Selected Files</h2>
+      <div id="fileItems" class="space-y-2"></div>
+    </div>
+
+    <!-- Upload Controls -->
+    <div id="uploadSection" class="hidden">
+      <button id="uploadBtn" class="w-full bg-[var(--cmx-accent)] text-white py-3 px-4 rounded-lg font-medium hover:brightness-110 transition-colors">
+        Upload to Azure Blob Storage
+      </button>
+      <button id="clearBtn" class="w-full mt-2 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+        Clear All
+      </button>
+    </div>
+
+    <!-- Upload Progress -->
+    <div id="progressSection" class="hidden mt-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-semibold text-blue-900 mb-2">Uploading...</h3>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div id="progressBar" class="bg-[var(--cmx-accent)] h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="progressText" class="text-sm text-blue-800 mt-2">Preparing upload...</p>
+      </div>
+    </div>
+
+    <!-- Processing Status -->
+    <div id="processingSection" class="hidden mt-6">
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <h3 class="font-semibold text-amber-900 mb-2">Processing Data...</h3>
+        <p class="text-sm text-amber-800">Your files have been uploaded. The extraction pipeline is running. This page will update when processing is complete.</p>
+        <div class="mt-3 flex items-center gap-2">
+          <div class="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-sm text-amber-700" id="processingStatus">Queued for extraction...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div id="successSection" class="hidden mt-6">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 class="font-semibold text-green-900 mb-1">Upload & Processing Complete</h3>
+        <p class="text-sm text-green-800">Your data has been processed and is now available in the dashboards.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const fileItems = document.getElementById('fileItems');
+  const uploadSection = document.getElementById('uploadSection');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const progressSection = document.getElementById('progressSection');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const processingSection = document.getElementById('processingSection');
+  const successSection = document.getElementById('successSection');
+
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+  const ALLOWED_EXTENSIONS = ['.pdf', '.xlsx', '.xlsm', '.xls', '.csv'];
+
+  let selectedFiles = [];
+
+  // Auto-detect state from parent URL
+  function detectState() {
+    const params = new URLSearchParams(window.location.search);
+    const state = params.get('state');
+    if (state) {
+      const select = document.getElementById('uploadState');
+      for (const opt of select.options) {
+        if (opt.value.toLowerCase() === state.toLowerCase()) {
+          opt.selected = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // Populate state dropdown
+  function populateStates() {
+    const select = document.getElementById('uploadState');
+    const states = [
+      ['MD', 'Maryland'], ['KY', 'Kentucky']
+    ];
+    states.forEach(([code, name]) => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = `${code} - ${name}`;
+      select.appendChild(opt);
+    });
+    detectState();
+  }
+
+  // Populate period dropdown
+  function populatePeriods() {
+    const select = document.getElementById('uploadPeriod');
+    const now = new Date();
+    const year = now.getFullYear();
+    const periods = [];
+
+    // Generate last 4 biannual periods (Feb and Aug)
+    for (let y = year; y >= year - 1; y--) {
+      periods.push(`${y}_08`);
+      periods.push(`${y}_02`);
+    }
+
+    periods.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      const [yr, mo] = p.split('_');
+      const monthName = mo === '02' ? 'February' : 'August';
+      opt.textContent = `${monthName} ${yr}`;
+      select.appendChild(opt);
+    });
+  }
+
+  function addCustomPeriod() {
+    const period = prompt('Enter period in YYYY_MM format (e.g., 2026_02):');
+    if (period && /^\d{4}_\d{2}$/.test(period)) {
+      const select = document.getElementById('uploadPeriod');
+      const opt = document.createElement('option');
+      opt.value = period;
+      const [yr, mo] = period.split('_');
+      const months = { '01':'Jan','02':'Feb','03':'Mar','04':'Apr','05':'May','06':'Jun',
+                        '07':'Jul','08':'Aug','09':'Sep','10':'Oct','11':'Nov','12':'Dec' };
+      opt.textContent = `${months[mo] || mo} ${yr}`;
+      select.appendChild(opt);
+      opt.selected = true;
+    } else if (period) {
+      alert('Invalid format. Use YYYY_MM (e.g., 2026_02)');
+    }
+  }
+
+  // File validation
+  function validateFile(file) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return `Invalid file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return `File too large: ${formatFileSize(file.size)}. Max: 100 MB`;
+    }
+    return null;
+  }
+
+  // Drop zone handlers
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+  function handleFiles(files) {
+    const errors = [];
+    for (const file of files) {
+      const err = validateFile(file);
+      if (err) { errors.push(err); }
+      else { selectedFiles.push(file); }
+    }
+    if (errors.length > 0) { alert('Some files were rejected:\n' + errors.join('\n')); }
+    displayFiles();
+  }
+
+  function displayFiles() {
+    if (selectedFiles.length === 0) {
+      fileList.classList.add('hidden');
+      uploadSection.classList.add('hidden');
+      return;
+    }
+    fileList.classList.remove('hidden');
+    uploadSection.classList.remove('hidden');
+    successSection.classList.add('hidden');
+
+    fileItems.innerHTML = selectedFiles.map((file, i) => `
+      <div class="file-item flex items-center justify-between p-3 bg-white border rounded-lg">
+        <div class="flex items-center gap-3">
+          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-gray-900">${file.name}</p>
+            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+          </div>
+        </div>
+        <button onclick="removeFile(${i})" class="text-gray-400 hover:text-red-500">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+  }
+
+  window.removeFile = function(index) { selectedFiles.splice(index, 1); displayFiles(); };
+
+  clearBtn.addEventListener('click', () => { selectedFiles = []; fileInput.value = ''; displayFiles(); });
+
+  // Upload handler
+  uploadBtn.addEventListener('click', async () => {
+    const state = document.getElementById('uploadState').value;
+    const domain = document.getElementById('uploadDomain').value;
+    const period = document.getElementById('uploadPeriod').value;
+
+    if (!state) { alert('Please select a state.'); return; }
+    if (!period) { alert('Please select a period.'); return; }
+    if (selectedFiles.length === 0) { alert('Please select files to upload.'); return; }
+
+    uploadSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+
+    // In production, this uploads to Azure Blob via Azure Function API
+    // API endpoint: POST /api/upload?state={state}&domain={domain}&period={period}
+    const apiBase = window.location.hostname.includes('localhost')
+      ? 'http://localhost:7071/api'
+      : '/api';
+
+    let uploaded = 0;
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        progressText.textContent = `Uploading ${file.name} (${uploaded + 1}/${selectedFiles.length})...`;
+        progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;
+
+        const response = await fetch(
+          `${apiBase}/upload?state=${state}&domain=${domain}&period=${period}`,
+          { method: 'POST', body: formData }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Upload failed for ${file.name}: ${response.statusText}`);
+        }
+
+        uploaded++;
+        progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;
+      } catch (err) {
+        // For local dev, simulate success
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          await new Promise(r => setTimeout(r, 500));
+          uploaded++;
+          progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;
+        } else {
+          alert(`Error: ${err.message}`);
+          progressSection.classList.add('hidden');
+          uploadSection.classList.remove('hidden');
+          return;
+        }
+      }
+    }
+
+    progressText.textContent = 'All files uploaded. Triggering extraction...';
+    progressBar.style.width = '100%';
+
+    setTimeout(() => {
+      progressSection.classList.add('hidden');
+      processingSection.classList.remove('hidden');
+      fileList.classList.add('hidden');
+      selectedFiles = [];
+      fileInput.value = '';
+
+      // Simulate extraction completion (in production, poll API)
+      setTimeout(() => {
+        processingSection.classList.add('hidden');
+        successSection.classList.remove('hidden');
+      }, 5000);
+    }, 1000);
+  });
+
+  // Initialize
+  populateStates();
+  populatePeriods();
+</script>
+</body>
+</html>

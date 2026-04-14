@@ -79,29 +79,76 @@ message("All modules loaded successfully")
 USE_VIZ_CONTAINERS <- TRUE
 
 #####################################
+# DATA SOURCE CONFIGURATION ----
+#####################################
+
+CM_DATA_SOURCE <- Sys.getenv("CM_DATA_SOURCE", "sharefile")
+
+# Azure Blob helpers (only loaded when needed)
+if (CM_DATA_SOURCE == "azure") {
+  AZURE_BLOB_ENDPOINT <- Sys.getenv("AZURE_BLOB_ENDPOINT", "")
+  AZURE_STORAGE_KEY <- Sys.getenv("AZURE_STORAGE_KEY", "")
+  AZURE_BLOB_CONTAINER_PROCESSED <- Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
+
+  if (!requireNamespace("AzureStor", quietly = TRUE)) {
+    stop("AzureStor package required for Azure mode")
+  }
+
+  .blob_endpoint <- NULL
+  get_blob_ep <- function() {
+    if (is.null(.blob_endpoint)) {
+      .blob_endpoint <<- AzureStor::blob_endpoint(AZURE_BLOB_ENDPOINT, key = AZURE_STORAGE_KEY)
+    }
+    .blob_endpoint
+  }
+
+  load_rds_from_blob <- function(blob_path) {
+    ep <- get_blob_ep()
+    container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
+    local_tmp <- file.path(tempdir(), basename(blob_path))
+    AzureStor::download_blob(container, blob_path, local_tmp, overwrite = TRUE)
+    data <- readRDS(local_tmp)
+    unlink(local_tmp)
+    data
+  }
+
+  list_processed_blobs <- function(prefix = "") {
+    ep <- get_blob_ep()
+    container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
+    blobs <- AzureStor::list_blobs(container, prefix = prefix)
+    blobs$name
+  }
+
+  message("app_measures: Azure Blob mode enabled")
+}
+
+#####################################
 # DATA DIRECTORY & RSP DATA LOADING ----
 #####################################
 
-# Data directory
 data_dir <- file.path(monorepo_root, "domains/cfsr/data/rds")
 
-# Get available RSP profiles for a state
 get_available_rsp_profiles <- function(state) {
   state <- toupper(state)
 
-  # New hierarchical structure: domains/cfsr/data/rds/{state}/{period}/
-  state_dir <- file.path(data_dir, tolower(state))
+  if (CM_DATA_SOURCE == "azure") {
+    prefix <- paste0("rds/", tolower(state), "/")
+    blobs <- list_processed_blobs(prefix)
+    pattern <- paste0(state, "_cfsr_profile_rsp_(\\d{4}_\\d{2})\\.rds$")
+    matches <- regmatches(blobs, regexpr(pattern, blobs))
+    periods <- sub(paste0(state, "_cfsr_profile_rsp_"), "", sub("\\.rds$", "", matches))
+    if (length(periods) == 0) return(character(0))
+    return(sort(periods, decreasing = TRUE))
+  }
 
-  # Check if state directory exists
+  state_dir <- file.path(data_dir, tolower(state))
   if (!dir.exists(state_dir)) return(character(0))
 
-  # Get all period subdirectories (e.g., "2025_02", "2024_08")
   period_dirs <- list.dirs(state_dir, full.names = FALSE, recursive = FALSE)
   period_dirs <- period_dirs[grepl("^[0-9]{4}_[0-9]{2}$", period_dirs)]
 
   if (length(period_dirs) == 0) return(character(0))
 
-  # Filter to periods where the RSP file actually exists
   periods <- character(0)
   for (period in period_dirs) {
     expected_file <- file.path(state_dir, period,
@@ -112,15 +159,11 @@ get_available_rsp_profiles <- function(state) {
   }
 
   if (length(periods) == 0) return(character(0))
-
-  # Sort in descending order (most recent first)
   sort(periods, decreasing = TRUE)
 }
 
-# Load RSP data for a state and profile period
 load_rsp_data <- function(state, profile = "latest") {
   state <- toupper(state)
-  # If "latest" requested, find most recent profile
   if (profile == "latest") {
     available <- get_available_rsp_profiles(state)
     if (length(available) == 0) {
@@ -129,16 +172,21 @@ load_rsp_data <- function(state, profile = "latest") {
     profile <- available[1]
   }
 
-  # New hierarchical structure: domains/cfsr/data/rds/{state}/{period}/
-  state_dir <- file.path(data_dir, tolower(state), profile)
-  filename <- paste0(state, "_cfsr_profile_rsp_", profile, ".rds")
-  file_path <- file.path(state_dir, filename)
+  if (CM_DATA_SOURCE == "azure") {
+    blob_path <- paste0("rds/", tolower(state), "/", profile, "/",
+                        state, "_cfsr_profile_rsp_", profile, ".rds")
+    data <- load_rds_from_blob(blob_path)
+  } else {
+    state_dir <- file.path(data_dir, tolower(state), profile)
+    filename <- paste0(state, "_cfsr_profile_rsp_", profile, ".rds")
+    file_path <- file.path(state_dir, filename)
 
-  if (!file.exists(file_path)) {
-    stop("RSP data file not found: ", file_path)
+    if (!file.exists(file_path)) {
+      stop("RSP data file not found: ", file_path)
+    }
+    data <- readRDS(file_path)
   }
-  data <- readRDS(file_path)
-  # Ensure period is a factor with correct chronological ordering
+
   if (!is.factor(data$period)) {
     unique_periods <- sort(unique(as.character(data$period)))
     data$period <- factor(data$period, levels = unique_periods)

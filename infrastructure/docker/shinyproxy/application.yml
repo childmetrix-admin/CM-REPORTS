@@ -1,0 +1,62 @@
+# ShinyProxy configuration for ChildMetrix
+# Manages Shiny app containers with per-user isolation
+
+proxy:
+  title: ChildMetrix Dashboards
+  hide-navbar: true
+  port: 8080
+
+  # Authentication via OpenID Connect (Azure Entra)
+  authentication: openid
+  openid:
+    auth-url: ${AZURE_AUTHORITY}/oauth2/v2.0/authorize
+    token-url: ${AZURE_AUTHORITY}/oauth2/v2.0/token
+    jwks-url: ${AZURE_AUTHORITY}/discovery/v2.0/keys
+    client-id: ${AZURE_CLIENT_ID}
+    client-secret: ${AZURE_CLIENT_SECRET}
+    roles-claim: roles
+
+  # Container backend (Docker or Kubernetes)
+  container-backend: docker
+
+  # Shiny app definitions
+  specs:
+    - id: cfsr-measures
+      display-name: CFSR Measures Dashboard
+      container-image: ${ACR_LOGIN_SERVER}/cm-app-measures:latest
+      container-cmd: ["R", "-e", "shiny::runApp('/app', host='0.0.0.0', port=3838)"]
+      container-env:
+        CM_DATA_SOURCE: azure
+        CM_REPORTS_ROOT: /app
+        AZURE_BLOB_ENDPOINT: ${AZURE_BLOB_ENDPOINT}
+        AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
+        AZURE_BLOB_CONTAINER_RAW: raw
+        AZURE_BLOB_CONTAINER_PROCESSED: processed
+      port: 3838
+      container-network: sp-net
+      access-groups: [viewer, manager, admin, super_admin]
+
+    - id: cfsr-summary
+      display-name: CFSR Performance Summary
+      container-image: ${ACR_LOGIN_SERVER}/cm-app-summary:latest
+      container-cmd: ["R", "-e", "shiny::runApp('/app', host='0.0.0.0', port=3840)"]
+      container-env:
+        CM_DATA_SOURCE: azure
+        CM_REPORTS_ROOT: /app
+        AZURE_BLOB_ENDPOINT: ${AZURE_BLOB_ENDPOINT}
+        AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
+        AZURE_BLOB_CONTAINER_RAW: raw
+        AZURE_BLOB_CONTAINER_PROCESSED: processed
+      port: 3840
+      container-network: sp-net
+      access-groups: [viewer, manager, admin, super_admin]
+
+  # Docker networking
+  docker:
+    internal-networking: true
+
+logging:
+  file:
+    name: /var/log/shinyproxy.log
+  level:
+    root: INFO

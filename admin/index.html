@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ChildMetrix Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --cmx-bg: #f9fafb;
+      --cmx-card: #ffffff;
+      --cmx-accent: #0e9ba4;
+      --cmx-accent-2: #0f4c75;
+      --cmx-text: #1f2937;
+      --cmx-muted: #64748b;
+    }
+    .tab-active { border-bottom: 2px solid var(--cmx-accent); color: var(--cmx-accent-2); font-weight: 600; }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+    .role-badge { padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+    .role-super_admin { background: #fef3c7; color: #92400e; }
+    .role-admin { background: #dbeafe; color: #1e40af; }
+    .role-manager { background: #e0e7ff; color: #3730a3; }
+    .role-viewer { background: #f3f4f6; color: #374151; }
+  </style>
+</head>
+<body class="min-h-screen bg-[var(--cmx-bg)] text-[var(--cmx-text)]">
+
+  <!-- Header -->
+  <header class="bg-white border-b px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <img src="../_assets/logo.png" alt="ChildMetrix" class="h-8" />
+      <span class="text-lg font-semibold text-[var(--cmx-accent-2)]">Admin Console</span>
+    </div>
+    <div class="flex items-center gap-3 text-sm">
+      <span id="adminUserName" class="text-[var(--cmx-muted)]"></span>
+      <a href="../app.html" class="px-3 py-1.5 hover:bg-slate-50 rounded">Back to Reports</a>
+      <a href="/" class="px-3 py-1.5 hover:bg-slate-50 rounded">Sign out</a>
+    </div>
+  </header>
+
+  <!-- Tab navigation -->
+  <nav class="bg-white border-b px-6 flex gap-0">
+    <button class="px-4 py-3 text-sm tab-active" data-tab="users" onclick="switchTab('users')">Users</button>
+    <button class="px-4 py-3 text-sm" data-tab="uploads" onclick="switchTab('uploads')">Upload History</button>
+    <button class="px-4 py-3 text-sm" data-tab="extractions" onclick="switchTab('extractions')">Extractions</button>
+    <button class="px-4 py-3 text-sm" data-tab="config" onclick="switchTab('config')">Configuration</button>
+    <button class="px-4 py-3 text-sm" data-tab="audit" onclick="switchTab('audit')">Audit Log</button>
+  </nav>
+
+  <main class="max-w-7xl mx-auto p-6">
+
+    <!-- Users Tab -->
+    <section id="tab-users">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold">User Management</h2>
+        <button onclick="showModal('addUser')" class="bg-[var(--cmx-accent)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:brightness-110">
+          + Invite User
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-4">
+        <select id="filterState" class="border rounded-lg px-3 py-2 text-sm" onchange="filterUsers()">
+          <option value="">All States</option>
+          <option value="MD">Maryland</option>
+          <option value="KY">Kentucky</option>
+        </select>
+        <select id="filterRole" class="border rounded-lg px-3 py-2 text-sm" onchange="filterUsers()">
+          <option value="">All Roles</option>
+          <option value="super_admin">Super Admin</option>
+          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
+          <option value="viewer">Viewer</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search by name or email..." class="border rounded-lg px-3 py-2 text-sm flex-1" oninput="filterUsers()" />
+      </div>
+
+      <!-- Users Table -->
+      <div class="bg-white rounded-lg border overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b">
+            <tr>
+              <th class="text-left px-4 py-3 font-medium">User</th>
+              <th class="text-left px-4 py-3 font-medium">Role</th>
+              <th class="text-left px-4 py-3 font-medium">States</th>
+              <th class="text-left px-4 py-3 font-medium">Status</th>
+              <th class="text-left px-4 py-3 font-medium">Last Login</th>
+              <th class="text-left px-4 py-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr class="border-b hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <div class="font-medium">Platform Admin</div>
+                <div class="text-xs text-[var(--cmx-muted)]">admin@childmetrix.com</div>
+              </td>
+              <td class="px-4 py-3"><span class="role-badge role-super_admin">Super Admin</span></td>
+              <td class="px-4 py-3">MD, KY</td>
+              <td class="px-4 py-3"><span class="role-badge status-active">Active</span></td>
+              <td class="px-4 py-3 text-[var(--cmx-muted)]">Today</td>
+              <td class="px-4 py-3">
+                <button class="text-blue-600 hover:underline text-xs mr-2">Edit</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-[var(--cmx-muted)] mt-2">User data is stored in Azure SQL and synced with Entra External ID.</p>
+    </section>
+
+    <!-- Upload History Tab -->
+    <section id="tab-uploads" class="hidden">
+      <h2 class="text-xl font-semibold mb-4">Upload History</h2>
+      <div class="bg-white rounded-lg border overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b">
+            <tr>
+              <th class="text-left px-4 py-3 font-medium">File</th>
+              <th class="text-left px-4 py-3 font-medium">State</th>
+              <th class="text-left px-4 py-3 font-medium">Domain</th>
+              <th class="text-left px-4 py-3 font-medium">Period</th>
+              <th class="text-left px-4 py-3 font-medium">Uploaded By</th>
+              <th class="text-left px-4 py-3 font-medium">Date</th>
+              <th class="text-left px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody id="uploadsTableBody">
+            <tr class="border-b">
+              <td colspan="7" class="px-4 py-8 text-center text-[var(--cmx-muted)]">No uploads recorded yet. Uploads will appear here once the Azure pipeline is active.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Extractions Tab -->
+    <section id="tab-extractions" class="hidden">
+      <h2 class="text-xl font-semibold mb-4">Extraction Runs</h2>
+      <div class="bg-white rounded-lg border overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b">
+            <tr>
+              <th class="text-left px-4 py-3 font-medium">State</th>
+              <th class="text-left px-4 py-3 font-medium">Period</th>
+              <th class="text-left px-4 py-3 font-medium">Source</th>
+              <th class="text-left px-4 py-3 font-medium">Trigger</th>
+              <th class="text-left px-4 py-3 font-medium">Started</th>
+              <th class="text-left px-4 py-3 font-medium">Duration</th>
+              <th class="text-left px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody id="extractionsTableBody">
+            <tr class="border-b">
+              <td colspan="7" class="px-4 py-8 text-center text-[var(--cmx-muted)]">No extractions recorded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Configuration Tab -->
+    <section id="tab-config" class="hidden">
+      <h2 class="text-xl font-semibold mb-4">Platform Configuration</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div class="bg-white rounded-lg border p-5">
+          <h3 class="font-semibold mb-3">Active States</h3>
+          <div class="space-y-2" id="stateConfig">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked disabled class="rounded" /> <span>MD - Maryland</span> <span class="text-xs text-green-600">(active)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked disabled class="rounded" /> <span>KY - Kentucky</span> <span class="text-xs text-green-600">(active)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="rounded" /> <span>MI - Michigan</span> <span class="text-xs text-[var(--cmx-muted)]">(placeholder)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="rounded" /> <span>NC - North Carolina</span> <span class="text-xs text-[var(--cmx-muted)]">(placeholder)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg border p-5">
+          <h3 class="font-semibold mb-3">Active Domains</h3>
+          <div class="space-y-2" id="domainConfig">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked disabled class="rounded" /> <span>CFSR</span> <span class="text-xs text-green-600">(implemented)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="rounded" /> <span>CPS</span> <span class="text-xs text-[var(--cmx-muted)]">(planned)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="rounded" /> <span>In-Home Services</span> <span class="text-xs text-[var(--cmx-muted)]">(planned)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="rounded" /> <span>Out-of-Home Care</span> <span class="text-xs text-[var(--cmx-muted)]">(planned)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="rounded" /> <span>Community</span> <span class="text-xs text-[var(--cmx-muted)]">(planned)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg border p-5">
+          <h3 class="font-semibold mb-3">Authentication Settings</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span>MFA Required</span>
+              <span class="font-medium text-green-600">Yes</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Session Timeout</span>
+              <span class="font-medium">8 hours</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Auth Provider</span>
+              <span class="font-medium">Azure Entra External ID</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg border p-5">
+          <h3 class="font-semibold mb-3">Upload Settings</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span>Max File Size</span>
+              <span class="font-medium">100 MB</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Allowed Extensions</span>
+              <span class="font-medium">.pdf, .xlsx, .xlsm, .csv</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Storage</span>
+              <span class="font-medium">Azure Blob Storage</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Audit Log Tab -->
+    <section id="tab-audit" class="hidden">
+      <h2 class="text-xl font-semibold mb-4">Audit Log</h2>
+      <div class="bg-white rounded-lg border overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b">
+            <tr>
+              <th class="text-left px-4 py-3 font-medium">Time</th>
+              <th class="text-left px-4 py-3 font-medium">User</th>
+              <th class="text-left px-4 py-3 font-medium">Action</th>
+              <th class="text-left px-4 py-3 font-medium">Details</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <tr class="border-b">
+              <td colspan="4" class="px-4 py-8 text-center text-[var(--cmx-muted)]">Audit log entries will appear here once Azure SQL is connected.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add User Modal -->
+  <div id="modal-addUser" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+      <h3 class="text-lg font-semibold mb-4">Invite New User</h3>
+      <form id="addUserForm" class="space-y-4">
+        <div>
+          <label class="block text-sm mb-1">Email Address</label>
+          <input type="email" name="email" required class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="user@agency.gov" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Display Name</label>
+          <input type="text" name="displayName" required class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Jane Smith" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Role</label>
+          <select name="role" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="viewer">Viewer - View reports only</option>
+            <option value="manager">Manager - View reports + upload data</option>
+            <option value="admin">Admin - Manage users for assigned states</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Assign States</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="states" value="MD" /> MD</label>
+            <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="states" value="KY" /> KY</label>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="hideModal('addUser')" class="px-4 py-2 text-sm rounded-lg border hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm rounded-lg bg-[var(--cmx-accent)] text-white hover:brightness-110">Send Invitation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+  function switchTab(tabName) {
+    document.querySelectorAll('[id^="tab-"]').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('tab-active'));
+    document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('tab-active');
+  }
+
+  function showModal(name) {
+    document.getElementById(`modal-${name}`).classList.remove('hidden');
+  }
+
+  function hideModal(name) {
+    document.getElementById(`modal-${name}`).classList.add('hidden');
+  }
+
+  function filterUsers() {
+    // Placeholder - will query Azure SQL API when connected
+  }
+
+  document.getElementById('addUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const email = formData.get('email');
+    const name = formData.get('displayName');
+    const role = formData.get('role');
+    const states = formData.getAll('states');
+
+    // In production, this POSTs to Azure Function API
+    alert(`Invitation will be sent to ${email} as ${role} for states: ${states.join(', ')}\n\nThis requires the Azure Function API to be deployed.`);
+    hideModal('addUser');
+  });
+
+  // Load admin user info from Azure auth
+  (async function() {
+    try {
+      const res = await fetch('/.auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.clientPrincipal) {
+          document.getElementById('adminUserName').textContent = data.clientPrincipal.userDetails;
+        }
+      }
+    } catch (e) {
+      document.getElementById('adminUserName').textContent = 'Local Dev';
+    }
+  })();
+</script>
+</body>
+</html>

@@ -36,8 +36,6 @@ if (!require("sparkline", quietly = TRUE)) {
 # CONFIGURATION ----
 #####################################
 
-# Data directory - dynamically detected from monorepo root
-# Detect monorepo root by finding CLAUDE.md or .git
 detect_monorepo_root <- function() {
   current <- getwd()
   while (current != dirname(current)) {
@@ -47,13 +45,11 @@ detect_monorepo_root <- function() {
     }
     current <- dirname(current)
   }
-  # Fallback to environment variable
   root <- Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports")
   return(root)
 }
 monorepo_root <- detect_monorepo_root()
 
-# Add resource path for shared CSS files
 shared_path <- file.path(monorepo_root, "shared")
 if (dir.exists(shared_path)) {
   addResourcePath("cm-shared", shared_path)
@@ -63,6 +59,49 @@ if (dir.exists(shared_path)) {
 }
 
 data_dir <- file.path(monorepo_root, "domains/cfsr/data/rds")
+
+#####################################
+# DATA SOURCE CONFIGURATION ----
+#####################################
+
+CM_DATA_SOURCE <- Sys.getenv("CM_DATA_SOURCE", "sharefile")
+
+if (CM_DATA_SOURCE == "azure") {
+  AZURE_BLOB_ENDPOINT <- Sys.getenv("AZURE_BLOB_ENDPOINT", "")
+  AZURE_STORAGE_KEY <- Sys.getenv("AZURE_STORAGE_KEY", "")
+  AZURE_BLOB_CONTAINER_PROCESSED <- Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
+
+  if (!requireNamespace("AzureStor", quietly = TRUE)) {
+    stop("AzureStor package required for Azure mode")
+  }
+
+  .blob_endpoint <- NULL
+  get_blob_ep <- function() {
+    if (is.null(.blob_endpoint)) {
+      .blob_endpoint <<- AzureStor::blob_endpoint(AZURE_BLOB_ENDPOINT, key = AZURE_STORAGE_KEY)
+    }
+    .blob_endpoint
+  }
+
+  load_rds_from_blob <- function(blob_path) {
+    ep <- get_blob_ep()
+    container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
+    local_tmp <- file.path(tempdir(), basename(blob_path))
+    AzureStor::download_blob(container, blob_path, local_tmp, overwrite = TRUE)
+    data <- readRDS(local_tmp)
+    unlink(local_tmp)
+    data
+  }
+
+  list_processed_blobs <- function(prefix = "") {
+    ep <- get_blob_ep()
+    container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
+    blobs <- AzureStor::list_blobs(container, prefix = prefix)
+    blobs$name
+  }
+
+  message("app_summary: Azure Blob mode enabled")
+}
 
 # State code mapping
 state_codes <- c(
@@ -91,19 +130,23 @@ state_codes <- c(
 get_available_observed_profiles <- function(state) {
   state <- toupper(state)
 
-  # New hierarchical structure: cfsr/data/rds/{state}/{period}/
-  state_dir <- file.path(data_dir, tolower(state))
+  if (CM_DATA_SOURCE == "azure") {
+    prefix <- paste0("rds/", tolower(state), "/")
+    blobs <- list_processed_blobs(prefix)
+    pattern <- paste0(state, "_cfsr_profile_observed_(\\d{4}_\\d{2})\\.rds$")
+    matches <- regmatches(blobs, regexpr(pattern, blobs))
+    periods <- sub(paste0(state, "_cfsr_profile_observed_"), "", sub("\\.rds$", "", matches))
+    if (length(periods) == 0) return(character(0))
+    return(sort(periods, decreasing = TRUE))
+  }
 
-  # Check if state directory exists
+  state_dir <- file.path(data_dir, tolower(state))
   if (!dir.exists(state_dir)) return(character(0))
 
-  # Get all period subdirectories (e.g., "2025_02", "2024_08")
   period_dirs <- list.dirs(state_dir, full.names = FALSE, recursive = FALSE)
   period_dirs <- period_dirs[grepl("^[0-9]{4}_[0-9]{2}$", period_dirs)]
-
   if (length(period_dirs) == 0) return(character(0))
 
-  # Filter to periods where the observed file actually exists
   periods <- character(0)
   for (period in period_dirs) {
     expected_file <- file.path(state_dir, period,
@@ -114,8 +157,6 @@ get_available_observed_profiles <- function(state) {
   }
 
   if (length(periods) == 0) return(character(0))
-
-  # Sort in descending order (most recent first)
   sort(periods, decreasing = TRUE)
 }
 
@@ -126,7 +167,6 @@ get_available_observed_profiles <- function(state) {
 load_observed_data <- function(state, profile = "latest") {
   state <- toupper(state)
 
-  # If "latest" requested, find most recent profile
   if (profile == "latest") {
     available <- get_available_observed_profiles(state)
     if (length(available) == 0) {
@@ -135,7 +175,12 @@ load_observed_data <- function(state, profile = "latest") {
     profile <- available[1]
   }
 
-  # New hierarchical structure: cfsr/data/rds/{state}/{period}/
+  if (CM_DATA_SOURCE == "azure") {
+    blob_path <- paste0("rds/", tolower(state), "/", profile, "/",
+                        state, "_cfsr_profile_observed_", profile, ".rds")
+    return(load_rds_from_blob(blob_path))
+  }
+
   state_dir <- file.path(data_dir, tolower(state), profile)
   filename <- paste0(state, "_cfsr_profile_observed_", profile, ".rds")
   file_path <- file.path(state_dir, filename)

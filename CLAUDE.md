@@ -309,18 +309,94 @@ This repository was consolidated in January 2026 to merge the formerly separate 
 - Simplified path management
 - Self-contained domains
 
+## Azure Cloud Infrastructure
+
+The platform is designed for Azure deployment with the following architecture:
+
+### Infrastructure-as-Code
+
+All Azure resources are defined in Bicep templates under `infrastructure/azure/`:
+
+- **`main.bicep`** - Provisions: Storage Account, SQL Database, Key Vault, Container Registry, Container Apps Environment, Static Web App, Log Analytics
+- **`parameters.json`** - Environment-specific parameters
+- **`deploy.ps1`** - End-to-end deployment script
+- **`setup-entra.ps1`** - Azure Entra External ID configuration (roles, user flows)
+- **`migrate-sharefile.ps1`** - Mirror ShareFile content to Azure Blob Storage
+- **`validate-parity.ps1`** - Verify Azure Blob matches ShareFile before decommission
+
+### Database Schema
+
+`infrastructure/sql/schema.sql` defines tables for:
+- `cm_users` - User accounts (synced with Entra External ID)
+- `cm_user_states` - State access assignments per user
+- `cm_uploads` - Upload tracking with processing status
+- `cm_extractions` - Extraction pipeline run logs
+- `cm_reports` - Report catalog (state/domain/period)
+- `cm_audit_log` - All significant actions logged
+- `cm_config` - Feature flags and platform configuration
+
+### Docker Containers
+
+Under `infrastructure/docker/`:
+- **`extraction/Dockerfile`** - R extraction pipeline container
+- **`shiny/app_measures/Dockerfile`** - CFSR Measures Shiny app
+- **`shiny/app_summary/Dockerfile`** - CFSR Summary Shiny app
+- **`shinyproxy/Dockerfile`** + **`application.yml`** - ShinyProxy for managing Shiny containers
+
+### Dual-Mode Data Source
+
+R code supports both ShareFile and Azure Blob via `CM_DATA_SOURCE` env var:
+
+```r
+# Set CM_DATA_SOURCE=azure to use Azure Blob, or =sharefile (default) for S: drive
+CM_DATA_SOURCE <- Sys.getenv("CM_DATA_SOURCE", "sharefile")
+```
+
+Key files updated for dual-mode:
+- `domains/cfsr/extraction/paths.R` - `save_rds_data()` / `load_rds_data()` / `build_rds_path()`
+- `shared/utils/file_discovery.R` - `discover_states()` / `discover_periods()` / `discover_sources()`
+- `domains/cfsr/apps/*/global.R` - Data loading functions
+
+### Authentication
+
+- **Azure Entra External ID** handles user auth (MFA, RBAC)
+- **Roles**: `viewer`, `manager`, `admin`, `super_admin`
+- **State isolation**: Users only access states assigned to them
+- Landing page (`index.html`) auto-detects Azure vs local mode
+- `staticwebapp.config.json` enforces route-level auth
+
+### Admin Console
+
+`admin/index.html` provides:
+- User management (invite, edit roles, assign states)
+- Upload history tracking
+- Extraction run monitoring
+- Platform configuration (states, domains, settings)
+- Audit log viewer
+
+### Upload Portal
+
+`shared/upload/index.html` provides:
+- State/domain/period-aware file upload
+- Drag-and-drop with file validation
+- Azure Blob upload via Azure Function API
+- Auto-trigger extraction pipeline on upload
+
 ## Notes
 
 - **Static + Dynamic Hybrid**: Static HTML site with embedded Shiny apps for interactive dashboards
 - **No JavaScript framework** - Vanilla JS for navigation and UI interactions
 - **Mobile-first responsive** - Tailwind utilities + custom media queries for sidebar
 - **Accessibility**: Form inputs use proper labels, buttons have aria-labels
-- **Preview mode**: Current login form is non-functional UI preview; production will integrate real auth
+- **Azure auth integration**: Landing page supports both preview (local) and Azure Entra (production) login
 - **Multi-app architecture**: Shiny apps run on separate ports and are embedded via iframes for modularity
 - **Self-contained**: No external R utility dependencies (utilities-core functions internalized)
+- **Configurable Shiny URLs**: Wrapper pages support `shiny_base` param for Azure-hosted Shiny endpoints
 
 ## Documentation
 
 - **[README.md](README.md)** - Quick-start guide for humans
 - **[docs/PRD.md](docs/PRD.md)** - Strategic planning document (vision, requirements, roadmap)
+- **[.env.example](.env.example)** - All environment variables documented
+- **[infrastructure/sql/schema.sql](infrastructure/sql/schema.sql)** - Database schema
 - **[states/md/README.md](states/md/README.md)** - Maryland-specific notes

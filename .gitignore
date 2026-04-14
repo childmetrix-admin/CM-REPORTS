@@ -17,3 +17,12 @@ cfsr/data/csv/
 cfsr/data/rds/
 domains/cfsr/data/csv/
 domains/cfsr/data/rds/
+
+# Credentials and secrets (never commit)
+Credentials*.txt
+credentials*.txt
+
+# Azure deployment secrets (never commit)
+infrastructure/azure/entra-config-*.json
+infrastructure/azure/*.tfstate
+infrastructure/azure/*.tfstate.backup

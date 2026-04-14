@@ -146,25 +146,32 @@
     const loading = document.getElementById('loadingIndicator');
     const error = document.getElementById('errorMessage');
 
-    // Measures app port
-    const MEASURES_PORT = 3838;
+    // Shiny base URL - configurable for Azure deployment
+    const SHINY_BASE_URL = (function() {
+      const params = new URLSearchParams(window.location.search);
+      const base = params.get('shiny_base');
+      if (base) return base;
 
-    // Get state from URL query parameter (passed from parent)
+      if (window.CM_SHINY_CONFIG && window.CM_SHINY_CONFIG.measuresUrl) {
+        return window.CM_SHINY_CONFIG.measuresUrl;
+      }
+
+      return `http://localhost:3838`;
+    })();
+
     function getStateFromURL() {
       const params = new URLSearchParams(window.location.search);
       return params.get('state') || 'MD';
     }
 
-    // Get profile period from URL or use default
     function getProfileFromURL() {
       const params = new URLSearchParams(window.location.search);
       return params.get('profile') || 'latest';
     }
 
-    // Check if Shiny server is running
     async function checkShinyServer() {
       try {
-        const response = await fetch(`http://localhost:${MEASURES_PORT}/`, {
+        const response = await fetch(`${SHINY_BASE_URL}/`, {
           method: 'HEAD',
           mode: 'no-cors'
         });
@@ -174,25 +181,21 @@
           const img = new Image();
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = `http://localhost:${MEASURES_PORT}/favicon.ico?` + Date.now();
+          img.src = `${SHINY_BASE_URL}/favicon.ico?` + Date.now();
           setTimeout(() => resolve(false), 2000);
         });
       }
     }
 
-    // Load the Shiny app with state parameter
     async function loadShinyApp(state, profile) {
       loading.classList.remove('hidden');
       error.classList.add('hidden');
       iframe.classList.add('hidden');
 
-      // Check if server is running
       const serverRunning = await checkShinyServer();
 
       if (serverRunning) {
-        // Server is running, load the app
-        // No view parameter needed - app_measures handles navigation internally via sidebar
-        const appURL = `http://localhost:${MEASURES_PORT}/?state=${state}&profile=${profile}`;
+        const appURL = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
         iframe.src = appURL;
 
         iframe.onload = function() {
@@ -200,39 +203,37 @@
           iframe.classList.remove('hidden');
         };
 
-        // Fallback timeout
         setTimeout(function() {
           if (!iframe.classList.contains('hidden')) return;
           loading.classList.add('hidden');
           iframe.classList.remove('hidden');
         }, 3000);
       } else {
-        // Server not running, show instructions
         loading.classList.add('hidden');
         error.classList.remove('hidden');
       }
     }
 
-    // Initialize on page load
     window.addEventListener('DOMContentLoaded', function() {
       const state = getStateFromURL();
       const profile = getProfileFromURL();
 
-      // Update direct link with current state
       const directLink = document.getElementById('directLink');
       if (directLink) {
-        directLink.href = `http://localhost:${MEASURES_PORT}/?state=${state}&profile=${profile}`;
+        directLink.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
       }
 
       loadShinyApp(state, profile);
     });
 
-    // Listen for messages from parent window
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'stateChange') {
         const newState = event.data.state;
         const profile = getProfileFromURL();
         loadShinyApp(newState, profile);
+      }
+      if (event.data && event.data.type === 'shinyConfig') {
+        window.CM_SHINY_CONFIG = event.data.config;
       }
     });
   </script>

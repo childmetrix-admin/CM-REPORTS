@@ -1,0 +1,71 @@
+{
+  "routes": [
+    {
+      "route": "/admin/*",
+      "allowedRoles": ["admin", "super_admin"]
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/upload/*",
+      "allowedRoles": ["manager", "admin", "super_admin"]
+    },
+    {
+      "route": "/app.html",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/states/*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/shared/*",
+      "allowedRoles": ["authenticated"]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/aad",
+      "statusCode": 302
+    },
+    "403": {
+      "rewrite": "/403.html",
+      "statusCode": 403
+    }
+  },
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+          "clientIdSettingName": "AZURE_CLIENT_ID",
+          "clientSecretSettingName": "AZURE_CLIENT_SECRET"
+        }
+      }
+    }
+  },
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/_assets/*",
+      "/shared/*",
+      "/states/*",
+      "*.css",
+      "*.js",
+      "*.png",
+      "*.jpg",
+      "*.ico"
+    ]
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; frame-src 'self' https://*.azurecontainerapps.io",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  }
+}
