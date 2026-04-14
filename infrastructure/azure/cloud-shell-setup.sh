@@ -6,8 +6,8 @@
 # Prerequisites:
 #   1. Open https://shell.azure.com in your browser
 #   2. Select "Bash" (not PowerShell)
-#   3. Clone the repo: git clone https://github.com/Kalyan1210/cm-reports.git
-#   4. cd cm-reports
+#   3. Clone the repo: git clone https://github.com/childmetrix-admin/CM-REPORTS.git
+#   4. cd CM-REPORTS
 #   5. chmod +x infrastructure/azure/cloud-shell-setup.sh
 #   6. Run phases one at a time (see usage below)
 #
@@ -546,8 +546,8 @@ case "${1:-help}" in
         echo "Before starting:"
         echo "  1. Open https://shell.azure.com"
         echo "  2. Select Bash"
-        echo "  3. git clone https://github.com/Kalyan1210/cm-reports.git"
-        echo "  4. cd cm-reports"
+        echo "  3. git clone https://github.com/childmetrix-admin/CM-REPORTS.git"
+        echo "  4. cd CM-REPORTS"
         echo "  5. chmod +x infrastructure/azure/cloud-shell-setup.sh"
         ;;
 esac
