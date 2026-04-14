@@ -1,0 +1,80 @@
+name: Build and Push Docker Images to ACR
+
+on:
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: acrchildmetrixprod.azurecr.io
+
+jobs:
+  build-shinyproxy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and push ShinyProxy
+        uses: docker/build-push-action@v6
+        with:
+          context: infrastructure/docker/shinyproxy/
+          file: infrastructure/docker/shinyproxy/Dockerfile
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/cm-shinyproxy:latest
+
+  build-app-measures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and push app_measures
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/shiny/app_measures/Dockerfile
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/cm-app-measures:latest
+
+  build-app-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and push app_summary
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/shiny/app_summary/Dockerfile
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/cm-app-summary:latest
+
+  build-extraction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and push extraction
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/extraction/Dockerfile
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/cm-extraction:latest
