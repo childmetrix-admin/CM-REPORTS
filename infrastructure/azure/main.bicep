@@ -21,9 +21,6 @@ param sqlAdminUser string
 @secure()
 param sqlAdminPassword string
 
-@description('Custom domain for the platform (optional)')
-param customDomain string = ''
-
 // --- Naming convention ---
 var suffix = '${baseName}-${environment}'
 var storageName = replace('st${baseName}${environment}', '-', '')
@@ -92,7 +89,7 @@ resource processedContainer 'Microsoft.Storage/storageAccounts/blobServices/cont
 }
 
 // --- Azure SQL Database ---
-resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
+resource sqlServer 'Microsoft.Sql/servers@2021-11-01' = {
   name: sqlServerName
   location: location
   properties: {
@@ -104,7 +101,7 @@ resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
   }
 }
 
-resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-preview' = {
+resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2021-11-01' = {
   parent: sqlServer
   name: 'AllowAzureServices'
   properties: {
@@ -113,7 +110,7 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-previe
   }
 }
 
-resource sqlDatabase 'Microsoft.Sql/databases@2023-05-01-preview' = {
+resource sqlDatabase 'Microsoft.Sql/databases@2021-11-01' = {
   parent: sqlServer
   name: sqlDbName
   location: location
@@ -124,7 +121,7 @@ resource sqlDatabase 'Microsoft.Sql/databases@2023-05-01-preview' = {
   }
   properties: {
     collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: 2147483648 // 2 GB
+    maxSizeBytes: 2147483648
   }
 }
 
