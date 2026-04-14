@@ -1,7 +1,7 @@
 # ShinyProxy - Manages Shiny app containers with authentication
 # Build: docker build -t cm-shinyproxy -f infrastructure/docker/shinyproxy/Dockerfile infrastructure/docker/shinyproxy/
 
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jre-jammy
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
