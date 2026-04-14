@@ -111,8 +111,7 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2021-11-01' = {
 }
 
 resource sqlDatabase 'Microsoft.Sql/databases@2021-11-01' = {
-  parent: sqlServer
-  name: sqlDbName
+  name: '${sqlServerName}/${sqlDbName}'
   location: location
   sku: {
     name: 'Basic'
@@ -123,6 +122,7 @@ resource sqlDatabase 'Microsoft.Sql/databases@2021-11-01' = {
     collation: 'SQL_Latin1_General_CP1_CI_AS'
     maxSizeBytes: 2147483648
   }
+  dependsOn: [sqlServer]
 }
 
 // --- Azure Key Vault ---
