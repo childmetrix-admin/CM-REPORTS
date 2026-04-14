@@ -110,7 +110,7 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2021-11-01' = {
   }
 }
 
-resource sqlDatabase 'Microsoft.Sql/databases@2021-11-01' = {
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2021-11-01' = {
   name: '${sqlServerName}/${sqlDbName}'
   location: location
   sku: {
