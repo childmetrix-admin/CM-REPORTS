@@ -66,7 +66,8 @@ if (!dir.exists(app_measures_dir)) {
 #####################################
 
 cat("========================================\n")
-cat("Launching CFSR Shiny Apps\n")
+cat("Launching CFSR Shiny Apps (local development only)\n")
+cat("Production: Azure Container Apps (see infrastructure/docker)\n")
 cat("========================================\n\n")
 
 # --------------------------------------
@@ -75,7 +76,7 @@ cat("========================================\n\n")
 
 cat("Starting app_summary on port 3840 (background)...\n")
 cat("  Directory: ", app_summary_dir, "\n")
-cat("  URL: http://localhost:3840\n\n")
+cat("  Local URL: http://localhost:3840\n\n")
 
 # Start app_summary in background process
 summary_process <- r_bg(
@@ -115,7 +116,7 @@ Sys.sleep(2)
 
 cat("Starting app_measures on port 3838 (foreground)...\n")
 cat("  Directory: ", app_measures_dir, "\n")
-cat("  URL: http://localhost:3838\n\n")
+cat("  Local URL: http://localhost:3838\n\n")
 
 cat("✓ Both apps running. Access via main app.html portal.\n")
 cat("  To stop: Press Ctrl+C or close R console\n\n")

@@ -13,6 +13,20 @@ library(officer)   # PowerPoint manipulation
 library(tidyverse) # Data manipulation
 library(glue)      # String interpolation
 
+# Public dashboard URLs for slide placeholders (override with CM_PUBLIC_*_URL in .env)
+.cfsr_public_summary_base <- function() {
+  sub("/$", "", Sys.getenv(
+    "CM_PUBLIC_SUMMARY_URL",
+    "https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io"
+  ))
+}
+.cfsr_public_measures_base <- function() {
+  sub("/$", "", Sys.getenv(
+    "CM_PUBLIC_MEASURES_URL",
+    "https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io"
+  ))
+}
+
 # Source shared utilities
 source("shared/utils/state_utils.R")
 
@@ -260,7 +274,7 @@ add_summary_slides <- function(ppt, data, state, period) {
                  location = ph_location_label(ph_label = "Title 1"))
   ppt <- ph_with(ppt,
                  value = glue("[INSERT SCREENSHOT: Summary App]\n\n",
-                              "URL: http://localhost:3840/?state={state}&profile={period}"),
+                              "URL: {.cfsr_public_summary_base()}/?state={toupper(state)}&profile={period}"),
                  location = ph_location_label(ph_label = "Picture Placeholder 2"))
 
   # RSP overview placeholder (Side Panel layout)
@@ -269,7 +283,7 @@ add_summary_slides <- function(ppt, data, state, period) {
                  location = ph_location_label(ph_label = "Title 1"))
   ppt <- ph_with(ppt,
                  value = glue("[INSERT SCREENSHOT: RSP KPI Cards]\n\n",
-                              "URL: http://localhost:3840/rsp?state={state}&profile={period}"),
+                              "URL: {.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period}&tab=overview&overview_tab=rsp"),
                  location = ph_location_label(ph_label = "Picture Placeholder 2"))
 
   # Observed overview placeholder (Side Panel layout)
@@ -278,7 +292,7 @@ add_summary_slides <- function(ppt, data, state, period) {
                  location = ph_location_label(ph_label = "Title 1"))
   ppt <- ph_with(ppt,
                  value = glue("[INSERT SCREENSHOT: Observed KPI Cards]\n\n",
-                              "URL: http://localhost:3840/observed?state={state}&profile={period}"),
+                              "URL: {.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period}&tab=overview&overview_tab=obs"),
                  location = ph_location_label(ph_label = "Picture Placeholder 2"))
 
   return(ppt)
@@ -329,10 +343,9 @@ add_indicator_slides <- function(ppt, data, state, period) {
                    location = ph_location_label(ph_label = "Title 1"))
 
     # Add screenshot placeholder (picture on right)
-    indicator_encoded <- URLencode(indicator_name, reserved = TRUE)
     ppt <- ph_with(ppt,
                    value = glue("[INSERT SCREENSHOT: {indicator_name} - By State chart]\n\n",
-                                "URL: http://localhost:3840/measures?indicator={indicator_encoded}&state={state}&profile={period}"),
+                                "URL: {.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period} (open this indicator in the Measures app sidebar)"),
                    location = ph_location_label(ph_label = "Picture Placeholder 2"))
 
     # Generate and add talking points (body content on left panel)

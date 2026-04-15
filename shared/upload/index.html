@@ -292,11 +292,12 @@
     uploadSection.classList.add('hidden');
     progressSection.classList.remove('hidden');
 
-    // In production, this uploads to Azure Blob via Azure Function API
-    // API endpoint: POST /api/upload?state={state}&domain={domain}&period={period}
-    const apiBase = window.location.hostname.includes('localhost')
-      ? 'http://localhost:7071/api'
-      : '/api';
+    // Azure Functions (local): http://localhost:7071/api — SWA / production: same-origin /api
+    const isLocalDev = (function () {
+      const h = window.location.hostname || '';
+      return h === 'localhost' || h === '127.0.0.1';
+    })();
+    const apiBase = isLocalDev ? 'http://localhost:7071/api' : '/api';
 
     let uploaded = 0;
     for (const file of selectedFiles) {
@@ -320,7 +321,7 @@
         progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;
       } catch (err) {
         // For local dev, simulate success
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (isLocalDev) {
           await new Promise(r => setTimeout(r, 500));
           uploaded++;
           progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;

@@ -12,7 +12,7 @@ Write-Host "All R processes killed." -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "1. Open RStudio or R console"
-Write-Host "2. Run: source('D:/repo_childmetrix/cm-reports/shared/cfsr/launch_cfsr_dashboard.R')"
-Write-Host "3. Wait for all 4 apps to start (watch for messages)"
-Write-Host "4. In browser, press Ctrl+Shift+R to hard refresh test_navigation.html"
+Write-Host "2. From the cm-reports repo root in R, run: source('domains/cfsr/launch_cfsr_apps.R')"
+Write-Host "3. Wait for both apps to start (see console messages)"
+Write-Host "4. Open app.html with ?state= and test CFSR tabs; hard-refresh after code changes"
 Write-Host ""

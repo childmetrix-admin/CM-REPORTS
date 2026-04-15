@@ -19,7 +19,8 @@ The PowerPoint generation script creates slides with screenshot placeholders. Yo
 Run the extraction workflow to generate the PowerPoint file with screenshot placeholders:
 
 ```r
-# In D:\repo_childmetrix\cm-reports\domains\cfsr\extraction\run.R:
+# From the cm-reports repo root in R:
+source("domains/cfsr/extraction/run_profile.R")
 
 # For a specific state/period:
 run_profile(state = "md", period = "2025_02", source = "all")
@@ -34,20 +35,23 @@ run_profile(source = "all")
 
 ---
 
-## Step 2: Launch CFSR Shiny Apps
+## Step 2: Open the dashboards (production or local)
 
-The apps must be running locally to capture screenshots.
+**Production (Azure Container Apps)** — use these bases for screenshots when capturing against live environments (override via `CM_PUBLIC_SUMMARY_URL` / `CM_PUBLIC_MEASURES_URL` in `.env` if needed):
+
+- **Summary:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io`
+- **Measures:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io`
+
+**Local development** — run from R:
 
 ```r
-# In R console:
 source("domains/cfsr/launch_cfsr_apps.R")
 ```
 
-This launches two apps:
-- **CFSR Measures app:** http://localhost:3838 (port may vary)
-- **CFSR Summary app:** http://localhost:3840 (port may vary)
+This launches:
 
-**Note the actual port numbers** displayed in the console - they may differ if the default ports are in use.
+- **Measures:** `http://localhost:3838` (default; console shows if different)
+- **Summary:** `http://localhost:3840`
 
 ---
 
@@ -75,8 +79,9 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 
 #### 1. Summary App (Slide 4)
 
-**URL:** `http://localhost:3840/?state={STATE}&profile={PERIOD}`
-**Example:** `http://localhost:3840/?state=md&profile=2025_02`
+**Production URL:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state={STATE}&profile={PERIOD}`  
+**Example:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02`  
+**Local URL:** `http://localhost:3840/?state=MD&profile=2025_02`
 
 **What to capture:**
 - Full page view of the summary app
@@ -93,8 +98,10 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 
 #### 2. RSP Overview (Slide 5)
 
-**URL:** `http://localhost:3840/rsp?state={STATE}&profile={PERIOD}`
-**Example:** `http://localhost:3840/rsp?state=md&profile=2025_02`
+**Production URL (Measures app, Overview → Risk Standardized Performance):**  
+`https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state={STATE}&profile={PERIOD}&tab=overview&overview_tab=rsp`  
+**Example:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02&tab=overview&overview_tab=rsp`  
+**Local:** `http://localhost:3838/?state=MD&profile=2025_02&tab=overview&overview_tab=rsp`
 
 **What to capture:**
 - KPI cards section only (not the full page)
@@ -109,8 +116,10 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 
 #### 3. Observed Overview (Slide 6)
 
-**URL:** `http://localhost:3840/observed?state={STATE}&profile={PERIOD}`
-**Example:** `http://localhost:3840/observed?state=md&profile=2025_02`
+**Production URL (Measures app, Overview → Observed Performance):**  
+`https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state={STATE}&profile={PERIOD}&tab=overview&overview_tab=obs`  
+**Example:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02&tab=overview&overview_tab=obs`  
+**Local:** `http://localhost:3838/?state=MD&profile=2025_02&tab=overview&overview_tab=obs`
 
 **What to capture:**
 - KPI cards section only
@@ -125,41 +134,25 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 
 #### 4-11. Individual Indicator Charts (Slides 8-15)
 
-**URL pattern:** `http://localhost:3840/measures?indicator={INDICATOR_NAME}&state={STATE}&profile={PERIOD}`
+Open the **Measures** app, set `state` and `profile` in the URL, then use the **left sidebar** to open each indicator (Entry rate, Maltreatment in care, etc.). Deep links use `?tab=obs_*` (see `app_measures` `tabName` values).
 
-**For each of the 8 indicators:**
+**Production base:**  
+`https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02`
 
-1. **Foster care entry rate**
-   - URL: `http://localhost:3840/measures?indicator=Foster%20care%20entry%20rate&state=md&profile=2025_02`
-   - Filename: `md_entry_rate_2025_02.png`
+**Example deep links (production):**
 
-2. **Maltreatment in care**
-   - URL: `http://localhost:3840/measures?indicator=Maltreatment%20in%20care&state=md&profile=2025_02`
-   - Filename: `md_maltreatment_in_care_2025_02.png`
+1. **Foster care entry rate** — add `&tab=obs_entry_rate` to the base URL above.
+2. **Maltreatment in care** — `&tab=obs_maltreatment`
+3. **Maltreatment recurrence** — `&tab=obs_recurrence`
+4. **Permanency in 12 months (entries)** — `&tab=obs_perm12_entries`
+5. **Permanency (12-23 months)** — `&tab=obs_perm12_12_23`
+6. **Permanency (24+ months)** — `&tab=obs_perm12_24`
+7. **Reentry** — `&tab=obs_reentry`
+8. **Placement stability** — `&tab=obs_placement`
 
-3. **Maltreatment recurrence**
-   - URL: `http://localhost:3840/measures?indicator=Maltreatment%20recurrence%20within%2012%20months&state=md&profile=2025_02`
-   - Filename: `md_maltreatment_recurrence_2025_02.png`
+**Local:** same query parameters against `http://localhost:3838/`.
 
-4. **Permanency in 12 months (entries)**
-   - URL: `http://localhost:3840/measures?indicator=Permanency%20in%2012%20months%20%28entries%29&state=md&profile=2025_02`
-   - Filename: `md_perm_12mo_entries_2025_02.png`
-
-5. **Permanency in 12 months (12-23 months)**
-   - URL: `http://localhost:3840/measures?indicator=Permanency%20in%2012%20months%20%2812-23%20months%29&state=md&profile=2025_02`
-   - Filename: `md_perm_12mo_12_23_2025_02.png`
-
-6. **Permanency in 12 months (24+ months)**
-   - URL: `http://localhost:3840/measures?indicator=Permanency%20in%2012%20months%20%2824%2B%20months%29&state=md&profile=2025_02`
-   - Filename: `md_perm_12mo_24plus_2025_02.png`
-
-7. **Reentry to foster care**
-   - URL: `http://localhost:3840/measures?indicator=Reentry%20to%20foster%20care%20within%2012%20months&state=md&profile=2025_02`
-   - Filename: `md_reentry_2025_02.png`
-
-8. **Placement stability**
-   - URL: `http://localhost:3840/measures?indicator=Placement%20stability&state=md&profile=2025_02`
-   - Filename: `md_placement_stability_2025_02.png`
+**Filenames (examples):** `md_entry_rate_2025_02.png`, `md_maltreatment_in_care_2025_02.png`, etc.
 
 **What to capture for each:**
 - The "By State" horizontal bar chart
