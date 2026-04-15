@@ -3,11 +3,16 @@
 # Consolidates 3 CFSR apps: national (state comparisons), rsp (KPI cards), observed (KPI cards + details)
 # Navigation is built into the app sidebar (no external HTML dependencies)
 
-# Load required packages explicitly (global.R also loads these, but we need them immediately)
-library(shiny)
-library(shinydashboard)
-
-# NOTE: global.R is sourced automatically by Shiny and loads additional packages/data
+# Shiny sources app.R into a dedicated environment; objects from global.R may live only in
+# .GlobalEnv and not be visible when building `ui`. Source global.R into THIS env first so
+# indicator_detail_ui / server helpers exist (packages + modules are loaded inside global.R).
+gf <- file.path(Sys.getenv("CM_REPORTS_ROOT", "/app"), "global.R")
+if (file.exists(gf)) {
+  sys.source(gf, envir = environment(), keep.source = FALSE)
+} else {
+  library(shiny)
+  library(shinydashboard)
+}
 
 #####################################
 # HELPER FUNCTIONS (APP-SPECIFIC) ----
