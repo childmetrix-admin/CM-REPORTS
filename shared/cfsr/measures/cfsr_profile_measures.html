@@ -181,26 +181,19 @@
     }
 
     async function checkShinyServer() {
+      // For Azure Container Apps, skip reachability check (CORS blocks it anyway)
+      // and trust that the container is running. The iframe will show its own error if not.
+      if (IS_AZURE) {
+        return true;
+      }
+      // For local development, try to check if server is running
       try {
-        if (IS_AZURE) {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-          const response = await fetch(`${SHINY_BASE_URL}/`, {
-            method: 'GET',
-            mode: 'cors',
-            signal: controller.signal
-          });
-          clearTimeout(timeout);
-          return response.ok;
-        } else {
-          const response = await fetch(`${SHINY_BASE_URL}/`, {
-            method: 'HEAD',
-            mode: 'no-cors'
-          });
-          return true;
-        }
+        const response = await fetch(`${SHINY_BASE_URL}/`, {
+          method: 'HEAD',
+          mode: 'no-cors'
+        });
+        return true;
       } catch (err) {
-        if (IS_AZURE) return false;
         return new Promise((resolve) => {
           const img = new Image();
           img.onload = () => resolve(true);
