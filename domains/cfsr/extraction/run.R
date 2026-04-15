@@ -49,22 +49,31 @@ source(file.path(CFSR_EXTRACTION_DIR, "run_profile.R"))
 # RUN ----
 #####################################
 
-# Uncomment ONE workflow below and modify as needed
-# Source options:
-# - all     = All CFSR files found (pdf, national, and state)
-# - rsp     = Risk-Standardized Performance (page 2 of PDF)
-# - observed = Observed Performance (page 4 of PDF)
-# - national = National supplemental context (Excel file)
-# - state   = State supplemental context (Excel file)
+# When running in container/automated mode, process everything available
+# When running interactively, uncomment specific workflows below
 
-# Check what data is available first
-# print_available_data()
+if (!interactive()) {
+  # Container/automated mode: process ALL available data
+  message("=== Running in automated mode - processing all available data ===")
+  run_profile(source = "all")
+} else {
+  # Interactive mode: uncomment ONE workflow below and modify as needed
+  # Source options:
+  # - all     = All CFSR files found (pdf, national, and state)
+  # - rsp     = Risk-Standardized Performance (page 2 of PDF)
+  # - observed = Observed Performance (page 4 of PDF)
+  # - national = National supplemental context (Excel file)
+  # - state   = State supplemental context (Excel file)
 
-# Workflow 1: Process everything found (all files for all states and periods in ShareFile)
-# run_profile(source = "all")
+  # Check what data is available first
+  # print_available_data()
 
-# Workflow 2: Specific state + period + all files
-run_profile(state = "md", period = "2026_02", source = "all")
+  # Workflow 1: Process everything found (all files for all states and periods)
+  # run_profile(source = "all")
+
+  # Workflow 2: Specific state + period + all files
+  run_profile(state = "md", period = "2026_02", source = "all")
+}
 
 # Workflow 3: Specific state + period + specific file
 # run_profile(state = "md", period = "2025_02", source = "national")
