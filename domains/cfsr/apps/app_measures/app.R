@@ -1020,14 +1020,14 @@ server <- function(input, output, session) {
   # OBSERVED INDICATOR DETAIL PAGES ----
   #####################################
 
-  indicator_detail_server("entry_rate", view_to_indicator[["entry_rate"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("maltreatment", view_to_indicator[["maltreatment"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("recurrence", view_to_indicator[["recurrence"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("perm12_entries", view_to_indicator[["perm12_entries"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("perm12_12_23", view_to_indicator[["perm12_12_23"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("perm12_24", view_to_indicator[["perm12_24"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("reentry", view_to_indicator[["reentry"]], observed_national_data, state_code_rv, profile_rv)
-  indicator_detail_server("placement", view_to_indicator[["placement"]], observed_national_data, state_code_rv, profile_rv)
+  indicator_detail_server("entry_rate", view_to_indicator[["entry_rate"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("maltreatment", view_to_indicator[["maltreatment"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("recurrence", view_to_indicator[["recurrence"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("perm12_entries", view_to_indicator[["perm12_entries"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("perm12_12_23", view_to_indicator[["perm12_12_23"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("perm12_24", view_to_indicator[["perm12_24"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("reentry", view_to_indicator[["reentry"]], observed_national_data, state_code_rv, profile_rv, state_codes)
+  indicator_detail_server("placement", view_to_indicator[["placement"]], observed_national_data, state_code_rv, profile_rv, state_codes)
 }
 
 #####################################

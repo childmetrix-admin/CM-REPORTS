@@ -110,7 +110,7 @@ indicator_detail_ui <- function(id) {
 # SERVER FUNCTION ----
 #####################################
 
-indicator_detail_server <- function(id, indicator_name, national_data, state_code, profile = reactive("latest")) {
+indicator_detail_server <- function(id, indicator_name, national_data, state_code, profile = reactive("latest"), state_codes) {
   moduleServer(id, function(input, output, session) {
 
     # Check if national_data is a reactive - if so, call it to get the data
@@ -137,7 +137,7 @@ indicator_detail_server <- function(id, indicator_name, national_data, state_cod
       selected_state_code <- get_state()
 
       # Convert state code to full name (national data uses full names like "Maryland")
-      # state_codes is defined in global.R: c("MD" = "Maryland", ...)
+      # state_codes passed from app (same map as global.R)
       selected_state_name <- state_codes[selected_state_code]
 
       # Filter to specific indicator and exclude "National" from state comparison
