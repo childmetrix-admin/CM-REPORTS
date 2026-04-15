@@ -169,6 +169,17 @@
       return params.get('profile') || 'latest';
     }
 
+    /** Pass-through from app.html tertiary nav (?tab= &overview_tab=) */
+    function getDeepLinkQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      const overviewTab = params.get('overview_tab');
+      let q = '';
+      if (tab) q += '&tab=' + encodeURIComponent(tab);
+      if (overviewTab) q += '&overview_tab=' + encodeURIComponent(overviewTab);
+      return q;
+    }
+
     async function checkShinyServer() {
       try {
         if (IS_AZURE) {
@@ -215,7 +226,8 @@
       errorAzure.classList.add('hidden');
       iframe.classList.add('hidden');
 
-      const appURL = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
+      const deep = getDeepLinkQuery();
+      const appURL = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}${deep}`;
 
       if (IS_AZURE) {
         iframe.src = appURL;
@@ -260,13 +272,14 @@
       const state = getStateFromURL();
       const profile = getProfileFromURL();
 
+      const deep = getDeepLinkQuery();
       const directLink = document.getElementById('directLink');
       if (directLink) {
-        directLink.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
+        directLink.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}${deep}`;
       }
       const directLinkAzure = document.getElementById('directLinkAzure');
       if (directLinkAzure) {
-        directLinkAzure.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
+        directLinkAzure.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}${deep}`;
       }
 
       loadShinyApp(state, profile);

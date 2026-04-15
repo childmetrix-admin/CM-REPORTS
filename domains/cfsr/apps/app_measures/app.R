@@ -567,12 +567,14 @@ ui <- dashboardPage(
                 type = "tabs",
 
                 tabPanel(
-                  "Risk Standardized Performance",
+                  title = "Risk Standardized Performance",
+                  value = "rsp",
                   div(class = "cm-tab-content", uiOutput("rsp_content"))
                 ),
 
                 tabPanel(
-                  "Observed Performance",
+                  title = "Observed Performance",
+                  value = "obs",
                   div(class = "cm-tab-content", uiOutput("obs_overview_content"))
                 )
               )
@@ -617,6 +619,29 @@ server <- function(input, output, session) {
     query <- parseQueryString(session$clientData$url_search)
     query$profile %||% "latest"
   })
+
+  # Deep links from static wrapper (app.html tertiary nav): ?tab= &overview_tab=
+  session$onFlushed(function() {
+    query <- tryCatch(
+      parseQueryString(session$clientData$url_search),
+      error = function(e) list()
+    )
+    tab <- query$tab %||% NULL
+    overview_tab <- query$overview_tab %||% NULL
+
+    valid_sidebar <- c(
+      "overview", "obs_entry_rate", "obs_maltreatment", "obs_recurrence",
+      "obs_perm12_entries", "obs_perm12_12_23", "obs_perm12_24",
+      "obs_reentry", "obs_placement"
+    )
+    if (!is.null(tab) && tab %in% valid_sidebar) {
+      updateTabItems(session, "sidebar_menu", selected = tab)
+    }
+    if (!is.null(overview_tab) && (query$tab %||% "overview") == "overview" &&
+        overview_tab %in% c("rsp", "obs")) {
+      updateTabsetPanel(session, inputId = "overview_tabs", selected = overview_tab)
+    }
+  }, once = TRUE)
 
   # Get state name from code
   state_name_rv <- reactive({

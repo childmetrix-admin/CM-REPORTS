@@ -614,6 +614,36 @@
         }
       }
 
+      // Maps tertiary nav to consolidated Shiny app URL params (see app_measures tab names)
+      const INDICATOR_NUM_TO_TAB = {
+        '1': 'obs_entry_rate',
+        '2': 'obs_maltreatment',
+        '3': 'obs_recurrence',
+        '4': 'obs_perm12_entries',
+        '5': 'obs_perm12_12_23',
+        '6': 'obs_perm12_24',
+        '7': 'obs_reentry',
+        '8': 'obs_placement'
+      };
+
+      function cfsrMeasuresFrameSrc() {
+        const stateCode = window.CM_STATE || 'md';
+        const period = periodSelect.value;
+        const shinyBase = (window.CM_SHINY_URLS && window.CM_SHINY_URLS.measures) || '';
+        let url = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(shinyBase)}`;
+        const t = currentTertiary;
+        if (t === 'rsp') {
+          url += '&tab=overview&overview_tab=rsp';
+        } else if (t === 'obs_overview') {
+          url += '&tab=overview&overview_tab=obs';
+        } else if (t && t.startsWith('obs_ind_')) {
+          const n = t.replace('obs_ind_', '');
+          const tab = INDICATOR_NUM_TO_TAB[n];
+          if (tab) url += `&tab=${encodeURIComponent(tab)}`;
+        }
+        return url;
+      }
+
       // Page title configuration
       const PAGE_INFO = {
         home: {
@@ -731,7 +761,8 @@
         if (currentSubsection === 'summary') {
           if (currentCategory === 'cfsr') {
             const period = periodSelect.value;
-            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.summary)}`;
+            const summaryBase = (window.CM_SHINY_URLS && window.CM_SHINY_URLS.summary) || '';
+            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(summaryBase)}`;
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/summary/index.html`;
           } else if (currentCategory === 'community') {
@@ -745,9 +776,7 @@
           }
         } else if (currentSubsection === 'performance') {
           if (currentCategory === 'cfsr') {
-            const period = periodSelect.value;
-            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.measures)}`;
-            cfsrTertiarySidebar.style.display = 'none';
+            frame.src = cfsrMeasuresFrameSrc();
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/current/index.html`;
           } else if (currentCategory === 'community') {
@@ -824,7 +853,8 @@
 
         if (currentCategory === 'cfsr') {
           const period = periodSelect.value;
-          frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.summary)}`;
+          const summaryBase = (window.CM_SHINY_URLS && window.CM_SHINY_URLS.summary) || '';
+          frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(summaryBase)}`;
         } else if (currentCategory === 'in-home') {
           frame.src = `states/${stateCode}/in_home/summary/index.html`;
         } else if (currentCategory === 'community') {
@@ -845,9 +875,9 @@
         const stateCode = window.CM_STATE || 'md';
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
-          const period = periodSelect.value;
-          frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.measures)}`;
-          cfsrTertiarySidebar.style.display = 'none';
+          frame.src = cfsrMeasuresFrameSrc();
+          cfsrTertiarySidebar.style.display = 'block';
+          setTertiaryActive(currentTertiary);
           setSecondaryActive('performance');
         } else if (currentCategory === 'in-home') {
           currentSubsection = 'performance';
@@ -961,10 +991,11 @@
 
         // Reload the current page with the new profile parameter
         if (currentCategory === 'cfsr') {
+          const summaryBase = (window.CM_SHINY_URLS && window.CM_SHINY_URLS.summary) || '';
           if (currentSubsection === 'summary') {
-            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.summary)}`;
+            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(summaryBase)}`;
           } else if (currentSubsection === 'performance') {
-            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.measures)}`;
+            frame.src = cfsrMeasuresFrameSrc();
           } else if (currentSubsection === 'presentations') {
             frame.src = `shared/cfsr/presentations/index.html`;
           } else if (currentSubsection === 'data_dictionary') {
@@ -984,9 +1015,7 @@
           if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
             currentTertiary = 'rsp';
             setTertiaryActive(currentTertiary);
-            const period = periodSelect.value;
-            const stateCode = window.CM_STATE || 'md';
-            frame.src = `shared/cfsr/measures/cfsr_profile_rsp.html?state=${stateCode}&profile=${period}`;
+            frame.src = cfsrMeasuresFrameSrc();
           }
         });
       }
@@ -999,24 +1028,10 @@
           if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
             currentTertiary = 'obs_overview';
             setTertiaryActive(currentTertiary);
-            const period = periodSelect.value;
-            const stateCode = window.CM_STATE || 'md';
-            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&view=overview`;
+            frame.src = cfsrMeasuresFrameSrc();
           }
         });
       }
-
-      // Map indicator numbers to view parameter names
-      const indicatorToView = {
-        '1': 'entry_rate',
-        '2': 'maltreatment',
-        '3': 'recurrence',
-        '4': 'perm12_entries',
-        '5': 'perm12_12_23',
-        '6': 'perm12_24',
-        '7': 'reentry',
-        '8': 'placement'
-      };
 
       // Observed Performance - Indicators (generic handler for all 8)
       document.querySelectorAll('[id^="tertiaryObs"][data-indicator]').forEach(link => {
@@ -1024,12 +1039,9 @@
           e.preventDefault();
           if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
             const indicatorNum = this.getAttribute('data-indicator');
-            const viewName = indicatorToView[indicatorNum] || 'overview';
             currentTertiary = `obs_ind_${indicatorNum}`;
             setTertiaryActive(currentTertiary);
-            const period = periodSelect.value;
-            const stateCode = window.CM_STATE || 'md';
-            frame.src = `shared/cfsr/measures/cfsr_profile_observed.html?state=${stateCode}&profile=${period}&view=${viewName}`;
+            frame.src = cfsrMeasuresFrameSrc();
           }
         });
       });
