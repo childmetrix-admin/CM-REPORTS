@@ -154,6 +154,10 @@
       if (window.CM_SHINY_CONFIG && window.CM_SHINY_CONFIG.measuresUrl) {
         return window.CM_SHINY_CONFIG.measuresUrl;
       }
+      if (typeof window.location.hostname === 'string' &&
+          window.location.hostname.indexOf('azurestaticapps.net') !== -1) {
+        return 'https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io';
+      }
       return 'http://localhost:3838';
     })();
 

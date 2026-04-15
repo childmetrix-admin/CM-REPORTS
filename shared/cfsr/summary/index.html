@@ -154,6 +154,11 @@
       if (window.CM_SHINY_CONFIG && window.CM_SHINY_CONFIG.summaryUrl) {
         return window.CM_SHINY_CONFIG.summaryUrl;
       }
+      // Production fallback when embedded from Azure Static Web Apps without query param
+      if (typeof window.location.hostname === 'string' &&
+          window.location.hostname.indexOf('azurestaticapps.net') !== -1) {
+        return 'https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io';
+      }
       return 'http://localhost:3840';
     })();
 
