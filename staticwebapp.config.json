@@ -2,50 +2,29 @@
   "routes": [
     {
       "route": "/admin/*",
-      "allowedRoles": ["admin", "super_admin"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/upload/*",
-      "allowedRoles": ["manager", "admin", "super_admin"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/app.html",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/states/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/shared/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     }
   ],
-  "responseOverrides": {
-    "401": {
-      "redirect": "/.auth/login/aad",
-      "statusCode": 302
-    },
-    "403": {
-      "rewrite": "/403.html",
-      "statusCode": 403
-    }
-  },
-  "auth": {
-    "identityProviders": {
-      "azureActiveDirectory": {
-        "registration": {
-          "openIdIssuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
-          "clientIdSettingName": "AZURE_CLIENT_ID",
-          "clientSecretSettingName": "AZURE_CLIENT_SECRET"
-        }
-      }
-    }
-  },
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [

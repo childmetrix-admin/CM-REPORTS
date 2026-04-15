@@ -730,13 +730,9 @@
           profileSelector.style.display = (currentCategory === 'cfsr') ? 'block' : 'none';
         }
 
-        // Show/hide tertiary nav based on category and subsection
-        if (currentCategory === 'cfsr' && currentSubsection === 'performance') {
-          cfsrTertiarySidebar.style.display = 'block';
-          setTertiaryActive(currentTertiary);
-        } else {
-          cfsrTertiarySidebar.style.display = 'none';
-        }
+        // Hide tertiary nav - the Shiny app has its own built-in navigation
+        // This avoids duplicate sidebars and provides a cleaner UX
+        cfsrTertiarySidebar.style.display = 'none';
 
         // Handle upload page specially (not in sidebar)
         if (currentCategory === 'upload') {
@@ -876,8 +872,7 @@
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
           frame.src = cfsrMeasuresFrameSrc();
-          cfsrTertiarySidebar.style.display = 'block';
-          setTertiaryActive(currentTertiary);
+          cfsrTertiarySidebar.style.display = 'none';  // Shiny app has built-in nav
           setSecondaryActive('performance');
         } else if (currentCategory === 'in-home') {
           currentSubsection = 'performance';
