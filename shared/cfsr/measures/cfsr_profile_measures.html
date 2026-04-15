@@ -118,7 +118,7 @@
       </div>
     </div>
 
-    <!-- Error/Instructions (local mode) -->
+    <!-- Error / fallback when iframe cannot load -->
     <div class="message hidden" id="errorMessage">
       <div class="instructions">
         <h3>Shiny Server Not Running</h3>
@@ -153,10 +153,6 @@
       if (base) return base;
       if (window.CM_SHINY_CONFIG && window.CM_SHINY_CONFIG.measuresUrl) {
         return window.CM_SHINY_CONFIG.measuresUrl;
-      }
-      const h = window.location.hostname || '';
-      if (h === 'localhost' || h === '127.0.0.1') {
-        return 'http://localhost:3838';
       }
       return 'https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io';
     })();

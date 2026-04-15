@@ -292,12 +292,7 @@
     uploadSection.classList.add('hidden');
     progressSection.classList.remove('hidden');
 
-    // Azure Functions (local): http://localhost:7071/api — SWA / production: same-origin /api
-    const isLocalDev = (function () {
-      const h = window.location.hostname || '';
-      return h === 'localhost' || h === '127.0.0.1';
-    })();
-    const apiBase = isLocalDev ? 'http://localhost:7071/api' : '/api';
+    const apiBase = '/api';
 
     let uploaded = 0;
     for (const file of selectedFiles) {
@@ -320,17 +315,10 @@
         uploaded++;
         progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;
       } catch (err) {
-        // For local dev, simulate success
-        if (isLocalDev) {
-          await new Promise(r => setTimeout(r, 500));
-          uploaded++;
-          progressBar.style.width = `${(uploaded / selectedFiles.length) * 100}%`;
-        } else {
-          alert(`Error: ${err.message}`);
-          progressSection.classList.add('hidden');
-          uploadSection.classList.remove('hidden');
-          return;
-        }
+        alert(`Error: ${err.message}`);
+        progressSection.classList.add('hidden');
+        uploadSection.classList.remove('hidden');
+        return;
       }
     }
 

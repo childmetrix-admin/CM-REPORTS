@@ -1,6 +1,6 @@
 # ChildMetrix CFSR Measures Shiny App
 # Build: docker build -t cm-app-measures -f infrastructure/docker/shiny/app_measures/Dockerfile .
-# Run:   docker run -p 3838:3838 -e CM_DATA_SOURCE=azure ... cm-app-measures
+# Run:   docker run -p 3838:3838 -e AZURE_BLOB_ENDPOINT=... -e AZURE_STORAGE_KEY=... cm-app-measures
 
 FROM rocker/shiny:4.3.2
 
@@ -29,7 +29,6 @@ COPY domains/cfsr/data/ /app/domains/cfsr/data/
 COPY shared/ /app/shared/
 COPY CLAUDE.md /app/CLAUDE.md
 
-ENV CM_DATA_SOURCE=azure
 ENV CM_REPORTS_ROOT=/app
 
 EXPOSE 3838

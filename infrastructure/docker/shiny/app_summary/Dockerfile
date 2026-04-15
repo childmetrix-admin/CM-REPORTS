@@ -1,6 +1,6 @@
 # ChildMetrix CFSR Summary Shiny App
 # Build: docker build -t cm-app-summary -f infrastructure/docker/shiny/app_summary/Dockerfile .
-# Run:   docker run -p 3840:3840 -e CM_DATA_SOURCE=azure ... cm-app-summary
+# Run:   docker run -p 3840:3840 -e AZURE_BLOB_ENDPOINT=... -e AZURE_STORAGE_KEY=... cm-app-summary
 
 FROM rocker/shiny:4.3.2
 
@@ -27,10 +27,9 @@ COPY domains/cfsr/data/ /app/domains/cfsr/data/
 COPY shared/ /app/shared/
 COPY CLAUDE.md /app/CLAUDE.md
 
-ENV CM_DATA_SOURCE=azure
 ENV CM_REPORTS_ROOT=/app
 
-# Note: Data is loaded from Azure Blob (CM_DATA_SOURCE=azure), not local files
+# Data is loaded from Azure Blob Storage (processed container)
 
 EXPOSE 3840
 

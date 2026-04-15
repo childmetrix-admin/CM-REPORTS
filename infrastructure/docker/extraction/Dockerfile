@@ -2,7 +2,7 @@
 # Runs R-based data extraction from Azure Blob Storage
 #
 # Build: docker build -t cm-extraction -f infrastructure/docker/extraction/Dockerfile .
-# Run:   docker run -e CM_DATA_SOURCE=azure -e AZURE_BLOB_ENDPOINT=... cm-extraction
+# Run:   docker run -e AZURE_BLOB_ENDPOINT=... -e AZURE_STORAGE_KEY=... cm-extraction
 
 FROM rocker/r-ver:4.3.2
 
@@ -30,7 +30,6 @@ COPY domains/cfsr/data/ /app/domains/cfsr/data/
 COPY shared/utils/ /app/shared/utils/
 COPY CLAUDE.md /app/CLAUDE.md
 
-ENV CM_DATA_SOURCE=azure
 ENV CM_REPORTS_ROOT=/app
 
 ENTRYPOINT ["Rscript", "/app/domains/cfsr/extraction/run.R"]

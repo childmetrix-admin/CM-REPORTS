@@ -57,22 +57,20 @@ setup_profile_env <- function(state, period) {
   validate_state(state)
   validate_period(period, state)
 
-  # Create configuration list
   config <- list(
     state = tolower(state),
     period = period,
-    sharefile_base = file.path(SHAREFILE_BASE, state, "cfsr/uploads", period),
+    azure_raw_prefix = paste0(tolower(state), "/cfsr/uploads/", period),
     processed_base = file.path(CFSR_PROCESSED_DIR, state, period),
     app_data_base = file.path(CFSR_APP_DATA_DIR, state),
     run_date = Sys.Date()
   )
 
-  # Set global variables for compatibility with existing scripts
   assign("state_code", config$state, envir = .GlobalEnv)
   assign("profile_period", config$period, envir = .GlobalEnv)
 
   message("Configuration set for: ", toupper(state), " - ", period)
-  message("ShareFile: ", config$sharefile_base)
+  message("Azure raw container prefix: ", config$azure_raw_prefix)
   message("Output: ", config$processed_base)
 
   return(config)
@@ -176,23 +174,7 @@ setup_cfsr_folders <- function(profile_period,
   profile_period <- toupper(profile_period)
   state_code <- tolower(state_code)
 
-  # Build folder paths - handle Azure vs ShareFile mode
-  if (CM_DATA_SOURCE == "azure") {
-    # Azure mode: download files from blob to temp directory
-    folder_uploads <- download_azure_uploads(state_code, profile_period)
-  } else {
-    # ShareFile mode: use local path
-    folder_uploads <- file.path(SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
-    
-    # Check if uploads folder exists
-    if (!dir.exists(folder_uploads)) {
-      stop("Uploads folder does not exist: ", folder_uploads,
-           "\n\nPlease upload files to ShareFile at:",
-           "\n  S:/Shared Folders/", state_code, "/cfsr/uploads/", profile_period, "/",
-           "\n\nOr check your state_code and profile_period values.",
-           call. = FALSE)
-    }
-  }
+  folder_uploads <- download_azure_uploads(state_code, profile_period)
   
   folder_processed <- file.path(CFSR_PROCESSED_DIR, state_code, profile_period)
   folder_app_data <- file.path(CFSR_APP_DATA_DIR, state_code)
@@ -349,7 +331,7 @@ print_available_data <- function() {
   states <- discover_states()
 
   if (length(states) == 0) {
-    cat("No states found. Check ShareFile access.\n")
+    cat("No states found. Check Azure Blob raw container and AZURE_BLOB_ENDPOINT.\n")
     return(invisible(NULL))
   }
 
@@ -382,5 +364,5 @@ print_available_data <- function() {
 
 message("CFSR Profile configuration loaded")
 message("Base directory: ", CFSR_ROOT)
-message("ShareFile base: ", SHAREFILE_BASE)
+message("Data source: Azure Blob (raw + processed)")
 message("\nRun print_available_data() to see available data")

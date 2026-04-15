@@ -138,20 +138,16 @@ The `domains/cfsr/apps/` directory contains interactive R Shiny dashboards that 
 
 ```
 domains/cfsr/
-├── apps/                              # Shiny applications
-│   ├── app_national/                  # National comparison app (port 3838)
-│   ├── app_rsp/                       # Risk-Standardized Performance (port 3839)
-│   │   ├── app.R                      # Main app logic
-│   │   └── global.R                   # Data loading and global variables
-│   ├── app_summary/                   # Performance summary app (port 3840)
-│   └── app_observed/                  # Observed Performance (port 3841)
+├── apps/                              # Shiny applications (Azure Container Apps / Docker)
+│   ├── app_measures/                  # Measures + RSP + Observed + indicators (port 3838 in container)
+│   │   ├── app.R
+│   │   └── global.R                   # Loads processed RDS from Azure Blob
+│   └── app_summary/                   # Performance summary (port 3840 in container)
 │       ├── app.R
 │       └── global.R
 ├── data/
-│   ├── rds/                           # RDS data files for Shiny apps
-│   │   ├── {STATE}_cfsr_profile_rsp_{YYYY_MM}.rds
-│   │   └── {STATE}_cfsr_profile_observed_{YYYY_MM}.rds
-│   └── csv/                           # CSV archives
+│   ├── rds/                           # Optional local fixtures only; production data is in Blob processed container
+│   └── csv/                           # CSV archives (as configured by extraction)
 ├── extraction/                        # Data extraction scripts
 │   ├── run_profile.R                  # Orchestrator
 │   ├── config.R                       # Discovery + validation
@@ -168,52 +164,43 @@ domains/cfsr/
 │   └── utils.R                        # Shiny data loading utilities
 ├── modules/                           # Shiny modules
 └── scripts/
-    └── launch_cfsr_dashboard.R        # Multi-app launcher script
+    └── (utility scripts only; Shiny runs in Azure Container Apps / Docker)
 ```
 
 ### Data Pipeline
 
 **Source**: Data is extracted from CFSR 4 Data Profile PDFs (biannual: February, August)
-**Input Location**: ShareFile at `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
-**Output Location**: RDS files saved to `domains/cfsr/data/rds/`
-**Archive Location**: CSV copies saved to `domains/cfsr/data/csv/`
+**Input Location**: Azure Blob **raw** container — uploads under `{state}/cfsr/uploads/{period}/` (see `shared/utils/file_discovery.R`)
+**Output Location**: RDS objects in Azure Blob **processed** container (paths from `build_rds_path()` in `domains/cfsr/extraction/paths.R`)
+**Archive Location**: CSV copies written per pipeline (typically processed container or paths defined in extraction scripts)
 **Format**: Each RDS contains state-specific indicator data with period, performance metrics, and metadata
 
-### Running CFSR Apps Locally
+### Running CFSR Apps
 
-```r
-# Launch all CFSR apps simultaneously on different ports
-source("D:/repo_childmetrix/cm-reports/domains/cfsr/scripts/launch_cfsr_dashboard.R")
-```
+CFSR Shiny apps (`app_measures`, `app_summary`) run in **Azure Container Apps** or locally via **Docker** images under `infrastructure/docker/shiny/`, with `AZURE_BLOB_ENDPOINT`, `AZURE_STORAGE_KEY`, and container names set. They load processed RDS data from Azure Blob only.
 
-This starts:
-- **National comparison**: http://localhost:3838
-- **RSP app**: http://localhost:3839
-- **Summary app**: http://localhost:3840
-- **Observed Performance**: http://localhost:3841
-
-Apps run in background R processes and can be stopped via the launcher script.
+The file `domains/cfsr/launch_cfsr_apps.R` intentionally **does not** start local servers; use Docker with the same environment variables as production.
 
 ### Running Data Extraction
 
 ```r
 # Extract CFSR data for all available states and periods
-source("D:/repo_childmetrix/cm-reports/domains/cfsr/extraction/run_profile.R")
+source("domains/cfsr/extraction/run_profile.R")
 ```
 
 The extraction pipeline:
-1. Discovers available states and periods from ShareFile
+1. Discovers available states and periods from Azure Blob (raw container)
 2. Parses PDFs using coordinate-based extraction (pdftools)
 3. Reads Excel files for supplemental context data
 4. Validates extracted data
-5. Saves RDS files to `domains/cfsr/data/rds/`
-6. Saves CSV archives to `domains/cfsr/data/csv/`
+5. Saves RDS objects to the processed blob container
+6. Saves CSV archives per script configuration
 
 ### App Integration
 
-**Embedding pattern**: Static HTML pages embed Shiny apps via iframes
+**Embedding pattern**: Static HTML pages embed Shiny apps via iframes (production base URL from Container Apps or `?shiny_base=` override)
 ```html
-<iframe src="http://localhost:3839/?state=MD&profile=2025_02"
+<iframe src="https://ca-app-measures.example.azurecontainerapps.io/?state=MD&profile=2025_02"
         style="width: 100%; height: calc(100vh - 100px); border: none;">
 </iframe>
 ```
@@ -244,7 +231,7 @@ The `shared/utils/` directory contains cross-domain R utilities that are used by
 - `validate_state(code)` - Check if state code is valid
 
 **`shared/utils/file_discovery.R`**:
-- `discover_states()` - Scan ShareFile for available states
+- `discover_states()` - List state prefixes with CFSR uploads in the raw blob container
 - `discover_periods(state)` - Find available periods for a state
 - `discover_sources(state, period)` - Find available source files
 
@@ -298,7 +285,7 @@ This repository was consolidated in January 2026 to merge the formerly separate 
 
 **After (single monorepo with domains structure):**
 - All CFSR code is self-contained in `domains/cfsr/` directory
-- Data lives at `domains/cfsr/data/rds/` (organized by state/period)
+- Processed CFSR outputs live in Azure Blob Storage (processed container); `domains/cfsr/data/` may hold templates or non-secret fixtures only
 - Other report domains will live in `domains/{domain}/` (cps, in_home, ooh, onehome, community)
 - Shared utilities internalized to `shared/utils/`
 - No dependency on external utilities-core repository
@@ -321,8 +308,6 @@ All Azure resources are defined in Bicep templates under `infrastructure/azure/`
 - **`parameters.json`** - Environment-specific parameters
 - **`deploy.ps1`** - End-to-end deployment script
 - **`setup-entra.ps1`** - Azure Entra External ID configuration (roles, user flows)
-- **`migrate-sharefile.ps1`** - Mirror ShareFile content to Azure Blob Storage
-- **`validate-parity.ps1`** - Verify Azure Blob matches ShareFile before decommission
 
 ### Database Schema
 
@@ -343,26 +328,21 @@ Under `infrastructure/docker/`:
 - **`shiny/app_summary/Dockerfile`** - CFSR Summary Shiny app
 - **`shinyproxy/Dockerfile`** + **`application.yml`** - ShinyProxy for managing Shiny containers
 
-### Dual-Mode Data Source
+### Data source (Azure Blob only)
 
-R code supports both ShareFile and Azure Blob via `CM_DATA_SOURCE` env var:
+R code uses Azure Blob Storage for CFSR raw uploads and processed RDS. Set `AZURE_BLOB_ENDPOINT` and `AZURE_STORAGE_KEY` (see `.env.example`).
 
-```r
-# Set CM_DATA_SOURCE=azure to use Azure Blob, or =sharefile (default) for S: drive
-CM_DATA_SOURCE <- Sys.getenv("CM_DATA_SOURCE", "sharefile")
-```
-
-Key files updated for dual-mode:
-- `domains/cfsr/extraction/paths.R` - `save_rds_data()` / `load_rds_data()` / `build_rds_path()`
-- `shared/utils/file_discovery.R` - `discover_states()` / `discover_periods()` / `discover_sources()`
-- `domains/cfsr/apps/*/global.R` - Data loading functions
+Key files:
+- `domains/cfsr/extraction/paths.R` — `save_rds_data()` / `load_rds_data()` / `build_rds_path()`
+- `shared/utils/file_discovery.R` — `discover_states()` / `discover_periods()` / `discover_sources()`
+- `domains/cfsr/apps/*/global.R` — load processed RDS from blob
 
 ### Authentication
 
 - **Azure Entra External ID** handles user auth (MFA, RBAC)
 - **Roles**: `viewer`, `manager`, `admin`, `super_admin`
 - **State isolation**: Users only access states assigned to them
-- Landing page (`index.html`) auto-detects Azure vs local mode
+- Landing page (`index.html`) supports preview UI and production Entra sign-in per deployment configuration
 - `staticwebapp.config.json` enforces route-level auth
 
 ### Admin Console
@@ -388,7 +368,7 @@ Key files updated for dual-mode:
 - **No JavaScript framework** - Vanilla JS for navigation and UI interactions
 - **Mobile-first responsive** - Tailwind utilities + custom media queries for sidebar
 - **Accessibility**: Form inputs use proper labels, buttons have aria-labels
-- **Azure auth integration**: Landing page supports both preview (local) and Azure Entra (production) login
+- **Azure auth integration**: Landing page supports preview sign-in UI and Azure Entra External ID in production
 - **Multi-app architecture**: Shiny apps run on separate ports and are embedded via iframes for modularity
 - **Self-contained**: No external R utility dependencies (utilities-core functions internalized)
 - **Configurable Shiny URLs**: Wrapper pages support `shiny_base` param for Azure-hosted Shiny endpoints

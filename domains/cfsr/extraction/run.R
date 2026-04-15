@@ -106,13 +106,13 @@ if (!interactive()) {
 #####################################
 
 # Data Source Location:
-# - ShareFile: S:/Shared Folders/{state}/cfsr/uploads/{period}/
-# - PDFs: "{STATE} - Data Profile {YYYY_MM}.pdf"
+# - Azure Blob raw container: {state}/cfsr/uploads/{period}/ (and alternate prefix {state}/{state}/cfsr/uploads/)
+# - PDFs: "{STATE} - Data Profile {YYYY_MM}.pdf" (or state naming variant from orchestrator)
 # - Excel: "National - Supplemental Context Data.xlsx" and "{ST} - Supplemental Context Data.xlsx"
 
 # Output Locations:
-# - RDS files (for Shiny apps): domains/cfsr/data/rds/
-# - CSV archives: domains/cfsr/data/csv/
+# - RDS: uploaded to processed blob container (see paths.R save_rds_data / build_rds_path)
+# - CSV archives: uploaded per extraction scripts (processed container or paths in orchestrator)
 
 # Available States (as of Jan 2026):
 # - MD (Maryland)

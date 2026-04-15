@@ -5,7 +5,7 @@
 #' Validate period format
 #'
 #' Validates that period is in YYYY_MM format and optionally checks
-#' if it exists for a given state in ShareFile
+#' if it exists for a given state in Azure Blob raw uploads
 #'
 #' @param period Period in YYYY_MM format (e.g., "2025_02")
 #' @param state Optional state to check period availability

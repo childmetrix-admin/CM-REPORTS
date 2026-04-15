@@ -93,18 +93,17 @@ Each state site includes:
 
 ### CFSR Data Pipeline
 
-The CFSR extraction pipeline is integrated into the monorepo:
+The CFSR extraction pipeline is integrated into the monorepo and uses **Azure Blob Storage** only:
 
-1. **Source**: CFSR 4 Data Profile PDFs from ShareFile (`S:/Shared Folders/{state}/cfsr/uploads/`)
-2. **Extraction**: Run `domains/cfsr/extraction/run_profile.R`
-3. **Output**: RDS files saved to `domains/cfsr/data/rds/`
-4. **Consumption**: Shiny apps load data from `domains/cfsr/data/rds/`
-5. **Archive**: CSV copies saved to `domains/cfsr/data/csv/`
+1. **Source**: CFSR 4 Data Profile PDFs and Excel files uploaded to the **raw** blob container (paths such as `{state}/cfsr/uploads/{period}/` — see `shared/utils/file_discovery.R`)
+2. **Extraction**: Run `domains/cfsr/extraction/run_profile.R` with `AZURE_BLOB_ENDPOINT` and `AZURE_STORAGE_KEY` set (see `.env.example`)
+3. **Output**: RDS objects written to the **processed** blob container (`build_rds_path()` in `domains/cfsr/extraction/paths.R`)
+4. **Consumption**: Shiny apps (`domains/cfsr/apps/`) load processed RDS from the same Azure storage account
+5. **Archive**: CSV outputs follow the extraction scripts (typically uploaded alongside RDS)
 
-To extract CFSR data:
+To extract CFSR data (after configuring Azure environment variables):
 ```r
-# Call run_profile() with parameters
-source("D:/repo_childmetrix/cm-reports/domains/cfsr/extraction/run_profile.R")
+source("domains/cfsr/extraction/run_profile.R")
 run_profile(state = "md", period = "2025_02", source = "all")
 ```
 
@@ -112,23 +111,13 @@ run_profile(state = "md", period = "2025_02", source = "all")
 
 ### Prerequisites
 
-- **R** (4.x+) with RStudio or VSCode
-- R packages auto-install on first run (tidyverse, shiny, pdftools, readxl, plotly, DT, etc.)
+- **R** (4.x+) with RStudio or VSCode (for extraction and app development)
+- R packages auto-install on first run where applicable (tidyverse, shiny, pdftools, readxl, plotly, DT, AzureStor, etc.)
+- **Azure credentials** for the storage account used by ChildMetrix (blob containers for raw uploads and processed outputs)
 
-### 1. Set Up CFSR Source Data
+### 1. Configure environment
 
-The extraction pipeline reads CFSR Data Profile files (PDFs + Excel) from a shared drive. You need at minimum **3 files for one state and one period**:
-
-- CFSR Data Profile PDF (contains observed + RSP performance data)
-- National Supplemental Context Data (Excel)
-- State Supplemental Context Data (Excel)
-
-**Default path**: `S:/Shared Folders/{state}/cfsr/uploads/{period}/`
-**Example**: `S:/Shared Folders/md/cfsr/uploads/2026_02/` (state = lowercase abbreviation, period = YYYY_MM)
-
-If you don't use ShareFile, place files in the same directory structure and either:
-- Map `S:` to your file location, or
-- Set the `CM_REPORTS_ROOT` environment variable and update `SHAREFILE_BASE` in `domains/cfsr/extraction/paths.R`
+Copy `.env.example` to `.env` and set at minimum `AZURE_BLOB_ENDPOINT`, `AZURE_STORAGE_KEY`, and container names. The upload portal (`shared/upload/index.html`) sends files to the **raw** container via the deployed API (`/api`).
 
 ### 2. Open the Project
 
@@ -141,27 +130,21 @@ source("domains/cfsr/extraction/run_profile.R")
 run_profile(source = "all")
 ```
 
-This discovers available states/periods from the shared drive, extracts data from PDFs and Excel files, and saves RDS files to `domains/cfsr/data/rds/`.
+This discovers available states/periods from the raw container, extracts data from PDFs and Excel files, and uploads RDS to the processed container.
 
-### 4. Launch Shiny Dashboards
+### 4. Shiny dashboards
 
-```r
-source("domains/cfsr/launch_cfsr_apps.R")
-```
-
-This starts:
-- **app_measures** (Measures + Indicators): http://localhost:3838
-- **app_summary** (Performance Summary): http://localhost:3840
+Interactive apps are deployed to **Azure Container Apps** (or run locally using the Dockerfiles under `infrastructure/docker/shiny/` with the same Azure variables). The repository does not start Shiny from R via `launch_cfsr_apps.R` (that file explains the Docker workflow).
 
 ### 5. View the Platform
 
 - **Landing page**: Open `index.html` in a browser (state selector + login preview)
 - **Direct access**: Open `app.html` (loads Maryland by default)
-- Shiny apps are embedded via iframes in the state hub pages
+- Embedded CFSR pages resolve Shiny base URLs from `?shiny_base=`, optional `window.CM_SHINY_CONFIG`, or the configured Azure Container Apps hostnames
 
 ### Deployment
 
-Deployment target TBD (AWS or Azure). Previous DigitalOcean staging setup has been removed.
+Azure infrastructure is defined under `infrastructure/azure/` (Bicep, `deploy.ps1`). Static site and Container Apps are the supported deployment path.
 
 ## Adding a New State
 
@@ -176,10 +159,11 @@ Deployment target TBD (AWS or Azure). Previous DigitalOcean staging setup has be
 - **Frontend**: HTML5, Tailwind CSS (CDN), JavaScript
 - **Interactive Dashboards**: R Shiny, Plotly
 - **Data Processing**: R, tidyverse, pdftools, readxl
-- **Storage**: Local RDS files, ShareFile cloud storage
+- **Storage**: Azure Blob Storage (raw uploads + processed RDS)
 
 ## Documentation
 
+- **[Azure deployment (GitHub + CLI)](docs/AZURE_DEPLOYMENT.md)** - Clone, push to ChildMetrix, deploy, open production URLs
 - **[Product Requirements Document](docs/PRD.md)** - Strategic roadmap and architecture
 - **[R Code Style Guide](docs/R_STYLE_GUIDE.md)** - R script structure and coding standards
 - **[AI Assistant Guide](CLAUDE.md)** - Technical implementation details

@@ -59,13 +59,13 @@ cm-reports/
 ### 1.2 Current Data Flow
 
 ```
-ShareFile PDFs/Excel (S:/Shared Folders/{state}/cfsr/uploads/)
+Azure Blob raw container ({state}/cfsr/uploads/{period}/)
       |
 domains/cfsr/extraction/ (run_profile.R, profile_pdf_*.R)
       |
-domains/cfsr/data/rds/ (RDS files organized by state/period)
+Azure Blob processed container (RDS paths from build_rds_path())
       |
-domains/cfsr/apps/ (Shiny apps load data via utils.R)
+domains/cfsr/apps/ (Shiny apps load data from blob via global.R / utils.R)
       |
 states/{state}/{category}/ (Static HTML embeds apps via iframes)
 ```
@@ -225,7 +225,7 @@ cm-reports/  (consolidated monorepo)
 |
 +-- shared/
 |   +-- utils/                      # Shared R utilities
-|   |   +-- file_discovery.R        # ShareFile discovery functions
+|   |   +-- file_discovery.R        # Azure Blob discovery functions
 |   |   +-- file_utils.R            # File handling utilities
 |   |   +-- state_utils.R           # State code mapping
 |   |
@@ -259,7 +259,7 @@ cm-reports/  (consolidated monorepo)
 |   |   +-- app_summary/            # Performance summary
 |   |
 |   +-- modules/                    # Shiny modules
-|   +-- scripts/                    # Utilities (launch_cfsr_dashboard.R)
+|   +-- scripts/                    # Utilities (no local Shiny launcher; use Docker / Azure)
 |   +-- tests/
 |
 +-- in_home/                        # In-Home Services (Future - Phase 2)
@@ -285,7 +285,7 @@ cm-reports/  (consolidated monorepo)
 **Standard Pipeline for All Data Types**:
 
 1. **Discovery** (shared/utils/file_discovery.R)
-   - Scan ShareFile for available states/periods/files
+   - List available states/periods/files from the Azure Blob raw container
    - Return structured list of available data
 
 2. **Validation** (cfsr/extraction/config.R)
@@ -304,8 +304,8 @@ cm-reports/  (consolidated monorepo)
    - Validate against expected schema
    - Check data types, required columns, value ranges
 
-6. **Output** ({data_type}/data/rds/)
-   - Write RDS files for Shiny apps
+6. **Output** (Azure Blob processed container and/or domain data folders)
+   - Write RDS for Shiny apps (uploaded to blob in CFSR pipeline)
    - Include metadata (extraction date, source file, version)
 
 7. **Consumption** ({data_type}/apps/)
@@ -316,7 +316,7 @@ cm-reports/  (consolidated monorepo)
 
 **Files in shared/utils/**:
 
-- `discover_states()` - Scan ShareFile for available states
+- `discover_states()` - Discover states from Azure Blob raw uploads
 - `discover_periods(state)` - Find available periods for a state
 - `validate_state(state_code)` - Check state code validity
 - `state_code_to_name()` - Convert code to full name
@@ -427,13 +427,13 @@ test_that("discover_states returns valid state codes", {
 
 ### 7.1 Development Environment
 
-**Current Setup**: Local Windows machine (D:/repo_childmetrix/)
+**Current Setup**: Development machine with Azure credentials for blob storage
 
 **Workflow**:
 1. Edit code in VSCode
-2. Run extraction scripts locally (data from S:/Shared Folders/)
-3. Launch Shiny apps on localhost ports
-4. Test in browser (http://localhost:3838-3841)
+2. Run extraction scripts against Azure Blob (raw uploads → processed RDS)
+3. Run Shiny via Docker (`infrastructure/docker/shiny/`) or test deployed Container Apps
+4. Test in browser using production or staging base URLs (or `?shiny_base=` on static embed pages)
 
 ### 7.2 Cloud Hosting (In Progress)
 

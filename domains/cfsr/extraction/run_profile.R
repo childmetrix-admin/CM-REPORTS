@@ -5,11 +5,11 @@
 #####################################
 
 # Purpose: Main entry point for CFSR profile data extraction pipeline.
-# Processes state CFSR Data Profile PDFs and Excel files from ShareFile,
+# Processes state CFSR Data Profile PDFs and Excel files from Azure Blob (raw container),
 # extracting observed performance, RSP, and national comparison data.
 #
-# Inputs: CFSR Data Profile PDFs and Excel files from S:/Shared Folders/{state}/cfsr/uploads/
-# Outputs: RDS files to domains/cfsr/data/rds/{state}/{period}/ for use by Shiny apps
+# Inputs: PDFs and Excel under raw blob paths such as {state}/cfsr/uploads/{period}/ (see file_discovery.R)
+# Outputs: RDS objects uploaded to the processed blob container (paths from build_rds_path())
 
 #####################################
 # NOTES ----

@@ -59,50 +59,49 @@ if (dir.exists(shared_path)) {
   warning("Shared directory not found at: ", shared_path)
 }
 
-data_dir <- file.path(monorepo_root, "domains/cfsr/data/rds")
-
 #####################################
 # DATA SOURCE CONFIGURATION ----
 #####################################
+# Processed RDS: Azure Blob only
 
-CM_DATA_SOURCE <- Sys.getenv("CM_DATA_SOURCE", "sharefile")
+AZURE_BLOB_ENDPOINT <- Sys.getenv("AZURE_BLOB_ENDPOINT", "")
+AZURE_STORAGE_KEY <- Sys.getenv("AZURE_STORAGE_KEY", "")
+AZURE_BLOB_CONTAINER_PROCESSED <- Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
 
-if (CM_DATA_SOURCE == "azure") {
-  AZURE_BLOB_ENDPOINT <- Sys.getenv("AZURE_BLOB_ENDPOINT", "")
-  AZURE_STORAGE_KEY <- Sys.getenv("AZURE_STORAGE_KEY", "")
-  AZURE_BLOB_CONTAINER_PROCESSED <- Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
-
-  if (!requireNamespace("AzureStor", quietly = TRUE)) {
-    stop("AzureStor package required for Azure mode")
-  }
-
-  .blob_endpoint <- NULL
-  get_blob_ep <- function() {
-    if (is.null(.blob_endpoint)) {
-      .blob_endpoint <<- AzureStor::blob_endpoint(AZURE_BLOB_ENDPOINT, key = AZURE_STORAGE_KEY)
-    }
-    .blob_endpoint
-  }
-
-  load_rds_from_blob <- function(blob_path) {
-    ep <- get_blob_ep()
-    container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
-    local_tmp <- file.path(tempdir(), basename(blob_path))
-    AzureStor::download_blob(container, blob_path, local_tmp, overwrite = TRUE)
-    data <- readRDS(local_tmp)
-    unlink(local_tmp)
-    data
-  }
-
-  list_processed_blobs <- function(prefix = "") {
-    ep <- get_blob_ep()
-    container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
-    blobs <- AzureStor::list_blobs(container, prefix = prefix)
-    blobs$name
-  }
-
-  message("app_summary: Azure Blob mode enabled")
+if (AZURE_BLOB_ENDPOINT == "") {
+  stop("AZURE_BLOB_ENDPOINT must be set (app_summary loads data from Azure Blob only)")
 }
+
+if (!requireNamespace("AzureStor", quietly = TRUE)) {
+  stop("AzureStor package required for app_summary")
+}
+
+.blob_endpoint <- NULL
+get_blob_ep <- function() {
+  if (is.null(.blob_endpoint)) {
+    .blob_endpoint <<- AzureStor::blob_endpoint(AZURE_BLOB_ENDPOINT, key = AZURE_STORAGE_KEY)
+  }
+  .blob_endpoint
+}
+
+load_rds_from_blob <- function(blob_path) {
+  ep <- get_blob_ep()
+  container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
+  local_tmp <- file.path(tempdir(), basename(blob_path))
+  AzureStor::download_blob(container, blob_path, local_tmp, overwrite = TRUE)
+  data <- readRDS(local_tmp)
+  unlink(local_tmp)
+  data
+}
+
+list_processed_blobs <- function(prefix = "") {
+  ep <- get_blob_ep()
+  container <- AzureStor::blob_container(ep, AZURE_BLOB_CONTAINER_PROCESSED)
+  blobs <- AzureStor::list_blobs(container, prefix = prefix)
+  blobs$name
+}
+
+message("app_summary: Azure Blob data source")
 
 # State code mapping
 state_codes <- c(
@@ -130,33 +129,11 @@ state_codes <- c(
 #' @return Character vector of available profile periods (e.g., c("2025_02", "2024_08"))
 get_available_observed_profiles <- function(state) {
   state <- toupper(state)
-
-  if (CM_DATA_SOURCE == "azure") {
-    prefix <- paste0("rds/", tolower(state), "/")
-    blobs <- list_processed_blobs(prefix)
-    pattern <- paste0(state, "_cfsr_profile_observed_(\\d{4}_\\d{2})\\.rds$")
-    matches <- regmatches(blobs, regexpr(pattern, blobs))
-    periods <- sub(paste0(state, "_cfsr_profile_observed_"), "", sub("\\.rds$", "", matches))
-    if (length(periods) == 0) return(character(0))
-    return(sort(periods, decreasing = TRUE))
-  }
-
-  state_dir <- file.path(data_dir, tolower(state))
-  if (!dir.exists(state_dir)) return(character(0))
-
-  period_dirs <- list.dirs(state_dir, full.names = FALSE, recursive = FALSE)
-  period_dirs <- period_dirs[grepl("^[0-9]{4}_[0-9]{2}$", period_dirs)]
-  if (length(period_dirs) == 0) return(character(0))
-
-  periods <- character(0)
-  for (period in period_dirs) {
-    expected_file <- file.path(state_dir, period,
-                              paste0(state, "_cfsr_profile_observed_", period, ".rds"))
-    if (file.exists(expected_file)) {
-      periods <- c(periods, period)
-    }
-  }
-
+  prefix <- paste0("rds/", tolower(state), "/")
+  blobs <- list_processed_blobs(prefix)
+  pattern <- paste0(state, "_cfsr_profile_observed_(\\d{4}_\\d{2})\\.rds$")
+  matches <- regmatches(blobs, regexpr(pattern, blobs))
+  periods <- sub(paste0(state, "_cfsr_profile_observed_"), "", sub("\\.rds$", "", matches))
   if (length(periods) == 0) return(character(0))
   sort(periods, decreasing = TRUE)
 }
@@ -176,21 +153,11 @@ load_observed_data <- function(state, profile = "latest") {
     profile <- available[1]
   }
 
-  if (CM_DATA_SOURCE == "azure") {
-    blob_path <- paste0("rds/", tolower(state), "/", profile, "/",
-                        state, "_cfsr_profile_observed_", profile, ".rds")
-    return(load_rds_from_blob(blob_path))
-  }
-
-  state_dir <- file.path(data_dir, tolower(state), profile)
-  filename <- paste0(state, "_cfsr_profile_observed_", profile, ".rds")
-  file_path <- file.path(state_dir, filename)
-
-  if (!file.exists(file_path)) {
-    stop("Observed data file not found: ", file_path)
-  }
-
-  readRDS(file_path)
+  blob_path <- paste0(
+    "rds/", tolower(state), "/", profile, "/",
+    state, "_cfsr_profile_observed_", profile, ".rds"
+  )
+  load_rds_from_blob(blob_path)
 }
 
 #####################################

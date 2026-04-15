@@ -17,7 +17,7 @@
 # Also shows data quality (DQ) checks the state failed.
 
 # INPUT: State-specific CFSR Data Profile PDF
-# - Located in ShareFile: S:/Shared Folders/{state}/cfsr/uploads/{period}/
+# - Located in Azure Blob raw container under {state}/cfsr/uploads/{period}/ (see config.R / file_discovery.R)
 # - Filename pattern: "{STATE} - CFSR 4 Data Profile - {Month} {Year}.pdf"
 
 # OUTPUT: Processed CSV with observed performance data by indicator and period

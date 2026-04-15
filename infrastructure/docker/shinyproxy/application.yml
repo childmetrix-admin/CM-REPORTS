@@ -26,7 +26,6 @@ proxy:
       container-image: ${ACR_LOGIN_SERVER}/cm-app-measures:latest
       container-cmd: ["R", "-e", "shiny::runApp('/app', host='0.0.0.0', port=3838)"]
       container-env:
-        CM_DATA_SOURCE: azure
         CM_REPORTS_ROOT: /app
         AZURE_BLOB_ENDPOINT: ${AZURE_BLOB_ENDPOINT}
         AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
@@ -41,7 +40,6 @@ proxy:
       container-image: ${ACR_LOGIN_SERVER}/cm-app-summary:latest
       container-cmd: ["R", "-e", "shiny::runApp('/app', host='0.0.0.0', port=3840)"]
       container-env:
-        CM_DATA_SOURCE: azure
         CM_REPORTS_ROOT: /app
         AZURE_BLOB_ENDPOINT: ${AZURE_BLOB_ENDPOINT}
         AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}

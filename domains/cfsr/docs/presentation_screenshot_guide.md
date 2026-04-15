@@ -35,23 +35,14 @@ run_profile(source = "all")
 
 ---
 
-## Step 2: Open the dashboards (production or local)
+## Step 2: Open the dashboards (Azure)
 
-**Production (Azure Container Apps)** — use these bases for screenshots when capturing against live environments (override via `CM_PUBLIC_SUMMARY_URL` / `CM_PUBLIC_MEASURES_URL` in `.env` if needed):
+Use these bases for screenshots (override via `CM_PUBLIC_SUMMARY_URL` / `CM_PUBLIC_MEASURES_URL` in `.env` if your environment uses different hostnames):
 
 - **Summary:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io`
 - **Measures:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io`
 
-**Local development** — run from R:
-
-```r
-source("domains/cfsr/launch_cfsr_apps.R")
-```
-
-This launches:
-
-- **Measures:** `http://localhost:3838` (default; console shows if different)
-- **Summary:** `http://localhost:3840`
+For ad hoc testing, run the Shiny images from `infrastructure/docker/shiny/` with Azure blob credentials set (same behavior as Container Apps).
 
 ---
 
@@ -80,8 +71,7 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 #### 1. Summary App (Slide 4)
 
 **Production URL:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state={STATE}&profile={PERIOD}`  
-**Example:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02`  
-**Local URL:** `http://localhost:3840/?state=MD&profile=2025_02`
+**Example:** `https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02`
 
 **What to capture:**
 - Full page view of the summary app
@@ -100,8 +90,7 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 
 **Production URL (Measures app, Overview → Risk Standardized Performance):**  
 `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state={STATE}&profile={PERIOD}&tab=overview&overview_tab=rsp`  
-**Example:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02&tab=overview&overview_tab=rsp`  
-**Local:** `http://localhost:3838/?state=MD&profile=2025_02&tab=overview&overview_tab=rsp`
+**Example:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02&tab=overview&overview_tab=rsp`
 
 **What to capture:**
 - KPI cards section only (not the full page)
@@ -118,8 +107,7 @@ Each PowerPoint slide includes a placeholder with the exact URL to navigate to. 
 
 **Production URL (Measures app, Overview → Observed Performance):**  
 `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state={STATE}&profile={PERIOD}&tab=overview&overview_tab=obs`  
-**Example:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02&tab=overview&overview_tab=obs`  
-**Local:** `http://localhost:3838/?state=MD&profile=2025_02&tab=overview&overview_tab=obs`
+**Example:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io/?state=MD&profile=2025_02&tab=overview&overview_tab=obs`
 
 **What to capture:**
 - KPI cards section only
@@ -149,8 +137,6 @@ Open the **Measures** app, set `state` and `profile` in the URL, then use the **
 6. **Permanency (24+ months)** — `&tab=obs_perm12_24`
 7. **Reentry** — `&tab=obs_reentry`
 8. **Placement stability** — `&tab=obs_placement`
-
-**Local:** same query parameters against `http://localhost:3838/`.
 
 **Filenames (examples):** `md_entry_rate_2025_02.png`, `md_maltreatment_in_care_2025_02.png`, etc.
 
@@ -261,8 +247,7 @@ Before sharing the presentation, verify:
 - Check URL matches the one in the placeholder
 
 ### App isn't loading
-- **Solution:** Verify apps are running: `source("domains/cfsr/launch_cfsr_apps.R")`
-- Check port numbers in console match URLs you're using
+- **Solution:** Confirm Container Apps revisions are healthy or Docker containers have valid `AZURE_BLOB_*` credentials and can reach processed data
 
 ---
 
