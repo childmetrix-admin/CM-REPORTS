@@ -3,7 +3,11 @@
 # Consolidates 3 CFSR apps: national (state comparisons), rsp (KPI cards), observed (KPI cards + details)
 # Navigation is built into the app sidebar (no external HTML dependencies)
 
-# NOTE: global.R is sourced automatically by Shiny
+# Load required packages explicitly (global.R also loads these, but we need them immediately)
+library(shiny)
+library(shinydashboard)
+
+# NOTE: global.R is sourced automatically by Shiny and loads additional packages/data
 
 #####################################
 # HELPER FUNCTIONS (APP-SPECIFIC) ----
