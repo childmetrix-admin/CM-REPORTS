@@ -1,4 +1,44 @@
 # utils.R - Utility functions for the Shiny app
+# Supports local RDS files or Azure Blob (CM_DATA_SOURCE=azure) for processed data.
+
+.cm_is_azure_data <- function() {
+  identical(Sys.getenv("CM_DATA_SOURCE", "sharefile"), "azure")
+}
+
+.cm_azure_list_blob_names <- function(prefix) {
+  if (!requireNamespace("AzureStor", quietly = TRUE)) {
+    stop("AzureStor package required when CM_DATA_SOURCE=azure")
+  }
+  ep <- AzureStor::blob_endpoint(
+    Sys.getenv("AZURE_BLOB_ENDPOINT"),
+    key = Sys.getenv("AZURE_STORAGE_KEY")
+  )
+  cont <- AzureStor::blob_container(
+    ep,
+    Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
+  )
+  b <- AzureStor::list_blobs(cont, prefix = prefix)
+  b$name
+}
+
+.cm_azure_read_rds <- function(blob_path) {
+  if (!requireNamespace("AzureStor", quietly = TRUE)) {
+    stop("AzureStor package required when CM_DATA_SOURCE=azure")
+  }
+  ep <- AzureStor::blob_endpoint(
+    Sys.getenv("AZURE_BLOB_ENDPOINT"),
+    key = Sys.getenv("AZURE_STORAGE_KEY")
+  )
+  cont <- AzureStor::blob_container(
+    ep,
+    Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
+  )
+  local_tmp <- file.path(tempdir(), basename(blob_path))
+  AzureStor::download_blob(cont, blob_path, local_tmp, overwrite = TRUE)
+  data <- readRDS(local_tmp)
+  unlink(local_tmp)
+  data
+}
 
 #' Get available profiles for a state and profile type
 #'
@@ -14,6 +54,39 @@ get_available_profiles <- function(state, type = "national") {
   if (!type %in% valid_types) {
     warning("Invalid profile type '", type, "'. Using 'national'.")
     type <- "national"
+  }
+
+  # Azure Blob: list processed container (same layout as build_rds_path in paths.R)
+  if (.cm_is_azure_data()) {
+    if (type == "national") {
+      blobs <- .cm_azure_list_blob_names("rds/national/")
+      ok <- grepl("^rds/national/cfsr_profile_national_[0-9]{4}_[0-9]{2}\\.rds$", blobs)
+      if (!any(ok)) return(character(0))
+      periods <- sub(
+        "^cfsr_profile_national_([0-9]{4}_[0-9]{2})\\.rds$",
+        "\\1",
+        basename(blobs[ok])
+      )
+    } else {
+      prefix <- paste0("rds/", tolower(state), "/")
+      blobs <- .cm_azure_list_blob_names(prefix)
+      rx <- paste0(
+        "^rds/", tolower(state), "/[0-9]{4}_[0-9]{2}/",
+        state, "_cfsr_profile_", type, "_[0-9]{4}_[0-9]{2}\\.rds$"
+      )
+      matching <- blobs[grepl(rx, blobs)]
+      if (length(matching) == 0) return(character(0))
+      periods <- vapply(matching, function(b) {
+        bn <- basename(b)
+        sub(
+          paste0("^", state, "_cfsr_profile_", type, "_"),
+          "",
+          sub("\\.rds$", "", bn)
+        )
+      }, character(1))
+      periods <- unique(periods)
+    }
+    return(sort(periods, decreasing = TRUE))
   }
 
   # Detect monorepo root and build path to data directory
@@ -120,14 +193,22 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
   # New hierarchical structure:
   # - national: domains/cfsr/data/rds/national/cfsr_profile_national_{PERIOD}.rds
   # - state-specific: domains/cfsr/data/rds/{state}/{period}/{STATE}_cfsr_profile_{type}_{period}.rds
+  # Azure: same paths relative to processed container (see paths.R build_rds_path)
   if (type == "national") {
-    national_dir <- file.path(data_dir, "national")
     filename <- paste0("cfsr_profile_national_", profile, ".rds")
+    blob_path <- paste0("rds/national/", filename)
+    national_dir <- file.path(data_dir, "national")
     file_path <- file.path(national_dir, filename)
   } else {
-    state_dir <- file.path(data_dir, tolower(state), profile)
     filename <- paste0(state, "_cfsr_profile_", type, "_", profile, ".rds")
+    blob_path <- paste0("rds/", tolower(state), "/", profile, "/", filename)
+    state_dir <- file.path(data_dir, tolower(state), profile)
     file_path <- file.path(state_dir, filename)
+  }
+
+  if (.cm_is_azure_data()) {
+    message("Loading data from blob: ", blob_path)
+    return(.cm_azure_read_rds(blob_path))
   }
 
   # Check if file exists
