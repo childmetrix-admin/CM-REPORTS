@@ -106,7 +106,19 @@
       <div style="color: #6b7280;">Checking for Shiny server...</div>
     </div>
 
-    <!-- Error/Instructions -->
+    <!-- Error/Instructions (Azure mode) -->
+    <div class="message hidden" id="errorMessageAzure">
+      <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 24px; text-align: left;">
+        <h3 style="margin-top: 0; color: #1e40af;">CFSR Measures Dashboard</h3>
+        <p style="color: #1e3a5f;">The Shiny dashboard container is starting up. This may take a moment on the first request.</p>
+        <p>
+          <a href="#" class="button" onclick="location.reload(); return false;">Retry</a>
+          <a href="" id="directLinkAzure" class="button" target="_blank" style="background: #6b7280;">Open Directly</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Error/Instructions (local mode) -->
     <div class="message hidden" id="errorMessage">
       <div class="instructions">
         <h3>Shiny Server Not Running</h3>
@@ -144,20 +156,20 @@
   <script>
     const iframe = document.getElementById('shinyFrame');
     const loading = document.getElementById('loadingIndicator');
-    const error = document.getElementById('errorMessage');
+    const errorLocal = document.getElementById('errorMessage');
+    const errorAzure = document.getElementById('errorMessageAzure');
 
-    // Shiny base URL - configurable for Azure deployment
     const SHINY_BASE_URL = (function() {
       const params = new URLSearchParams(window.location.search);
       const base = params.get('shiny_base');
       if (base) return base;
-
       if (window.CM_SHINY_CONFIG && window.CM_SHINY_CONFIG.measuresUrl) {
         return window.CM_SHINY_CONFIG.measuresUrl;
       }
-
-      return `http://localhost:3838`;
+      return 'http://localhost:3838';
     })();
+
+    const IS_AZURE = SHINY_BASE_URL.includes('azurecontainerapps.io');
 
     function getStateFromURL() {
       const params = new URLSearchParams(window.location.search);
@@ -171,12 +183,25 @@
 
     async function checkShinyServer() {
       try {
-        const response = await fetch(`${SHINY_BASE_URL}/`, {
-          method: 'HEAD',
-          mode: 'no-cors'
-        });
-        return true;
+        if (IS_AZURE) {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch(`${SHINY_BASE_URL}/`, {
+            method: 'GET',
+            mode: 'cors',
+            signal: controller.signal
+          });
+          clearTimeout(timeout);
+          return response.ok;
+        } else {
+          const response = await fetch(`${SHINY_BASE_URL}/`, {
+            method: 'HEAD',
+            mode: 'no-cors'
+          });
+          return true;
+        }
       } catch (err) {
+        if (IS_AZURE) return false;
         return new Promise((resolve) => {
           const img = new Image();
           img.onload = () => resolve(true);
@@ -187,30 +212,59 @@
       }
     }
 
+    function showError() {
+      loading.classList.add('hidden');
+      if (IS_AZURE) {
+        errorAzure.classList.remove('hidden');
+      } else {
+        errorLocal.classList.remove('hidden');
+      }
+    }
+
     async function loadShinyApp(state, profile) {
       loading.classList.remove('hidden');
-      error.classList.add('hidden');
+      errorLocal.classList.add('hidden');
+      errorAzure.classList.add('hidden');
       iframe.classList.add('hidden');
 
-      const serverRunning = await checkShinyServer();
+      const appURL = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
 
-      if (serverRunning) {
-        const appURL = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
+      if (IS_AZURE) {
         iframe.src = appURL;
+        let loaded = false;
 
         iframe.onload = function() {
+          loaded = true;
           loading.classList.add('hidden');
           iframe.classList.remove('hidden');
         };
 
+        iframe.onerror = function() {
+          showError();
+        };
+
         setTimeout(function() {
-          if (!iframe.classList.contains('hidden')) return;
-          loading.classList.add('hidden');
-          iframe.classList.remove('hidden');
-        }, 3000);
+          if (!loaded) {
+            loading.classList.add('hidden');
+            iframe.classList.remove('hidden');
+          }
+        }, 10000);
       } else {
-        loading.classList.add('hidden');
-        error.classList.remove('hidden');
+        const serverRunning = await checkShinyServer();
+        if (serverRunning) {
+          iframe.src = appURL;
+          iframe.onload = function() {
+            loading.classList.add('hidden');
+            iframe.classList.remove('hidden');
+          };
+          setTimeout(function() {
+            if (!iframe.classList.contains('hidden')) return;
+            loading.classList.add('hidden');
+            iframe.classList.remove('hidden');
+          }, 3000);
+        } else {
+          showError();
+        }
       }
     }
 
@@ -221,6 +275,10 @@
       const directLink = document.getElementById('directLink');
       if (directLink) {
         directLink.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
+      }
+      const directLinkAzure = document.getElementById('directLinkAzure');
+      if (directLinkAzure) {
+        directLinkAzure.href = `${SHINY_BASE_URL}/?state=${state}&profile=${profile}`;
       }
 
       loadShinyApp(state, profile);
