@@ -19,10 +19,13 @@ RUN R -e "options(repos = c(CRAN = 'https://p3m.dev/cran/__linux__/jammy/latest'
 
 WORKDIR /app
 
+# Copy app files to /app (working directory)
 COPY domains/cfsr/apps/app_measures/ /app/
-COPY domains/cfsr/functions/ /app/functions/
-COPY domains/cfsr/modules/ /app/modules/
-COPY domains/cfsr/data/ /app/data/
+
+# Recreate monorepo structure so paths work correctly
+COPY domains/cfsr/functions/ /app/domains/cfsr/functions/
+COPY domains/cfsr/modules/ /app/domains/cfsr/modules/
+COPY domains/cfsr/data/ /app/domains/cfsr/data/
 COPY shared/ /app/shared/
 COPY CLAUDE.md /app/CLAUDE.md
 

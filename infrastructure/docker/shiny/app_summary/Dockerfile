@@ -19,13 +19,18 @@ RUN R -e "options(repos = c(CRAN = 'https://p3m.dev/cran/__linux__/jammy/latest'
 
 WORKDIR /app
 
+# Copy app files to /app (working directory)
 COPY domains/cfsr/apps/app_summary/ /app/
-COPY domains/cfsr/data/ /app/data/
+
+# Recreate monorepo structure so paths work correctly
+COPY domains/cfsr/data/ /app/domains/cfsr/data/
 COPY shared/ /app/shared/
 COPY CLAUDE.md /app/CLAUDE.md
 
 ENV CM_DATA_SOURCE=azure
 ENV CM_REPORTS_ROOT=/app
+
+# Note: Data is loaded from Azure Blob (CM_DATA_SOURCE=azure), not local files
 
 EXPOSE 3840
 
