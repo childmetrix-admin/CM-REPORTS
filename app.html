@@ -417,6 +417,13 @@
         }
       };
 
+      // Azure Container App URLs for Shiny dashboards
+      const SHINY_URLS = {
+        summary: 'https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io',
+        measures: 'https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io'
+      };
+      window.CM_SHINY_URLS = SHINY_URLS;
+
       const config = STATE_CONFIGS[stateCode];
       if (config) {
           // Apply configuration to page
@@ -724,7 +731,7 @@
         if (currentSubsection === 'summary') {
           if (currentCategory === 'cfsr') {
             const period = periodSelect.value;
-            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}`;
+            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.summary)}`;
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/summary/index.html`;
           } else if (currentCategory === 'community') {
@@ -739,9 +746,8 @@
         } else if (currentSubsection === 'performance') {
           if (currentCategory === 'cfsr') {
             const period = periodSelect.value;
-            // Load the measures app (app handles navigation internally with built-in sidebar)
-            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}`;
-            cfsrTertiarySidebar.style.display = 'none'; // Hide external sidebar
+            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.measures)}`;
+            cfsrTertiarySidebar.style.display = 'none';
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/current/index.html`;
           } else if (currentCategory === 'community') {
@@ -818,7 +824,7 @@
 
         if (currentCategory === 'cfsr') {
           const period = periodSelect.value;
-          frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}`;
+          frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.summary)}`;
         } else if (currentCategory === 'in-home') {
           frame.src = `states/${stateCode}/in_home/summary/index.html`;
         } else if (currentCategory === 'community') {
@@ -840,8 +846,8 @@
         if (currentCategory === 'cfsr') {
           currentSubsection = 'performance';
           const period = periodSelect.value;
-          frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}`;
-          cfsrTertiarySidebar.style.display = 'none'; // Hide external sidebar - app has built-in sidebar
+          frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.measures)}`;
+          cfsrTertiarySidebar.style.display = 'none';
           setSecondaryActive('performance');
         } else if (currentCategory === 'in-home') {
           currentSubsection = 'performance';
@@ -956,10 +962,9 @@
         // Reload the current page with the new profile parameter
         if (currentCategory === 'cfsr') {
           if (currentSubsection === 'summary') {
-            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}`;
+            frame.src = `shared/cfsr/summary/index.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.summary)}`;
           } else if (currentSubsection === 'performance') {
-            // Reload the measures app with new profile (app handles navigation internally)
-            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}`;
+            frame.src = `shared/cfsr/measures/cfsr_profile_measures.html?state=${stateCode}&profile=${period}&shiny_base=${encodeURIComponent(SHINY_URLS.measures)}`;
           } else if (currentSubsection === 'presentations') {
             frame.src = `shared/cfsr/presentations/index.html`;
           } else if (currentSubsection === 'data_dictionary') {
