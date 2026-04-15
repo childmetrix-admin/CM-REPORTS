@@ -13,7 +13,17 @@
 #####################################
 
 # Load centralized path configuration
-source(file.path(dirname(sys.frame(1)$ofile), "paths.R"))
+# Use CFSR_EXTRACTION_DIR if available (set by paths.R when called from run.R),
+# otherwise detect script directory from sys.frame or fallback to env var
+config_script_dir <- if (exists("CFSR_EXTRACTION_DIR")) {
+  CFSR_EXTRACTION_DIR
+} else if (!is.null(sys.frame(1)$ofile)) {
+  dirname(sys.frame(1)$ofile)
+} else {
+  root <- Sys.getenv("CM_REPORTS_ROOT", "/app")
+  file.path(root, "domains/cfsr/extraction")
+}
+source(file.path(config_script_dir, "paths.R"))
 
 # Load packages (shared utility)
 source(file.path(SHARED_UTILS_DIR, "load_packages.R"))

@@ -33,10 +33,24 @@
 #####################################
 
 # Find paths.R relative to this script's location
+# Handle three cases: interactive RStudio, Rscript with --file=, and source()
 script_dir <- if (interactive()) {
+  # Interactive mode (RStudio)
   dirname(rstudioapi::getSourceEditorContext()$path)
 } else {
-  dirname(sys.frame(1)$ofile)
+  # Check for --file= argument (Rscript execution)
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  if (length(file_arg) > 0) {
+    dirname(normalizePath(sub("^--file=", "", file_arg)))
+  } else if (!is.null(sys.frame(1)$ofile)) {
+    # Fallback: source() call
+    dirname(sys.frame(1)$ofile)
+  } else {
+    # Last resort: use CM_REPORTS_ROOT env var
+    root <- Sys.getenv("CM_REPORTS_ROOT", "/app")
+    file.path(root, "domains/cfsr/extraction")
+  }
 }
 
 # Source paths.R first to get canonical detect_monorepo_root() and path variables

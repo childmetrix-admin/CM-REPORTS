@@ -29,8 +29,18 @@
 #####################################
 
 # Load configuration (in same directory)
-source(file.path(dirname(sys.frame(1)$ofile), "config.R"))
-source(file.path(dirname(sys.frame(1)$ofile), "update_app.R"))
+# Use CFSR_EXTRACTION_DIR if available (set by paths.R), otherwise detect from sys.frame
+extraction_dir <- if (exists("CFSR_EXTRACTION_DIR")) {
+  CFSR_EXTRACTION_DIR
+} else if (!is.null(sys.frame(1)$ofile)) {
+  dirname(sys.frame(1)$ofile)
+} else {
+  # Fallback for Rscript execution
+  root <- Sys.getenv("CM_REPORTS_ROOT", "/app")
+  file.path(root, "domains/cfsr/extraction")
+}
+source(file.path(extraction_dir, "config.R"))
+source(file.path(extraction_dir, "update_app.R"))
 
 #####################################
 # MAIN FUNCTION ----
