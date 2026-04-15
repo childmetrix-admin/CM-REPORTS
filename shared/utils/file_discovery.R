@@ -109,7 +109,8 @@ discover_states_azure <- function() {
   }
 
   # List top-level "directories" in the raw container
-  # Blob paths: raw/{state}/cfsr/uploads/...
+  # Blob paths may be: {state}/{state}/cfsr/uploads/... (doubled from AzCopy)
+  # or: {state}/cfsr/uploads/... (correct structure)
   all_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW, prefix = "")
 
   # Extract unique 2-letter state codes from blob paths
@@ -117,8 +118,17 @@ discover_states_azure <- function() {
   state_codes <- state_codes[nchar(state_codes) == 2]
 
   # Verify each state has cfsr/uploads content
+  # Check both doubled path (state/state/cfsr) and normal path (state/cfsr)
   states_with_cfsr <- character(0)
   for (state in state_codes) {
+    # Try doubled path first (from AzCopy upload)
+    cfsr_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW,
+                             prefix = paste0(state, "/", state, "/cfsr/uploads/"))
+    if (length(cfsr_blobs) > 0) {
+      states_with_cfsr <- c(states_with_cfsr, state)
+      next
+    }
+    # Try normal path
     cfsr_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW,
                              prefix = paste0(state, "/cfsr/uploads/"))
     if (length(cfsr_blobs) > 0) {
@@ -130,8 +140,17 @@ discover_states_azure <- function() {
 }
 
 discover_periods_azure <- function(state) {
-  prefix <- paste0(tolower(state), "/cfsr/uploads/")
+  state <- tolower(state)
+  
+  # Try doubled path first (from AzCopy upload: state/state/cfsr/uploads/)
+  prefix <- paste0(state, "/", state, "/cfsr/uploads/")
   all_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW, prefix = prefix)
+  
+  # Fall back to normal path if doubled path is empty
+  if (length(all_blobs) == 0) {
+    prefix <- paste0(state, "/cfsr/uploads/")
+    all_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW, prefix = prefix)
+  }
 
   if (length(all_blobs) == 0) {
     warning("No uploads found for state: ", state)
@@ -139,7 +158,7 @@ discover_periods_azure <- function(state) {
   }
 
   # Extract period directories from blob paths
-  # e.g., "md/cfsr/uploads/2026_02/file.pdf" -> "2026_02"
+  # e.g., "md/md/cfsr/uploads/2026_02/file.pdf" -> "2026_02"
   sub_paths <- sub(paste0("^", prefix), "", all_blobs)
   period_parts <- sub("/.*", "", sub_paths)
   periods <- unique(period_parts[grepl("^\\d{4}_\\d{2}$", period_parts)])
@@ -148,8 +167,17 @@ discover_periods_azure <- function(state) {
 }
 
 discover_sources_azure <- function(state, period) {
-  prefix <- paste0(tolower(state), "/cfsr/uploads/", period, "/")
+  state <- tolower(state)
+  
+  # Try doubled path first (from AzCopy upload: state/state/cfsr/uploads/)
+  prefix <- paste0(state, "/", state, "/cfsr/uploads/", period, "/")
   all_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW, prefix = prefix)
+  
+  # Fall back to normal path if doubled path is empty
+  if (length(all_blobs) == 0) {
+    prefix <- paste0(state, "/cfsr/uploads/", period, "/")
+    all_blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW, prefix = prefix)
+  }
 
   if (length(all_blobs) == 0) {
     return(c(national = FALSE, rsp = FALSE, observed = FALSE, state = FALSE))

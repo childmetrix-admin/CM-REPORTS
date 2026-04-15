@@ -176,25 +176,27 @@ setup_cfsr_folders <- function(profile_period,
   profile_period <- toupper(profile_period)
   state_code <- tolower(state_code)
 
-  # Build folder paths
-  folder_uploads <- file.path(SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
+  # Build folder paths - handle Azure vs ShareFile mode
+  if (CM_DATA_SOURCE == "azure") {
+    # Azure mode: download files from blob to temp directory
+    folder_uploads <- download_azure_uploads(state_code, profile_period)
+  } else {
+    # ShareFile mode: use local path
+    folder_uploads <- file.path(SHAREFILE_BASE, state_code, "cfsr/uploads", profile_period)
+    
+    # Check if uploads folder exists
+    if (!dir.exists(folder_uploads)) {
+      stop("Uploads folder does not exist: ", folder_uploads,
+           "\n\nPlease upload files to ShareFile at:",
+           "\n  S:/Shared Folders/", state_code, "/cfsr/uploads/", profile_period, "/",
+           "\n\nOr check your state_code and profile_period values.",
+           call. = FALSE)
+    }
+  }
+  
   folder_processed <- file.path(CFSR_PROCESSED_DIR, state_code, profile_period)
   folder_app_data <- file.path(CFSR_APP_DATA_DIR, state_code)
   folder_raw <- folder_uploads  # Alias for backward compatibility
-
-  # Check if uploads folder exists
-  if (!dir.exists(folder_uploads)) {
-    stop("Uploads folder does not exist: ", folder_uploads,
-         "\n\nPlease upload files to ShareFile at:",
-         "\n  S:/Shared Folders/", state_code, "/cfsr/uploads/", profile_period, "/",
-         "\n\nOr check your state_code and profile_period values.",
-         call. = FALSE)
-  }
-
-  # Note: Folders are created on-demand by extraction scripts
-  # - CSV files: save_to_folder_run() creates date-stamped folders
-  # - RDS files: Extraction scripts create output_dir_prod as needed
-  # No need to pre-create empty folder structures here
 
   # Return configuration list
   config <- list(
@@ -217,6 +219,77 @@ setup_cfsr_folders <- function(profile_period,
   }
 
   return(invisible(config))
+}
+
+#' Download uploads from Azure Blob to local temp directory
+#'
+#' Downloads all files from a state/period uploads folder in Azure Blob
+#' to a local temp directory for processing.
+#'
+#' @param state_code Lowercase 2-letter state code
+#' @param profile_period Period in YYYY_MM format
+#' @return Path to local temp directory containing downloaded files
+download_azure_uploads <- function(state_code, profile_period) {
+  state_code <- tolower(state_code)
+  
+  # Create temp directory for this state/period
+  temp_dir <- file.path(tempdir(), "cfsr_uploads", state_code, profile_period)
+  dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)
+  
+  # Try both path patterns (doubled from AzCopy vs normal)
+  prefixes <- c(
+    paste0(state_code, "/", state_code, "/cfsr/uploads/", profile_period, "/"),
+    paste0(state_code, "/cfsr/uploads/", profile_period, "/")
+  )
+  
+  blobs_found <- character(0)
+  used_prefix <- NULL
+  
+  for (prefix in prefixes) {
+    blobs <- list_blobs(AZURE_BLOB_CONTAINER_RAW, prefix = prefix)
+    if (length(blobs) > 0) {
+      blobs_found <- blobs
+      used_prefix <- prefix
+      break
+    }
+  }
+  
+  if (length(blobs_found) == 0) {
+    stop("No files found in Azure Blob for: ", state_code, "/", profile_period,
+         "\nTried prefixes: ", paste(prefixes, collapse = ", "),
+         call. = FALSE)
+  }
+  
+  message("Downloading ", length(blobs_found), " files from Azure Blob...")
+  
+  # Download each file
+  endpoint <- get_blob_endpoint()
+  container <- AzureStor::blob_container(endpoint, AZURE_BLOB_CONTAINER_RAW)
+  
+  for (blob_path in blobs_found) {
+    # Skip "directories" (blobs ending in /)
+    if (grepl("/$", blob_path)) next
+    
+    # Get just the filename
+    filename <- basename(blob_path)
+    local_path <- file.path(temp_dir, filename)
+    
+    tryCatch({
+      AzureStor::download_blob(container, blob_path, local_path, overwrite = TRUE)
+      message("  Downloaded: ", filename)
+    }, error = function(e) {
+      warning("  Failed to download ", filename, ": ", e$message)
+    })
+  }
+  
+  # Verify we have files
+  downloaded <- list.files(temp_dir)
+  if (length(downloaded) == 0) {
+    stop("No files were successfully downloaded to: ", temp_dir, call. = FALSE)
+  }
+  
+  message("Downloaded ", length(downloaded), " files to: ", temp_dir)
+  return(temp_dir)
 }
 
 #####################################
