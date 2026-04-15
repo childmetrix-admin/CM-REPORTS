@@ -1,0 +1,51 @@
+# Node modules (from SWA CLI install)
+node_modules/
+package-lock.json
+package.json
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Infrastructure and config (not needed in static site)
+infrastructure/
+.github/
+templates/
+docs/
+
+# R data files (loaded from Azure Blob, not served statically)
+*.rds
+*.RData
+
+# Development files
+*.bak
+*.save
+*.backup.*
+.Rproj.user/
+.Rhistory
+.RData
+*.Rproj
+
+# Environment files
+.env
+.env.*
+.Renviron
+
+# Cursor/IDE
+.cursor/
+.vscode/
+
+# Claude/AI
+CLAUDE.md
+
+# Large binary files
+*.pdf
+*.pptx
+*.xlsx
+*.docx
+
+# Test files
+test/
+tests/
+__tests__/
