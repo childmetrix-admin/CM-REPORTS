@@ -26,7 +26,7 @@ get_available_profiles <- function(state, type = "national") {
       }
       current <- dirname(current)
     }
-    return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
+    return(Sys.getenv("CM_REPORTS_ROOT", "/app"))
   }
   data_dir <- file.path(detect_root(), "domains/cfsr/data/rds")
 
@@ -102,7 +102,7 @@ load_cfsr_data <- function(state, profile = "latest", type = "national") {
       }
       current <- dirname(current)
     }
-    return(Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports"))
+    return(Sys.getenv("CM_REPORTS_ROOT", "/app"))
   }
   data_dir <- file.path(detect_root(), "domains/cfsr/data/rds")
 

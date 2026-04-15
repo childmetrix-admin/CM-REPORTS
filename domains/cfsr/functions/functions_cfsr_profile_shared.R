@@ -934,7 +934,7 @@ save_extraction_output <- function(data,
     period = profile_period,
     type = data_type
   )
-  saveRDS(data, output_file_rds)
+  save_rds_data(data, output_file_rds)
 
   return(list(folder_run = folder_run, run_date = run_date))
 }

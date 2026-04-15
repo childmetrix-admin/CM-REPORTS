@@ -187,8 +187,8 @@ observed_data <- bind_rows(top_long, bottom_long)
 rsp_rds_path <- build_rds_path(state_code, profile_period, "rsp")
 
 # Load RSP data
-if (file.exists(rsp_rds_path)) {
-  rsp_data <- readRDS(rsp_rds_path)
+if (rds_exists(rsp_rds_path)) {
+  rsp_data <- load_rds_data(rsp_rds_path)
 
   # Join on indicator and period to get status and data_used
   observed_data <- observed_data %>%
@@ -241,8 +241,8 @@ assign("validation_results_obs", validation_results_obs, envir = .GlobalEnv)
 # Use new hierarchical structure: domains/cfsr/data/rds/national/
 national_file <- build_rds_path(state_code = NULL, profile_period, "national")
 
-if (file.exists(national_file)) {
-  national_data <- readRDS(national_file)
+if (rds_exists(national_file)) {
+  national_data <- load_rds_data(national_file)
 
   # Join national data to add state_rank and reporting_states
   # Join on: indicator, period, state_abb

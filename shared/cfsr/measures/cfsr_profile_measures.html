@@ -122,23 +122,11 @@
     <div class="message hidden" id="errorMessage">
       <div class="instructions">
         <h3>Shiny Server Not Running</h3>
-        <p>The CFSR Measures dashboard requires a running Shiny server. To start it:</p>
-
-        <p><strong>Step 1:</strong> Open R or RStudio</p>
-
-        <p><strong>Step 2:</strong> Run this command:</p>
-        <div class="code-block">source("D:/repo_childmetrix/cm-reports/domains/cfsr/launch_cfsr_apps.R")</div>
-
-        <p><strong>Step 3:</strong> Once running, choose an option:</p>
+        <p>The CFSR Measures dashboard is loading...</p>
+        <p>If this message persists, the Shiny server may not be available.</p>
         <p>
-          <a href="http://localhost:3838/" id="directLink" class="button" target="_blank">Open Dashboard Directly</a>
+          <a href="#" id="directLink" class="button" target="_blank">Open Dashboard Directly</a>
           <a href="#" class="button" onclick="location.reload(); return false;">Reload This Page</a>
-        </p>
-
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid #d1d5db;">
-
-        <p style="font-size: 13px; color: #6b7280;">
-          <strong>Note:</strong> The Measures app runs on port 3838 and includes RSP, Observed Overview, and all indicator detail pages.
         </p>
       </div>
     </div>

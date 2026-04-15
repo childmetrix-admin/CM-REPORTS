@@ -178,6 +178,18 @@ load_rds_data <- function(rds_path) {
   return(readRDS(rds_path))
 }
 
+#' Check if RDS data exists - works for both local filesystem and Azure Blob
+#' @param rds_path Path returned by build_rds_path()
+#' @return Logical TRUE if exists, FALSE otherwise
+rds_exists <- function(rds_path) {
+  if (CM_DATA_SOURCE == "azure") {
+    # Check if blob exists by listing with exact prefix
+    blobs <- list_blobs(AZURE_BLOB_CONTAINER_PROCESSED, prefix = rds_path)
+    return(length(blobs) > 0 && any(blobs == rds_path))
+  }
+  return(file.exists(rds_path))
+}
+
 # Output message
 message("Monorepo paths configured:")
 message("  Root: ", MONOREPO_ROOT)

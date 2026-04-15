@@ -188,8 +188,8 @@ ind_data <- standardize_dimension_values(ind_data)
 # Use new hierarchical structure: domains/cfsr/data/rds/national/
 national_file <- build_rds_path(state_code = NULL, profile_period, "national")
 
-if (file.exists(national_file)) {
-  national_data <- readRDS(national_file)
+if (rds_exists(national_file)) {
+  national_data <- load_rds_data(national_file)
 
   # Join national data to add state_rank and reporting_states
   # Join on: indicator, period, state_abb
@@ -223,8 +223,8 @@ if (file.exists(national_file)) {
 # This allows charts to show appropriate message when performance can't be calculated
 rsp_file <- build_rds_path(state_code, profile_period, "rsp")
 
-if (file.exists(rsp_file)) {
-  rsp_data <- readRDS(rsp_file)
+if (rds_exists(rsp_file)) {
+  rsp_data <- load_rds_data(rsp_file)
 
   # Join RSP data to add status column
   # Join on: indicator, period

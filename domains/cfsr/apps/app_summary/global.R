@@ -45,7 +45,8 @@ detect_monorepo_root <- function() {
     }
     current <- dirname(current)
   }
-  root <- Sys.getenv("CM_REPORTS_ROOT", "d:/repo_childmetrix/cm-reports")
+  # Use environment variable (set by Docker or local .Renviron)
+  root <- Sys.getenv("CM_REPORTS_ROOT", "/app")
   return(root)
 }
 monorepo_root <- detect_monorepo_root()

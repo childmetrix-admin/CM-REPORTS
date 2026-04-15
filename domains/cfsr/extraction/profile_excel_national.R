@@ -233,4 +233,4 @@ message("Saved: ", csv_path)
 # RDS contains same data as CSV (all periods, not filtered)
 # Apps can filter to most recent period as needed
 output_file_prod_period <- build_rds_path(state_code = NULL, profile_period, "national")
-saveRDS(ind_data, output_file_prod_period)
+save_rds_data(ind_data, output_file_prod_period)

@@ -35,9 +35,23 @@ if (!requireNamespace("callr", quietly = TRUE)) {
 
 library(callr)
 
-# App directories
-app_summary_dir <- "D:/repo_childmetrix/cm-reports/domains/cfsr/apps/app_summary"
-app_measures_dir <- "D:/repo_childmetrix/cm-reports/domains/cfsr/apps/app_measures"
+# Detect monorepo root for portable paths
+detect_root <- function() {
+  current <- getwd()
+  while (current != dirname(current)) {
+    if (file.exists(file.path(current, "CLAUDE.md")) ||
+        file.exists(file.path(current, ".git"))) {
+      return(current)
+    }
+    current <- dirname(current)
+  }
+  return(Sys.getenv("CM_REPORTS_ROOT", getwd()))
+}
+monorepo_root <- detect_root()
+
+# App directories (relative to monorepo root)
+app_summary_dir <- file.path(monorepo_root, "domains/cfsr/apps/app_summary")
+app_measures_dir <- file.path(monorepo_root, "domains/cfsr/apps/app_measures")
 
 # Check if apps exist
 if (!dir.exists(app_summary_dir)) {
