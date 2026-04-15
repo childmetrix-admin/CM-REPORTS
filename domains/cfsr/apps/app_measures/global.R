@@ -7,6 +7,9 @@
 #
 # Navigation is built into the Shiny app sidebar, eliminating external HTML dependencies
 
+# Null-coalescing infix (used in app.R for URL query parsing; same as app_summary)
+`%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || x == "") y else x
+
 # Load required packages
 suppressPackageStartupMessages({
   library(shiny)
