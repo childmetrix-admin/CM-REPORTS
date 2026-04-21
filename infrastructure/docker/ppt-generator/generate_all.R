@@ -41,6 +41,35 @@ if (blob_endpoint == "") {
 message(sprintf("Blob endpoint: %s", blob_endpoint))
 message("")
 
+# Headless Chrome in Azure Container Instances / Docker requires no-sandbox and small /dev/shm
+Sys.setenv(
+  GOOGLE_CHROME = chrome_path,
+  CHROMOTE_CHROME = chrome_path
+)
+tryCatch(
+  {
+    if (requireNamespace("chromote", quietly = TRUE)) {
+      base_args <- tryCatch(
+        chromote::default_chrome_args(),
+        error = function(e) c("--headless=new", "--remote-debugging-port=0")
+      )
+      chromote::set_chrome_args(unique(c(
+        base_args,
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--window-size=1100,2400"
+      )))
+      message("chromote: Chrome args set for container (no-sandbox, disable-dev-shm-usage)")
+    } else {
+      warning("chromote not installed — webshot2 may fail in ACI")
+    }
+  },
+  error = function(e) {
+    warning("Could not configure chromote: ", conditionMessage(e))
+  }
+)
+
 # Load required packages
 suppressPackageStartupMessages({
   library(AzureStor)
@@ -93,6 +122,11 @@ for (period in periods) {
   }, error = function(e) {
     results[[period]] <<- list(success = FALSE, error = conditionMessage(e))
     message(sprintf("FAILED: %s", conditionMessage(e)))
+    message("----------------------------------------------")
+    print(e)
+    if (length(sys.calls()) > 0) {
+      try(traceback(2L), silent = TRUE)
+    }
   })
   
   message("")

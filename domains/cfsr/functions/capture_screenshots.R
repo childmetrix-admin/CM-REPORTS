@@ -89,6 +89,38 @@
 #' @param delay Seconds to wait after load before capture (Plotly render).
 #' @param vwidth,vheight Viewport size passed to \code{webshot2::webshot}.
 #'
+#' Configure chromote for Docker / Azure Container Instances (headless Chrome).
+#' @noRd
+.cfsr_configure_chromote_for_container <- function() {
+  if (!requireNamespace("chromote", quietly = TRUE)) {
+    return(invisible(NULL))
+  }
+  chrome_path <- Sys.getenv(
+    "CHROMOTE_CHROME",
+    Sys.getenv("GOOGLE_CHROME", "/usr/bin/google-chrome")
+  )
+  if (nzchar(chrome_path) && file.exists(chrome_path)) {
+    Sys.setenv(GOOGLE_CHROME = chrome_path, CHROMOTE_CHROME = chrome_path)
+  }
+  tryCatch(
+    {
+      base_args <- tryCatch(
+        chromote::default_chrome_args(),
+        error = function(e) c("--headless=new", "--remote-debugging-port=0")
+      )
+      chromote::set_chrome_args(unique(c(
+        base_args,
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--window-size=1100,2400"
+      )))
+    },
+    error = function(e) invisible(NULL)
+  )
+  invisible(NULL)
+}
+
 #' @return Invisibly, character vector of paths written (or skipped on failure).
 #' @export
 capture_cfsr_screenshots <- function(state,
@@ -100,6 +132,7 @@ capture_cfsr_screenshots <- function(state,
   if (!requireNamespace("webshot2", quietly = TRUE)) {
     stop("Install webshot2 for automated screenshots: install.packages('webshot2')")
   }
+  .cfsr_configure_chromote_for_container()
 
   st <- toupper(state)
   sl <- tolower(state)

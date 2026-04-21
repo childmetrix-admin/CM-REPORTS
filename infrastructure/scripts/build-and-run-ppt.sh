@@ -59,6 +59,7 @@ echo ""
 az container create \
   --resource-group $RESOURCE_GROUP \
   --name $CONTAINER_NAME \
+  --location southcentralus \
   --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:latest" \
   --registry-login-server $ACR_LOGIN_SERVER \
   --registry-username $ACR_USERNAME \
@@ -70,20 +71,19 @@ az container create \
   --environment-variables \
     AZURE_BLOB_ENDPOINT="https://$STORAGE_ACCOUNT.blob.core.windows.net" \
     AZURE_STORAGE_KEY="$STORAGE_KEY" \
+    AZURE_BLOB_CONTAINER_RAW="raw" \
     AZURE_BLOB_CONTAINER_PROCESSED="processed" \
     CM_PUBLIC_MEASURES_URL="https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io" \
     CM_PUBLIC_SUMMARY_URL="https://ca-app-summary.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io" \
   --command-line "Rscript /app/generate_all.R $STATE $PERIODS"
 
 echo ""
-echo "Container started. Streaming logs..."
+echo "Container started. Fetching logs (use: az container logs -g $RESOURCE_GROUP -n $CONTAINER_NAME)..."
 echo ""
 
-# Wait and show logs
 az container logs \
   --resource-group $RESOURCE_GROUP \
-  --name $CONTAINER_NAME \
-  --follow
+  --name $CONTAINER_NAME
 
 # Check exit status
 STATUS=$(az container show \
