@@ -146,6 +146,32 @@ ui <- fluidPage(
           padding: var(--cm-space-4);
         }
       }
+
+      /* PPT / webshot export (?export=true) */
+      body.export-mode .container-fluid {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      body.export-mode .cm-source,
+      body.export-mode .cm-footnote {
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+      }
+      body.export-mode .cm-download-btn {
+        display: none !important;
+      }
+    ")),
+    tags$script(HTML("
+      (function() {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get('export') === 'true') {
+            document.body.classList.add('export-mode');
+          }
+        } catch (e) { /* ignore */ }
+      })();
     "))
   ),
 

@@ -541,6 +541,40 @@ ui <- dashboardPage(
           padding: 0 !important;
           margin-bottom: 0 !important;
         }
+
+        /* ===== PPT / WEBSHOT EXPORT MODE (?export=true) ===== */
+        body.export-mode .cm-viz-container,
+        body.export-mode .cm-chart-container {
+          max-width: 800px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        body.export-mode .cm-source {
+          white-space: normal !important;
+          word-wrap: break-word;
+          overflow-wrap: anywhere;
+        }
+        body.export-mode .cm-download-btn {
+          display: none !important;
+        }
+        body.export-mode .main-sidebar,
+        body.export-mode .left-side {
+          display: none !important;
+        }
+        body.export-mode .content-wrapper,
+        body.export-mode .right-side {
+          margin-left: 0 !important;
+        }
+      ")),
+      tags$script(HTML("
+        (function() {
+          try {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('export') === 'true') {
+              document.body.classList.add('export-mode');
+            }
+          } catch (e) { /* ignore */ }
+        })();
       "))
     ),
 

@@ -5,6 +5,7 @@
 *.md   text eol=lf
 
 # Images/binaries
+*.pptx binary
 *.png binary
 *.jpg binary
 *.jpeg binary

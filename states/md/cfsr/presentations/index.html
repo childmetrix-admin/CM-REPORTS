@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maryland — CFSR Presentations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen pl-6 pr-8 py-10">
+  <div class="max-w-3xl mr-auto space-y-6">
+    <div>
+      <p class="text-sm text-slate-500 uppercase tracking-wide font-medium">Maryland</p>
+      <h1 class="text-2xl font-semibold text-slate-900 mt-1">CFSR Data Profile — Presentations</h1>
+      <p class="text-slate-600 mt-2 text-sm leading-relaxed">
+        Download PowerPoint decks for stakeholder meetings. Files match the ChildMetrix CFSR profile period naming
+        (<code class="text-xs bg-slate-200 px-1 rounded">YYYY_MM</code>).
+      </p>
+    </div>
+
+    <ul class="space-y-3 list-none p-0 m-0">
+      <li>
+        <a href="./2026_02/MD_CFSR_Presentation_2026_02.pptx" download
+           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all">
+          <div>
+            <div class="text-lg font-semibold text-slate-900">February 2026</div>
+            <div class="text-sm text-slate-500 mt-0.5">Profile period 2026_02</div>
+          </div>
+          <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
+            Download .pptx
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="./2025_08/MD_CFSR_Presentation_2025_08.pptx" download
+           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all">
+          <div>
+            <div class="text-lg font-semibold text-slate-900">August 2025</div>
+            <div class="text-sm text-slate-500 mt-0.5">Profile period 2025_08</div>
+          </div>
+          <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
+            Download .pptx
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="./2025_02/MD_CFSR_Presentation_2025_02.pptx" download
+           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all">
+          <div>
+            <div class="text-lg font-semibold text-slate-900">February 2025</div>
+            <div class="text-sm text-slate-500 mt-0.5">Profile period 2025_02</div>
+          </div>
+          <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
+            Download .pptx
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <p class="text-xs text-slate-500 border-t border-slate-200 pt-4">
+      To generate a new deck from data and optional screenshots, run
+      <code class="bg-slate-200 px-1 rounded">Rscript domains/cfsr/scripts/generate_ppt.R md &lt;period&gt;</code>
+      from the repository root (see <code class="bg-slate-200 px-1 rounded">domains/cfsr/docs/presentation_screenshot_guide.md</code>).
+    </p>
+  </div>
+</body>
+</html>

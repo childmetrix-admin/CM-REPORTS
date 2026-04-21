@@ -109,8 +109,9 @@ run_profile <- function(state = NULL, period = NULL, source = "all", verbose = T
         # Source PPT generation functions
         source(file.path(CFSR_FUNCTIONS_DIR, "functions_cfsr_profile_ppt.R"))
 
-        # Generate presentation
-        ppt_path <- generate_cfsr_presentation(combo_state, combo_period)
+        # Generate presentation (optional webshot2 capture when AUTO_CAPTURE=1)
+        auto_cap <- tolower(Sys.getenv("AUTO_CAPTURE", "")) %in% c("1", "true", "yes")
+        ppt_path <- generate_cfsr_presentation(combo_state, combo_period, auto_capture = auto_cap)
 
         if (verbose) {
           cat("  ✓ Presentation saved:", ppt_path, "\n")

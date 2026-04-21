@@ -35,7 +35,8 @@
       "*.js",
       "*.png",
       "*.jpg",
-      "*.ico"
+      "*.ico",
+      "*.pptx"
     ]
   },
   "globalHeaders": {
@@ -45,6 +46,7 @@
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
   },
   "mimeTypes": {
-    ".json": "application/json"
+    ".json": "application/json",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   }
 }

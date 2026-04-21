@@ -16,18 +16,17 @@ The PowerPoint generation script creates slides with screenshot placeholders. Yo
 
 ## Step 1: Generate PowerPoint with Placeholders
 
-Run the extraction workflow to generate the PowerPoint file with screenshot placeholders:
+From the monorepo root, run the dedicated entrypoint (recommended):
 
-```r
-# From the cm-reports repo root in R:
-source("domains/cfsr/extraction/run_profile.R")
+```bash
+# Default: load processed RDS from Azure Blob (same as Shiny apps); placeholders if screenshots are absent.
+Rscript domains/cfsr/scripts/generate_ppt.R md 2025_02
 
-# For a specific state/period:
-run_profile(state = "md", period = "2025_02", source = "all")
-
-# For all available states/periods:
-run_profile(source = "all")
+# Local RDS only (no Azure): set CFSR_PPT_USE_LOCAL_RDS=1 before running.
+# Optional: AUTO_CAPTURE=1 runs webshot2 against live apps (?export=true) before building slides (needs Chrome).
 ```
+
+The extraction orchestrator (`run_profile`) may also call `generate_cfsr_presentation()` after a successful run; you can use either path.
 
 **Output location:** `states/{state}/cfsr/presentations/{period}/{STATE}_CFSR_Presentation_{period}.pptx`
 
@@ -43,6 +42,8 @@ Use these bases for screenshots (override via `CM_PUBLIC_SUMMARY_URL` / `CM_PUBL
 - **Measures:** `https://ca-app-measures.icyforest-fe9bbf66.southcentralus.azurecontainerapps.io`
 
 For ad hoc testing, run the Shiny images from `infrastructure/docker/shiny/` with Azure blob credentials set (same behavior as Container Apps).
+
+Append **`&export=true`** to any Measures or Summary app URL when capturing for PowerPoint: the Measures app constrains chart width (~800px) and wraps long source lines for cleaner screenshots.
 
 ---
 
@@ -218,6 +219,7 @@ Before sharing the presentation, verify:
   - Summary app, RSP overview, Observed overview
   - Section Header: Individual Indicators
   - 8 indicator slides
+  - Closing slide (summary, contact, acknowledgments)
 - [ ] File saved with correct name: `{STATE}_CFSR_Presentation_{period}.pptx`
 
 ---
@@ -251,15 +253,20 @@ Before sharing the presentation, verify:
 
 ---
 
-## Future Enhancement: Automated Screenshots (Phase 2)
+## Automated Screenshots (Phase 2)
 
-This manual workflow will be automated in Phase 2 using the `webshot2` R package to:
-- Automatically launch apps in headless browser
-- Navigate to each view
-- Capture screenshots at optimal dimensions
-- Insert directly into PowerPoint
+`domains/cfsr/functions/capture_screenshots.R` defines `capture_cfsr_screenshots()` (uses **webshot2** + Chrome). It is invoked automatically when you run:
 
-For now, this manual process takes ~15-20 minutes per presentation and ensures high-quality results.
+```bash
+set AUTO_CAPTURE=1
+Rscript domains/cfsr/scripts/generate_ppt.R md 2025_02
+```
+
+(On PowerShell: `$env:AUTO_CAPTURE="1"; Rscript ...`.)
+
+PNG files are written under `states/{state}/cfsr/presentations/{period}/screenshots/` using the same filenames as the manual workflow. The deck builder embeds them when present; otherwise it keeps the `[INSERT SCREENSHOT: …]` text placeholders.
+
+You can still use the manual process (~15–20 minutes per deck) when you need pixel-perfect crops or webshot2 is unavailable.
 
 ---
 

@@ -37,15 +37,31 @@ AZURE_BLOB_CONTAINER_RAW <- Sys.getenv("AZURE_BLOB_CONTAINER_RAW", "raw")
 AZURE_BLOB_CONTAINER_PROCESSED <- Sys.getenv("AZURE_BLOB_CONTAINER_PROCESSED", "processed")
 AZURE_STORAGE_KEY <- Sys.getenv("AZURE_STORAGE_KEY", "")
 
-if (AZURE_BLOB_ENDPOINT == "") {
-  stop("AZURE_BLOB_ENDPOINT must be set. CFSR pipelines use Azure Blob Storage only.")
+# Allow sourcing this file without Azure when only build_rds_path() etc. are needed
+# (e.g. template build). Blob I/O still requires AZURE_BLOB_ENDPOINT.
+CFSR_PATHS_ALLOW_NO_AZURE <- tolower(Sys.getenv("CFSR_PATHS_ALLOW_NO_AZURE", "")) %in%
+  c("1", "true", "yes")
+
+if (AZURE_BLOB_ENDPOINT == "" && !CFSR_PATHS_ALLOW_NO_AZURE) {
+  stop(
+    "AZURE_BLOB_ENDPOINT must be set. CFSR pipelines use Azure Blob Storage only. ",
+    "To source paths without a live endpoint (path helpers only), set CFSR_PATHS_ALLOW_NO_AZURE=1."
+  )
 }
 
-message("Data source: Azure Blob Storage (", AZURE_BLOB_ENDPOINT, ")")
+if (AZURE_BLOB_ENDPOINT != "") {
+  message("Data source: Azure Blob Storage (", AZURE_BLOB_ENDPOINT, ")")
+}
 
 #' Initialize Azure Blob client (lazy-loaded)
 #' @return AzureStor blob endpoint object
 get_blob_endpoint <- function() {
+  if (AZURE_BLOB_ENDPOINT == "") {
+    stop(
+      "AZURE_BLOB_ENDPOINT is not set. Configure Azure for blob download/upload, ",
+      "or set CFSR_PPT_USE_LOCAL_RDS=1 when generating presentations from local RDS only."
+    )
+  }
   if (!requireNamespace("AzureStor", quietly = TRUE)) {
     stop("AzureStor package required. Install with: install.packages('AzureStor')")
   }

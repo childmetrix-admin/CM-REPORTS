@@ -1,0 +1,28 @@
+# CFSR profile deck — bullet templates (fixed wording + {{PLACEHOLDERS}}).
+# Keys under indicators must match domains/cfsr/extraction/cfsr_round4_indicators_dictionary.csv column "indicator".
+
+default_bullets:
+  - "{{STATE_NAME}} ranks {{RANK}} of {{TOTAL_STATES}} reporting states."
+  - "Performance: {{PERF_DISPLAY}}."
+  - "{{NAT_STD_BULLET}}"
+  - "{{MEETS_STANDARD_TEXT}}"
+  - "{{NUM_DEN_BULLET}}"
+  - "{{SOURCE_BULLET}}"
+
+indicators:
+  "Foster care entry rate (entries / 1,000 children)":
+    context: "Entry rate reflects how often children in the state enter foster care relative to the child population."
+  "Maltreatment in care (victimizations / 100,000 days in care)":
+    context: "Maltreatment in care counts substantiated or indicated victimizations during foster care episodes."
+  "Maltreatment recurrence within 12 months":
+    context: "Recurrence measures children with a new substantiated or indicated report within 12 months of an initial report."
+  "Permanency in 12 months for children entering care":
+    context: "Permanency within 12 months of entry reflects timely exits to reunification, adoption, or guardianship."
+  "Permanency in 12 months for children in care 12-23 months":
+    context: "This cohort had been in care 12–23 months continuously as of the first day of the 12-month period."
+  "Permanency in 12 months for children in care 24 months or more":
+    context: "This cohort had been in care 24 months or more continuously as of the first day of the 12-month period."
+  "Reentry to foster care within 12 months":
+    context: "Reentry counts children who return to foster care within 12 months after a discharge to permanency."
+  "Placement stability (moves / 1,000 days in care)":
+    context: "Placement stability summarizes moves per 1,000 days in care for children entering during the period."
