@@ -641,6 +641,17 @@ make_period_meaningful <- function(period) {
   period <- trimws(period)
   period <- gsub("\\s+", "", period)  # Remove all whitespace
 
+  # Case 0: Format "YYYY_MM" (e.g., "2026_02") => "February 2026"
+  # This is the profile period format used in PPT generation
+  if (grepl("^[0-9]{4}_[0-9]{2}$", period)) {
+    year <- substr(period, 1, 4)
+    month_num <- as.integer(substr(period, 6, 7))
+    month_names <- c("January", "February", "March", "April", "May", "June",
+                     "July", "August", "September", "October", "November", "December")
+    month_name <- month_names[month_num]
+    return(paste(month_name, year))
+  }
+
   # Case 1: Format "YYAYYB" (e.g., "20A20B") => Oct 'prev_year - Sep 'year
   if (grepl("^[0-9]{2}A[0-9]{2}B$", period)) {
     year1 <- as.numeric(substr(period, 1, 2))
