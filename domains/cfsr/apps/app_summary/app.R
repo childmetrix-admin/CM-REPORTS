@@ -165,12 +165,18 @@ ui <- fluidPage(
     ")),
     tags$script(HTML("
       (function() {
-        try {
-          var params = new URLSearchParams(window.location.search);
-          if (params.get('export') === 'true') {
-            document.body.classList.add('export-mode');
-          }
-        } catch (e) { /* ignore */ }
+        function applyExportMode() {
+          try {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('export') === 'true') {
+              document.body.classList.add('export-mode');
+            }
+          } catch (e) { /* ignore */ }
+        }
+        if (document.body) applyExportMode();
+        document.addEventListener('DOMContentLoaded', applyExportMode);
+        setTimeout(applyExportMode, 500);
+        setTimeout(applyExportMode, 1500);
       })();
     "))
   ),

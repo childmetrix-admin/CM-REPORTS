@@ -558,22 +558,53 @@ ui <- dashboardPage(
           display: none !important;
         }
         body.export-mode .main-sidebar,
-        body.export-mode .left-side {
+        body.export-mode .left-side,
+        body.export-mode .sidebar,
+        body.export-mode aside.main-sidebar {
           display: none !important;
+          width: 0 !important;
         }
         body.export-mode .content-wrapper,
-        body.export-mode .right-side {
+        body.export-mode .right-side,
+        body.export-mode section.content {
           margin-left: 0 !important;
+          padding-left: 20px !important;
+        }
+        body.export-mode .main-header {
+          display: none !important;
+        }
+        body.export-mode .wrapper {
+          margin-left: 0 !important;
+        }
+        /* Signal that export mode is active for webshot */
+        body.export-mode::after {
+          content: 'EXPORT_READY';
+          position: fixed;
+          bottom: 0;
+          right: 0;
+          font-size: 1px;
+          color: transparent;
         }
       ")),
       tags$script(HTML("
         (function() {
-          try {
-            var params = new URLSearchParams(window.location.search);
-            if (params.get('export') === 'true') {
-              document.body.classList.add('export-mode');
-            }
-          } catch (e) { /* ignore */ }
+          function applyExportMode() {
+            try {
+              var params = new URLSearchParams(window.location.search);
+              if (params.get('export') === 'true') {
+                document.body.classList.add('export-mode');
+              }
+            } catch (e) { /* ignore */ }
+          }
+          // Apply immediately if body exists
+          if (document.body) {
+            applyExportMode();
+          }
+          // Also apply on DOMContentLoaded to ensure it sticks
+          document.addEventListener('DOMContentLoaded', applyExportMode);
+          // And after a short delay for Shiny re-renders
+          setTimeout(applyExportMode, 500);
+          setTimeout(applyExportMode, 1500);
         })();
       "))
     ),

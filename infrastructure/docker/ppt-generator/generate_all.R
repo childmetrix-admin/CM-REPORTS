@@ -58,7 +58,7 @@ tryCatch(
         "--no-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--window-size=1100,2400"
+        "--window-size=1200,800"
       )))
       message("chromote: Chrome args set for container (no-sandbox, disable-dev-shm-usage)")
     } else {

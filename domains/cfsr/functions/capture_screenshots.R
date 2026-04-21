@@ -113,7 +113,7 @@
         "--no-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--window-size=1100,2400"
+        "--window-size=1200,800"
       )))
     },
     error = function(e) invisible(NULL)
@@ -126,9 +126,9 @@
 capture_cfsr_screenshots <- function(state,
                                      period,
                                      out_dir,
-                                     delay = 4,
-                                     vwidth = 1100,
-                                     vheight = 3200) {
+                                     delay = 8,
+                                     vwidth = 1200,
+                                     vheight = 800) {
   if (!requireNamespace("webshot2", quietly = TRUE)) {
     stop("Install webshot2 for automated screenshots: install.packages('webshot2')")
   }
