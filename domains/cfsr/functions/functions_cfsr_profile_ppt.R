@@ -10,7 +10,10 @@
 ########################################
 
 library(officer)   # PowerPoint manipulation
-library(tidyverse) # Data manipulation
+library(dplyr)     # Data manipulation
+library(readr)     # CSV reading
+library(tidyr)     # Data tidying
+library(stringr)   # String manipulation
 library(glue)      # String interpolation
 library(yaml)      # Talking-point templates
 
