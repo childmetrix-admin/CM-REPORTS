@@ -334,19 +334,33 @@ generate_indicator_talking_points <- function(ind_data, state_code, yaml_path = 
 #' @param state Character. State code (e.g., "md")
 #' @param period Character. Profile period (e.g., "2025_02")
 #' @param template_path Optional path to .pptx template; defaults per-state asset then KY
+#' @param data_used Optional. Data period range string (e.g., "19B-21B") from RSP data
 #'
 #' @return officer ppt object
 #'
-build_presentation_skeleton <- function(state, period, template_path = NULL) {
+build_presentation_skeleton <- function(state, period, template_path = NULL, data_used = NULL) {
   tp <- .cfsr_resolve_template_path(state, template_path)
   ppt <- read_pptx(tp)
 
   state_name <- state_code_to_name(toupper(state))
+  generation_date <- format(Sys.Date(), "%B %d, %Y")
+
+  # Build subtitle with data period range if available
+  subtitle_parts <- c(glue("Data Profile Period: {make_period_meaningful(period)}"))
+  if (!is.null(data_used) && !is.na(data_used) && nzchar(data_used)) {
+    data_range_display <- make_period_meaningful(data_used)
+    if (!is.na(data_range_display)) {
+      subtitle_parts <- c(subtitle_parts, glue("Data Range: {data_range_display}"))
+    }
+  }
+  subtitle_parts <- c(subtitle_parts, glue("Generated: {generation_date}"))
+  subtitle_text <- paste(subtitle_parts, collapse = "
+")
 
   .cfsr_require_layout(ppt, "Title Slide")
   ppt <- add_slide(ppt, layout = "Title Slide")
   brand_title <- fp_text(color = "#0f4c75", font.size = 32, bold = TRUE)
-  brand_sub <- fp_text(color = "#0e9ba4", font.size = 18)
+  brand_sub <- fp_text(color = "#0e9ba4", font.size = 14)
   ppt <- ph_with(
     ppt,
     value = fpar(ftext(glue("{state_name} CFSR Profile"), prop = brand_title)),
@@ -354,7 +368,7 @@ build_presentation_skeleton <- function(state, period, template_path = NULL) {
   )
   ppt <- ph_with(
     ppt,
-    value = fpar(ftext(glue("Data Profile Period: {make_period_meaningful(period)}"), prop = brand_sub)),
+    value = fpar(ftext(subtitle_text, prop = brand_sub)),
     location = ph_location_label(ph_label = "Subtitle 2")
   )
 
@@ -635,7 +649,16 @@ generate_cfsr_presentation <- function(state,
 
   data <- load_cfsr_data(state, period)
 
-  ppt <- build_presentation_skeleton(state, period, template_path = template_path)
+  # Extract data_used from RSP data (first non-NA value)
+  data_used <- NULL
+  if (!is.null(data$rsp) && "data_used" %in% names(data$rsp)) {
+    data_used_vals <- unique(na.omit(data$rsp$data_used))
+    if (length(data_used_vals) > 0) {
+      data_used <- data_used_vals[1]
+    }
+  }
+
+  ppt <- build_presentation_skeleton(state, period, template_path = template_path, data_used = data_used)
   message("Built presentation skeleton (title + background slides)")
 
   ppt <- add_summary_slides(ppt, data, state, period,
