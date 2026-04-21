@@ -786,7 +786,7 @@
           }
         } else if (currentSubsection === 'presentations') {
           if (currentCategory === 'cfsr') {
-            frame.src = `shared/cfsr/presentations/index.html`;
+            frame.src = `states/${stateCode}/cfsr/presentations/index.html`;
           } else if (currentCategory === 'in-home') {
             frame.src = `states/${stateCode}/in_home/presentations/index.html`;
           } else if (currentCategory === 'community') {
@@ -915,7 +915,7 @@
         setSecondaryActive('presentations');
 
         if (currentCategory === 'cfsr') {
-          frame.src = `shared/cfsr/presentations/index.html`;
+          frame.src = `states/${stateCode}/cfsr/presentations/index.html`;
         } else if (currentCategory === 'in-home') {
           frame.src = `states/${stateCode}/in_home/presentations/index.html`;
         } else if (currentCategory === 'community') {
@@ -992,7 +992,7 @@
           } else if (currentSubsection === 'performance') {
             frame.src = cfsrMeasuresFrameSrc();
           } else if (currentSubsection === 'presentations') {
-            frame.src = `shared/cfsr/presentations/index.html`;
+            frame.src = `states/${stateCode}/cfsr/presentations/index.html`;
           } else if (currentSubsection === 'data_dictionary') {
             frame.src = `shared/cfsr/data_dictionary/index.html`;
           } else if (currentSubsection === 'notes') {
