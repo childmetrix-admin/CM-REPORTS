@@ -63,6 +63,7 @@ az container create \
   --registry-login-server $ACR_LOGIN_SERVER \
   --registry-username $ACR_USERNAME \
   --registry-password $ACR_PASSWORD \
+  --os-type Linux \
   --cpu 2 \
   --memory 4 \
   --restart-policy Never \
