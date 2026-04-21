@@ -78,9 +78,10 @@ if (!.cfsr_use_local_rds()) {
 }
 
 .cfsr_require_layout <- function(ppt, layout) {
-  if (!officer::has_layout(ppt, layout)) {
-    ls <- officer::layout_summary(ppt)
-    nm <- if (!is.null(ls$name)) ls$name else ls[[1]]
+  # Check layout exists using layout_summary (has_layout not available in all officer versions)
+  ls <- officer::layout_summary(ppt)
+  nm <- if (!is.null(ls$name)) ls$name else ls[[1]]
+  if (!(layout %in% nm)) {
     stop("Layout '", layout, "' not in template. Available:\n", paste(unique(nm), collapse = ", "))
   }
 }
