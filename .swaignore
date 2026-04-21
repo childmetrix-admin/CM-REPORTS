@@ -14,6 +14,12 @@ infrastructure/
 templates/
 docs/
 
+# R code / extraction pipeline (runs in Azure Container Apps, not SWA)
+domains/
+
+# Legacy minimal deploy mirror (kept out of live payload)
+deploy-minimal/
+
 # R data files (loaded from Azure Blob, not served statically)
 *.rds
 *.RData
@@ -39,11 +45,11 @@ docs/
 # Claude/AI
 CLAUDE.md
 
-# Large binary files
-*.pdf
-*.pptx
-*.xlsx
-*.docx
+# Downloadable documents (pptx/pdf/xlsx/docx) are intentionally served.
+# Keep them IN the SWA payload so users can download them via the
+# presentations/reports pages.
+# Add specific large files or directories below if needed, e.g.:
+# domains/**/data/raw/
 
 # Test files
 test/
