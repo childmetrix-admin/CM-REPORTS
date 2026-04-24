@@ -42,7 +42,7 @@
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "SAMEORIGIN",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; frame-src 'self' https://*.azurecontainerapps.io",
+    "Content-Security-Policy": "default-src 'self' https://stchildmetrixprod.blob.core.windows.net; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; frame-src 'self' https://*.azurecontainerapps.io https://stchildmetrixprod.blob.core.windows.net",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
   },
   "mimeTypes": {
