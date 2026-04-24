@@ -1,0 +1,8 @@
+{
+  "name": "cm-reports-api",
+  "version": "1.0.0",
+  "description": "API functions for ChildMetrix Reports",
+  "dependencies": {
+    "@azure/storage-blob": "^12.17.0"
+  }
+}
