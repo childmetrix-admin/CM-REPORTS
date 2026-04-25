@@ -16,12 +16,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     libpoppler-cpp-dev \
     zlib1g-dev \
-    # For officer (PPT generation)
     libfontconfig1-dev \
     libfreetype6-dev \
-    # For webshot2/chromote (optional screenshot capture)
-    chromium \
-    chromium-driver \
+    wget \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chromium from Debian repos (for webshot2/chromote screenshot capture)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium-browser || apt-get install -y --no-install-recommends chromium || \
+    (wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+     echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+     apt-get update && apt-get install -y google-chrome-stable) \
     && rm -rf /var/lib/apt/lists/*
 
 # Use Posit Package Manager for faster binary installs
@@ -37,9 +43,10 @@ RUN R -e "options(repos = c(CRAN = 'https://p3m.dev/cran/__linux__/jammy/latest'
     'webshot2', 'chromote' \
   ))"
 
-# Set Chrome path for webshot2/chromote
-ENV CHROMOTE_CHROME=/usr/bin/chromium
-ENV GOOGLE_CHROME=/usr/bin/chromium
+# Set Chrome path for webshot2/chromote (check common locations)
+ENV CHROMOTE_CHROME=/usr/bin/chromium-browser
+ENV GOOGLE_CHROME=/usr/bin/chromium-browser
+ENV CHROME_BIN=/usr/bin/chromium-browser
 
 WORKDIR /app
 
