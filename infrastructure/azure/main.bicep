@@ -195,9 +195,11 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
 }
 
 // --- Static Web App ---
+// Note: Static Web Apps have limited region availability
+var swaLocation = location == 'eastus' ? 'eastus2' : location
 resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   name: swaName
-  location: location
+  location: swaLocation
   sku: { name: 'Standard', tier: 'Standard' }
   properties: {}
 }
