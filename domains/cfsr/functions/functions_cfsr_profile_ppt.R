@@ -16,6 +16,7 @@ library(tidyr)     # Data tidying
 library(stringr)   # String manipulation
 library(glue)      # String interpolation
 library(yaml)      # Talking-point templates
+library(ggplot2)   # Indicator bar charts for PPT
 
 # Public dashboard URLs for slide placeholders (override with CM_PUBLIC_*_URL in .env)
 .cfsr_public_summary_base <- function() {
@@ -266,6 +267,7 @@ load_cfsr_data <- function(state, period) {
     state_file <- glue("domains/cfsr/data/rds/{sl}/{period}/{state_upper}_cfsr_profile_state_{period}.rds")
     rsp_file <- glue("domains/cfsr/data/rds/{sl}/{period}/{state_upper}_cfsr_profile_rsp_{period}.rds")
     observed_file <- glue("domains/cfsr/data/rds/{sl}/{period}/{state_upper}_cfsr_profile_observed_{period}.rds")
+    national_file <- glue("domains/cfsr/data/rds/national/cfsr_profile_national_{period}.rds")
     for (f in c(state_file, rsp_file, observed_file)) {
       if (!file.exists(f)) {
         stop("Local RDS file not found: ", f)
@@ -274,10 +276,18 @@ load_cfsr_data <- function(state, period) {
     state_data <- readRDS(state_file)
     rsp_data <- readRDS(rsp_file)
     observed_data <- readRDS(observed_file)
+    national_data <- if (file.exists(national_file)) readRDS(national_file) else NULL
   } else {
     state_data <- load_rds_data(build_rds_path(sl, period, "state"))
     rsp_data <- load_rds_data(build_rds_path(sl, period, "rsp"))
     observed_data <- load_rds_data(build_rds_path(sl, period, "observed"))
+    national_data <- tryCatch(
+      load_rds_data(build_rds_path(sl, period, "national")),
+      error = function(e) {
+        message("National data not available: ", conditionMessage(e))
+        NULL
+      }
+    )
   }
 
   dict <- read_csv(
@@ -289,8 +299,205 @@ load_cfsr_data <- function(state, period) {
     state = state_data,
     rsp = rsp_data,
     observed = observed_data,
+    national = national_data,
     dictionary = dict
   )
+}
+
+
+#' Build "By State" Horizontal Bar Chart for an Indicator
+#'
+#' Renders a ggplot2 bar chart matching the Shiny app's Plotly chart:
+#' gray bars for all states, blue for selected state, dashed green national
+#' standard line, sorted by state_rank (best at top).
+#'
+#' @param national_data Data frame with all states' performance for one indicator.
+#' @param state_code Two-letter state code to highlight (e.g. "MD").
+#' @param dict_row One-row data frame from the indicator dictionary.
+#' @param out_path File path for the output PNG.
+#' @param width,height Plot dimensions in inches.
+#' @return \code{out_path} invisibly (or NULL on failure).
+#' @noRd
+build_indicator_bar_chart <- function(national_data,
+                                      state_code,
+                                      dict_row,
+                                      out_path,
+                                      width = 8.67,
+                                      height = 7.05) {
+  indicator_name <- dict_row$indicator[1]
+  ind_df <- national_data %>%
+    filter(indicator == indicator_name, state != "National")
+
+  if (nrow(ind_df) == 0) {
+    warning("No national data for indicator: ", indicator_name)
+    return(NULL)
+  }
+
+  state_name <- state_code_to_name(toupper(state_code))
+  format_type <- dict_row$format[1]
+  decimal_prec <- dict_row$decimal_precision[1]
+  if (is.na(decimal_prec)) decimal_prec <- 1
+  scale_val <- dict_row$scale[1]
+  if (is.na(scale_val)) scale_val <- 1
+  nat_std <- as.numeric(dict_row$national_standard[1])
+  direction <- dict_row$direction_desired[1]
+
+  ind_df <- ind_df %>%
+    arrange(state_rank) %>%
+    mutate(
+      is_selected = (state == state_name),
+      bar_color = ifelse(is_selected, "#4472C4", "#D3D3D3"),
+      perf_display = performance
+    )
+
+  if (format_type == "percent") {
+    ind_df$perf_display <- ind_df$performance * 100
+    decimal_prec <- 1
+  }
+
+  dq_states <- ind_df %>% filter(is.na(performance))
+  valid_states <- ind_df %>% filter(!is.na(performance))
+
+  ind_df <- ind_df %>%
+    mutate(
+      state_label = factor(state, levels = rev(state)),
+      perf_plot = ifelse(is.na(perf_display), 0, perf_display),
+      label_text = ifelse(
+        is.na(performance),
+        "Not calculated due to data quality issues",
+        formatC(perf_display, format = "f", digits = decimal_prec)
+      )
+    )
+
+  if (format_type == "percent") {
+    ind_df$label_text <- ifelse(
+      is.na(ind_df$performance),
+      ind_df$label_text,
+      paste0(ind_df$label_text, "%")
+    )
+  }
+
+  max_val <- max(ind_df$perf_plot, na.rm = TRUE)
+  x_max <- max_val * 1.20
+
+  nat_std_display <- if (!is.na(nat_std)) {
+    if (format_type != "percent") nat_std else nat_std
+  } else {
+    NA_real_
+  }
+
+  scale_label <- if (format_type == "percent") {
+    "%"
+  } else if (scale_val == 1000) {
+    " per 1,000"
+  } else if (scale_val == 100000) {
+    " per 100,000"
+  } else {
+    ""
+  }
+
+  description <- if ("description" %in% names(dict_row) && !is.na(dict_row$description[1])) {
+    dict_row$description[1]
+  } else {
+    ""
+  }
+
+  profile_ver <- if ("profile_version" %in% names(ind_df) && !all(is.na(ind_df$profile_version))) {
+    unique(na.omit(ind_df$profile_version))[1]
+  } else {
+    ""
+  }
+
+  period_txt <- if ("period_meaningful" %in% names(ind_df) && !all(is.na(ind_df$period_meaningful))) {
+    unique(na.omit(ind_df$period_meaningful))[1]
+  } else {
+    ""
+  }
+
+  subtitle_parts <- character()
+  if (nzchar(description)) subtitle_parts <- c(subtitle_parts, description)
+  meta_line <- paste(c(
+    if (nzchar(profile_ver)) paste0("CFSR Round 4 Data Profile | ", profile_ver),
+    if (nzchar(period_txt)) period_txt
+  ), collapse = " | ")
+  if (nzchar(meta_line)) subtitle_parts <- c(subtitle_parts, meta_line)
+
+  nat_line <- if (!is.na(nat_std_display)) {
+    dir_sym <- if (!is.na(direction) && grepl("lower|down", direction, ignore.case = TRUE)) "<" else ">"
+    paste0("National standard: ", dir_sym, " ",
+           formatC(nat_std_display, format = "f", digits = decimal_prec),
+           scale_label)
+  } else {
+    NULL
+  }
+  if (!is.null(nat_line)) subtitle_parts <- c(subtitle_parts, nat_line)
+
+  p <- ggplot(ind_df, aes(x = perf_plot, y = state_label, fill = bar_color)) +
+    geom_col(width = 0.7, show.legend = FALSE) +
+    geom_text(
+      aes(label = label_text),
+      hjust = -0.05, size = 2.8, color = "#666666"
+    ) +
+    scale_fill_identity()
+
+  if (!is.na(nat_std_display)) {
+    p <- p + geom_vline(
+      xintercept = nat_std_display,
+      linetype = "dashed", color = "#10b981", linewidth = 0.6
+    )
+  }
+
+  if (format_type == "percent") {
+    p <- p + scale_x_continuous(
+      limits = c(0, x_max), expand = c(0, 0),
+      labels = function(x) paste0(x, "%")
+    )
+  } else {
+    p <- p + scale_x_continuous(
+      limits = c(0, x_max), expand = c(0, 0)
+    )
+  }
+
+  title_text <- paste0(indicator_name, " \u2014 ", state_name)
+  subtitle_text <- paste(subtitle_parts, collapse = "\n")
+
+  p <- p +
+    labs(
+      title = title_text,
+      subtitle = subtitle_text,
+      x = NULL, y = NULL
+    ) +
+    theme_minimal(base_size = 10) +
+    theme(
+      plot.title = element_text(color = "#1C7ED6", size = 12, face = "bold",
+                                margin = margin(b = 4)),
+      plot.subtitle = element_text(color = "#555555", size = 8,
+                                   margin = margin(b = 8)),
+      axis.text.y = element_text(size = 7, color = "#333333"),
+      axis.text.x = element_text(size = 7, color = "#666666"),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_line(color = "#E5E5E5", linewidth = 0.3),
+      plot.margin = margin(10, 15, 10, 5),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA)
+    )
+
+  dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
+
+  num_states <- nrow(ind_df)
+  fig_height <- max(5, num_states * 0.14 + 1.5)
+  fig_height <- min(fig_height, height)
+
+  tryCatch({
+    ggsave(out_path, plot = p, width = width, height = fig_height,
+           dpi = 150, bg = "white")
+    message("Chart saved: ", basename(out_path))
+    invisible(out_path)
+  }, error = function(e) {
+    warning("Failed to save chart: ", conditionMessage(e))
+    invisible(NULL)
+  })
 }
 
 
@@ -566,20 +773,24 @@ add_indicator_slides <- function(ppt, data, state, period,
     )
 
     # Chart image (right side - Picture Placeholder 2)
+    # Generate the bar chart directly in R using national data
     stem <- .cfsr_indicator_screenshot_stem(indicator_name)
     ind_png <- file.path(screenshot_dir, paste0(sl, "_", stem, "_", period, ".png"))
+    dict_row <- data$dictionary %>% filter(indicator == indicator_name)
 
-    tab_q <- .cfsr_measures_tab_for_indicator(indicator_name)
-    meas_url <- glue(
-      "{.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period}",
-      "&tab={tab_q}&export=true#shiny-tab-{tab_q}"
-    )
+    if (!is.null(data$national) && nrow(dict_row) > 0) {
+      build_indicator_bar_chart(
+        national_data = data$national,
+        state_code = state,
+        dict_row = dict_row,
+        out_path = ind_png
+      )
+    }
+
     ppt <- .cfsr_ph_image_or_text(
       ppt,
       ind_png,
-      glue(
-        "[INSERT SCREENSHOT: {ind_data$indicator_short[1]} - By State chart]\n\nURL: {meas_url}"
-      ),
+      glue("[Chart unavailable: {ind_data$indicator_short[1]}]"),
       location = ph_location_label(ph_label = "Picture Placeholder 2"),
       width = 8.67, height = 7.05
     )

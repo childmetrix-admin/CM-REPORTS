@@ -132,8 +132,7 @@
 capture_cfsr_screenshots <- function(state,
                                      period,
                                      out_dir,
-                                     delay = 10,
-                                     indicator_delay = 20) {
+                                     delay = 10) {
   if (!requireNamespace("webshot2", quietly = TRUE)) {
     stop("Install webshot2 for automated screenshots: install.packages('webshot2')")
   }
@@ -188,22 +187,8 @@ capture_cfsr_screenshots <- function(state,
     )
   )
 
-  # Indicator screenshots - use "Side Panel with Picture" layout
-  dict <- read.csv(
-    "domains/cfsr/extraction/cfsr_round4_indicators_dictionary.csv",
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-  indicators <- dict$indicator[order(dict$indicator_sort)]
-
-  for (ind in indicators) {
-    tab <- .cfsr_measures_tab_for_indicator(ind)
-    stem <- .cfsr_indicator_screenshot_stem(ind)
-    shots_panel <- c(shots_panel, list(list(
-      path = file.path(out_dir, paste0(sl, "_", stem, "_", period, ".png")),
-      url = paste0(meas_base, "/?state=", st, "&profile=", period, "&tab=", tab, "&export=true#shiny-tab-", tab)
-    )))
-  }
+  # Indicator charts are now generated directly in R by build_indicator_bar_chart()
+  # in functions_cfsr_profile_ppt.R — no webshot needed for individual indicators.
 
   # Capture wide screenshots (summary app)
   for (sh in shots_wide) {
@@ -225,12 +210,9 @@ capture_cfsr_screenshots <- function(state,
     )
   }
 
-  # Capture overview panel screenshots (RSP, Observed) — these use the default tab
-  overview_shots <- shots_panel[seq_len(min(2, length(shots_panel)))]
-  indicator_shots <- if (length(shots_panel) > 2) shots_panel[3:length(shots_panel)] else list()
-
-  for (sh in overview_shots) {
-    message("Capturing (panel/overview): ", basename(sh$path))
+  # Capture panel screenshots (RSP overview, Observed overview)
+  for (sh in shots_panel) {
+    message("Capturing (panel): ", basename(sh$path))
     tryCatch(
       {
         webshot2::webshot(
@@ -239,26 +221,6 @@ capture_cfsr_screenshots <- function(state,
           vwidth = vwidth_panel,
           vheight = vheight_panel,
           delay = delay
-        )
-        written <- c(written, sh$path)
-      },
-      error = function(e) {
-        warning("webshot failed for ", sh$url, " — ", conditionMessage(e))
-      }
-    )
-  }
-
-  # Capture indicator screenshots — these require tab switch + data load + chart render
-  for (sh in indicator_shots) {
-    message("Capturing (panel/indicator): ", basename(sh$path))
-    tryCatch(
-      {
-        webshot2::webshot(
-          url = sh$url,
-          file = sh$path,
-          vwidth = vwidth_panel,
-          vheight = vheight_panel,
-          delay = indicator_delay
         )
         written <- c(written, sh$path)
       },
