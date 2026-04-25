@@ -29,9 +29,7 @@
   <script>
     const STATE = 'md';
     const STATE_UPPER = 'MD';
-    const BLOB_BASE = 'https://stchildmetrixprod.blob.core.windows.net/processed';
-    
-    // Available periods (newest first)
+
     const PERIODS = [
       { period: '2026_02', label: 'February 2026' },
       { period: '2025_08', label: 'August 2025' },
@@ -39,14 +37,14 @@
     ];
 
     function buildDownloadUrl(period) {
-      return `${BLOB_BASE}/states/${STATE}/cfsr/presentations/${period}/${STATE_UPPER}_CFSR_Presentation_${period}.pptx`;
+      return `/api/download?state=${STATE}&period=${period}`;
     }
 
     function renderPresentations() {
       const list = document.getElementById('presentations-list');
       list.innerHTML = PERIODS.map(p => `
         <li>
-          <a href="${buildDownloadUrl(p.period)}" download
+          <a href="${buildDownloadUrl(p.period)}"
              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all"
              onclick="trackDownload('${p.period}')">
             <div>

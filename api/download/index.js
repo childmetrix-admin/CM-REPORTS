@@ -7,16 +7,17 @@ module.exports = async function (context, req) {
     if (!state || !period) {
         context.res = {
             status: 400,
-            body: "Missing required parameters: state and period"
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ error: "Missing required parameters: state and period" })
         };
         return;
     }
 
-    // Validate period format (YYYY_MM)
     if (!/^\d{4}_\d{2}$/.test(period)) {
         context.res = {
             status: 400,
-            body: "Invalid period format. Expected: YYYY_MM"
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ error: "Invalid period format. Expected: YYYY_MM" })
         };
         return;
     }
@@ -27,7 +28,8 @@ module.exports = async function (context, req) {
     if (!accountName || !accountKey) {
         context.res = {
             status: 500,
-            body: "Storage configuration missing"
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ error: "Storage configuration missing" })
         };
         return;
     }
@@ -38,18 +40,38 @@ module.exports = async function (context, req) {
 
     try {
         const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-        
-        // Generate SAS token valid for 5 minutes
+        const blobServiceClient = new BlobServiceClient(
+            `https://${accountName}.blob.core.windows.net`,
+            sharedKeyCredential
+        );
+
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+        const blobClient = containerClient.getBlobClient(blobPath);
+        const exists = await blobClient.exists();
+
+        if (!exists) {
+            context.res = {
+                status: 404,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    error: "Presentation not found",
+                    state: stateUpper,
+                    period: period
+                })
+            };
+            return;
+        }
+
         const sasToken = generateBlobSASQueryParameters({
             containerName,
             blobName: blobPath,
             permissions: BlobSASPermissions.parse("r"),
-            expiresOn: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+            expiresOn: new Date(Date.now() + 5 * 60 * 1000),
+            contentDisposition: `attachment; filename="${stateUpper}_CFSR_Presentation_${period}.pptx"`
         }, sharedKeyCredential).toString();
 
         const downloadUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobPath}?${sasToken}`;
 
-        // Redirect to the blob URL with short-lived SAS token
         context.res = {
             status: 302,
             headers: {
@@ -61,7 +83,8 @@ module.exports = async function (context, req) {
     } catch (error) {
         context.res = {
             status: 500,
-            body: "Error generating download URL: " + error.message
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ error: "Error generating download URL: " + error.message })
         };
     }
 };
