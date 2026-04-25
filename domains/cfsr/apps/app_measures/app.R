@@ -561,8 +561,10 @@ ui <- dashboardPage(
         body.export-mode .left-side,
         body.export-mode .sidebar,
         body.export-mode aside.main-sidebar {
-          display: none !important;
+          visibility: hidden !important;
+          position: absolute !important;
           width: 0 !important;
+          overflow: hidden !important;
         }
         body.export-mode .content-wrapper,
         body.export-mode .right-side,
@@ -596,15 +598,35 @@ ui <- dashboardPage(
               }
             } catch (e) { /* ignore */ }
           }
-          // Apply immediately if body exists
           if (document.body) {
             applyExportMode();
           }
-          // Also apply on DOMContentLoaded to ensure it sticks
           document.addEventListener('DOMContentLoaded', applyExportMode);
-          // And after a short delay for Shiny re-renders
           setTimeout(applyExportMode, 500);
           setTimeout(applyExportMode, 1500);
+        })();
+      ")),
+      tags$script(HTML("
+        (function() {
+          var params = new URLSearchParams(window.location.search);
+          var targetTab = params.get('tab');
+          if (!targetTab || targetTab === 'overview') return;
+
+          var attempts = 0;
+          var switcher = setInterval(function() {
+            attempts++;
+            var link = document.querySelector(
+              '.sidebar-menu a[data-value=\"' + targetTab + '\"]'
+            );
+            if (link) {
+              link.click();
+              var activePane = document.getElementById('shiny-tab-' + targetTab);
+              if (activePane && activePane.classList.contains('active')) {
+                clearInterval(switcher);
+              }
+            }
+            if (attempts > 60) clearInterval(switcher);
+          }, 100);
         })();
       "))
     ),
