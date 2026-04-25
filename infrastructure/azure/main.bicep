@@ -64,7 +64,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
     accessTier: 'Hot'
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
-    allowBlobPublicAccess: false
+    allowBlobPublicAccess: true  // Required for presentation downloads
     networkAcls: {
       defaultAction: 'Allow'
     }
@@ -74,18 +74,31 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
 resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
   parent: storageAccount
   name: 'default'
+  properties: {
+    cors: {
+      corsRules: [
+        {
+          allowedOrigins: ['*']
+          allowedMethods: ['GET', 'HEAD', 'OPTIONS']
+          allowedHeaders: ['*']
+          exposedHeaders: ['Content-Disposition', 'Content-Length']
+          maxAgeInSeconds: 3600
+        }
+      ]
+    }
+  }
 }
 
 resource rawContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
   parent: blobService
   name: 'raw'
-  properties: { publicAccess: 'None' }
+  properties: { publicAccess: 'None' }  // Keep private - contains uploaded source files
 }
 
 resource processedContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
   parent: blobService
   name: 'processed'
-  properties: { publicAccess: 'None' }
+  properties: { publicAccess: 'Blob' }  // Allow public read for presentations/reports
 }
 
 // --- Azure SQL Database ---

@@ -88,9 +88,13 @@ if (-not $SkipContainers) {
 Write-Host "`n[3/4] Deploying Container Apps..." -ForegroundColor Yellow
 
 $caEnvName = "cae-${suffix}"
+$storageName = "st${baseName}${Environment}" -replace '-', ''
 $loginServer = az acr show --name $acrName --query loginServer -o tsv
 $acrPassword = az acr credential show --name $acrName --query "passwords[0].value" -o tsv
+$storageKey = az storage account keys list --account-name $storageName --query "[0].value" -o tsv
+$blobEndpoint = "https://${storageName}.blob.core.windows.net"
 
+# Deploy ShinyProxy (main entry point for Shiny apps)
 az containerapp create `
     --name "ca-shinyproxy-${Environment}" `
     --resource-group $ResourceGroup `
@@ -105,6 +109,48 @@ az containerapp create `
     --max-replicas 3 `
     --cpu 1.0 `
     --memory 2.0Gi
+
+# Deploy Measures Shiny app
+az containerapp create `
+    --name "ca-app-measures-${Environment}" `
+    --resource-group $ResourceGroup `
+    --environment $caEnvName `
+    --image "${loginServer}/cm-app-measures:latest" `
+    --registry-server $loginServer `
+    --registry-username $acrName `
+    --registry-password $acrPassword `
+    --target-port 3838 `
+    --ingress external `
+    --min-replicas 1 `
+    --max-replicas 3 `
+    --cpu 0.5 `
+    --memory 1.0Gi `
+    --env-vars "AZURE_BLOB_ENDPOINT=$blobEndpoint" "AZURE_STORAGE_KEY=$storageKey"
+
+# Deploy Summary Shiny app
+az containerapp create `
+    --name "ca-app-summary-${Environment}" `
+    --resource-group $ResourceGroup `
+    --environment $caEnvName `
+    --image "${loginServer}/cm-app-summary:latest" `
+    --registry-server $loginServer `
+    --registry-username $acrName `
+    --registry-password $acrPassword `
+    --target-port 3840 `
+    --ingress external `
+    --min-replicas 1 `
+    --max-replicas 3 `
+    --cpu 0.5 `
+    --memory 1.0Gi `
+    --env-vars "AZURE_BLOB_ENDPOINT=$blobEndpoint" "AZURE_STORAGE_KEY=$storageKey"
+
+# Get Shiny app URLs for extraction container
+$measuresUrl = az containerapp show --name "ca-app-measures-${Environment}" --resource-group $ResourceGroup --query "properties.configuration.ingress.fqdn" -o tsv
+$summaryUrl = az containerapp show --name "ca-app-summary-${Environment}" --resource-group $ResourceGroup --query "properties.configuration.ingress.fqdn" -o tsv
+
+Write-Host "Shiny Apps deployed:"
+Write-Host "  Measures: https://$measuresUrl"
+Write-Host "  Summary: https://$summaryUrl"
 
 Write-Host "[3/4] Container Apps deployed." -ForegroundColor Green
 
