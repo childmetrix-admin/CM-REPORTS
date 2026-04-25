@@ -17,48 +17,55 @@
       </p>
     </div>
 
-    <ul class="space-y-3 list-none p-0 m-0">
-      <li>
-        <a href="./2026_02/MD_CFSR_Presentation_2026_02.pptx" download
-           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all">
-          <div>
-            <div class="text-lg font-semibold text-slate-900">February 2026</div>
-            <div class="text-sm text-slate-500 mt-0.5">Profile period 2026_02</div>
-          </div>
-          <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
-            Download .pptx
-          </span>
-        </a>
-      </li>
-      <li>
-        <a href="./2025_08/MD_CFSR_Presentation_2025_08.pptx" download
-           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all">
-          <div>
-            <div class="text-lg font-semibold text-slate-900">August 2025</div>
-            <div class="text-sm text-slate-500 mt-0.5">Profile period 2025_08</div>
-          </div>
-          <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
-            Download .pptx
-          </span>
-        </a>
-      </li>
-      <li>
-        <a href="./2025_02/MD_CFSR_Presentation_2025_02.pptx" download
-           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all">
-          <div>
-            <div class="text-lg font-semibold text-slate-900">February 2025</div>
-            <div class="text-sm text-slate-500 mt-0.5">Profile period 2025_02</div>
-          </div>
-          <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
-            Download .pptx
-          </span>
-        </a>
-      </li>
+    <ul id="presentations-list" class="space-y-3 list-none p-0 m-0">
+      <li class="text-slate-500 text-sm">Loading presentations...</li>
     </ul>
 
     <p class="text-xs text-slate-500 border-t border-slate-200 pt-4">
-      Decks are updated biannually when a new CFSR Data Profile period is published (February and August).
+      Decks are automatically generated when new CFSR Data Profile periods are published (February and August).
     </p>
   </div>
+
+  <script>
+    const STATE = 'md';
+    const STATE_UPPER = 'MD';
+    const BLOB_BASE = 'https://stchildmetrixprod.blob.core.windows.net/processed';
+    
+    // Available periods (newest first)
+    const PERIODS = [
+      { period: '2026_02', label: 'February 2026' },
+      { period: '2025_08', label: 'August 2025' },
+      { period: '2025_02', label: 'February 2025' }
+    ];
+
+    function buildDownloadUrl(period) {
+      return `${BLOB_BASE}/${STATE}/cfsr/presentations/${period}/${STATE_UPPER}_CFSR_Presentation_${period}.pptx`;
+    }
+
+    function renderPresentations() {
+      const list = document.getElementById('presentations-list');
+      list.innerHTML = PERIODS.map(p => `
+        <li>
+          <a href="${buildDownloadUrl(p.period)}" download
+             class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-slate-200 rounded-lg p-5 bg-white hover:border-blue-400 hover:shadow-md transition-all"
+             onclick="trackDownload('${p.period}')">
+            <div>
+              <div class="text-lg font-semibold text-slate-900">${p.label}</div>
+              <div class="text-sm text-slate-500 mt-0.5">Profile period ${p.period}</div>
+            </div>
+            <span class="inline-flex items-center justify-center rounded-md bg-blue-700 text-white text-sm font-medium px-4 py-2 shrink-0">
+              Download .pptx
+            </span>
+          </a>
+        </li>
+      `).join('');
+    }
+
+    function trackDownload(period) {
+      console.log('Download:', STATE_UPPER, period);
+    }
+
+    renderPresentations();
+  </script>
 </body>
 </html>

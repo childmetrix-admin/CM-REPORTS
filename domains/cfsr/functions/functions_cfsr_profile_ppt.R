@@ -400,11 +400,14 @@ build_presentation_skeleton <- function(state, period, template_path = NULL, dat
 }
 
 
-.cfsr_ph_image_or_text <- function(ppt, path, placeholder_text, location) {
+# Insert image into picture placeholder, or fallback text if image missing
+# Dimensions match Kurt's "Side Panel with Picture" layout: 8.67 x 7.05 inches
+.cfsr_ph_image_or_text <- function(ppt, path, placeholder_text, location,
+                                   width = 8.67, height = 7.05) {
   if (!is.null(path) && nzchar(path) && file.exists(path)) {
     ph_with(
       ppt,
-      value = external_img(path, width = 7.5, height = 4.2),
+      value = external_img(path, width = width, height = height),
       location = location
     )
   } else {
@@ -415,11 +418,14 @@ build_presentation_skeleton <- function(state, period, template_path = NULL, dat
 
 #' Add Summary Slides
 #'
+#' Uses Kurt's branded layouts:
+#' - "Top Banner with Picture" for Summary App (wide image: 12.89 x 5.38)
+#' - "Side Panel with Picture" for RSP/Observed overview (right-side image: 8.67 x 7.05)
+#'
 #' @param ppt officer ppt object
 #' @param data List from load_cfsr_data()
 #' @param state,period State code and profile period
 #' @param screenshot_dir Directory with PNG captures (optional)
-#' @param yaml_path Optional talking points YAML path
 #'
 add_summary_slides <- function(ppt, data, state, period,
                                screenshot_dir = NULL) {
@@ -428,6 +434,7 @@ add_summary_slides <- function(ppt, data, state, period,
     screenshot_dir <- file.path("states", sl, "cfsr", "presentations", period, "screenshots")
   }
 
+  # Section header
   .cfsr_require_layout(ppt, "Section Header")
   ppt <- add_slide(ppt, layout = "Section Header")
   ppt <- ph_with(
@@ -436,10 +443,9 @@ add_summary_slides <- function(ppt, data, state, period,
     location = ph_location_label(ph_label = "Title 1")
   )
 
-  .cfsr_require_layout(ppt, "Title and Content")
-
-  # Summary app
-  ppt <- add_slide(ppt, layout = "Title and Content")
+  # Summary app - uses "Top Banner with Picture" layout (wide image area)
+  .cfsr_require_layout(ppt, "Top Banner with Picture")
+  ppt <- add_slide(ppt, layout = "Top Banner with Picture")
   ppt <- ph_with(
     ppt,
     value = "Overall Performance Summary",
@@ -452,11 +458,13 @@ add_summary_slides <- function(ppt, data, state, period,
     glue(
       "[INSERT SCREENSHOT: Summary App]\n\nURL: {.cfsr_public_summary_base()}/?state={toupper(state)}&profile={period}&export=true"
     ),
-    location = ph_location_label(ph_label = "Content Placeholder 2")
+    location = ph_location_label(ph_label = "Picture Placeholder 2"),
+    width = 12.89, height = 5.38
   )
 
-  # RSP overview
-  ppt <- add_slide(ppt, layout = "Title and Content")
+  # RSP overview - uses "Side Panel with Picture" layout
+  .cfsr_require_layout(ppt, "Side Panel with Picture")
+  ppt <- add_slide(ppt, layout = "Side Panel with Picture")
   ppt <- ph_with(
     ppt,
     value = "Risk-Standardized Performance Overview",
@@ -469,11 +477,12 @@ add_summary_slides <- function(ppt, data, state, period,
     glue(
       "[INSERT SCREENSHOT: RSP KPI Cards]\n\nURL: {.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period}&tab=overview&overview_tab=rsp&export=true"
     ),
-    location = ph_location_label(ph_label = "Content Placeholder 2")
+    location = ph_location_label(ph_label = "Picture Placeholder 2"),
+    width = 8.67, height = 7.05
   )
 
-  # Observed overview
-  ppt <- add_slide(ppt, layout = "Title and Content")
+  # Observed overview - uses "Side Panel with Picture" layout
+  ppt <- add_slide(ppt, layout = "Side Panel with Picture")
   ppt <- ph_with(
     ppt,
     value = "Observed Performance Overview",
@@ -486,7 +495,8 @@ add_summary_slides <- function(ppt, data, state, period,
     glue(
       "[INSERT SCREENSHOT: Observed KPI Cards]\n\nURL: {.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period}&tab=overview&overview_tab=obs&export=true"
     ),
-    location = ph_location_label(ph_label = "Content Placeholder 2")
+    location = ph_location_label(ph_label = "Picture Placeholder 2"),
+    width = 8.67, height = 7.05
   )
 
   ppt
@@ -494,6 +504,11 @@ add_summary_slides <- function(ppt, data, state, period,
 
 
 #' Add Indicator Slides
+#'
+#' Uses Kurt's "Side Panel with Picture" layout:
+#' - Title 1: Indicator short name (top-left)
+#' - Picture Placeholder 2: Chart screenshot (right side, 8.67 x 7.05 inches)
+#' - Text Placeholder 3: Talking points bullets (left side below title)
 #'
 add_indicator_slides <- function(ppt, data, state, period,
                                  screenshot_dir = NULL,
@@ -503,6 +518,7 @@ add_indicator_slides <- function(ppt, data, state, period,
     screenshot_dir <- file.path("states", sl, "cfsr", "presentations", period, "screenshots")
   }
 
+  # Section header
   .cfsr_require_layout(ppt, "Section Header")
   ppt <- add_slide(ppt, layout = "Section Header")
   ppt <- ph_with(
@@ -515,7 +531,8 @@ add_indicator_slides <- function(ppt, data, state, period,
     arrange(indicator_sort) %>%
     pull(indicator)
 
-  .cfsr_require_layout(ppt, "Two Content")
+  # Indicator slides use "Side Panel with Picture" layout from Kurt's template
+  .cfsr_require_layout(ppt, "Side Panel with Picture")
 
   for (indicator_name in indicators) {
     inm <- indicator_name
@@ -530,13 +547,16 @@ add_indicator_slides <- function(ppt, data, state, period,
       next
     }
 
-    ppt <- add_slide(ppt, layout = "Two Content")
+    ppt <- add_slide(ppt, layout = "Side Panel with Picture")
+    
+    # Title (top-left)
     ppt <- ph_with(
       ppt,
       value = ind_data$indicator_short[1],
       location = ph_location_label(ph_label = "Title 1")
     )
 
+    # Chart image (right side - Picture Placeholder 2)
     stem <- .cfsr_indicator_screenshot_stem(indicator_name)
     ind_png <- file.path(screenshot_dir, paste0(sl, "_", stem, "_", period, ".png"))
 
@@ -549,11 +569,13 @@ add_indicator_slides <- function(ppt, data, state, period,
       ppt,
       ind_png,
       glue(
-        "[INSERT SCREENSHOT: By State chart]\n\n{indicator_name}\n\nURL: {meas_url}"
+        "[INSERT SCREENSHOT: {ind_data$indicator_short[1]} - By State chart]\n\nURL: {meas_url}"
       ),
-      location = ph_location_label(ph_label = "Content Placeholder 3")
+      location = ph_location_label(ph_label = "Picture Placeholder 2"),
+      width = 8.67, height = 7.05
     )
 
+    # Talking points (left side below title - Text Placeholder 3)
     bullets <- generate_indicator_talking_points(ind_data, state, yaml_path)
     bullet_block <- unordered_list(
       level_list = rep(1, length(bullets)),
@@ -562,7 +584,7 @@ add_indicator_slides <- function(ppt, data, state, period,
     ppt <- ph_with(
       ppt,
       value = bullet_block,
-      location = ph_location_label(ph_label = "Content Placeholder 2")
+      location = ph_location_label(ph_label = "Text Placeholder 3")
     )
   }
 
@@ -570,23 +592,90 @@ add_indicator_slides <- function(ppt, data, state, period,
 }
 
 
-#' Closing slide (summary, contact, acknowledgments)
+#' Add summary slide with performance highlights
+#'
+#' Shows key findings: indicators meeting vs. below national standard
+#'
+#' @param ppt officer ppt object
+#' @param data List from load_cfsr_data() - used to calculate summary stats
+#' @param state State code
+#' @param period Profile period
 #' @noRd
-add_closing_slide <- function(ppt, state, period) {
+add_closing_slide <- function(ppt, data, state, period) {
   .cfsr_require_layout(ppt, "Title and Content")
   state_name <- state_code_to_name(toupper(state))
+  period_display <- make_period_meaningful(period)
+
   ppt <- add_slide(ppt, layout = "Title and Content")
   ppt <- ph_with(
     ppt,
     value = glue("Summary — {state_name}"),
     location = ph_location_label(ph_label = "Title 1")
   )
+
+  # Calculate performance summary from data
+  meets_standard <- c()
+  below_standard <- c()
+
+  if (!is.null(data$state)) {
+    # Get unique indicators with State dimension (one row per indicator)
+    ind_summary <- data$state %>%
+      filter(dimension == "State") %>%
+      group_by(indicator_short) %>%
+      slice(1) %>%
+      ungroup()
+
+    for (i in seq_len(nrow(ind_summary))) {
+      row <- ind_summary[i, ]
+      ind_name <- row$indicator_short
+      nat_std <- as.numeric(row$national_standard)
+      perf <- row$performance
+      direction <- row$direction_desired
+
+      if (!is.na(nat_std) && !is.na(perf) && !is.na(direction)) {
+        # Convert performance to comparable format
+        perf_cmp <- if (row$format == "percent") perf * 100 else perf
+
+        # Check if meets standard based on direction
+        meets <- if (grepl("lower", direction, ignore.case = TRUE)) {
+          perf_cmp <= nat_std
+        } else {
+          perf_cmp >= nat_std
+        }
+
+        if (meets) {
+          meets_standard <- c(meets_standard, ind_name)
+        } else {
+          below_standard <- c(below_standard, ind_name)
+        }
+      }
+    }
+  }
+
+  # Build summary bullets
   closing <- c(
-    glue("This deck summarizes observed CFSR profile indicators for {make_period_meaningful(period)}."),
-    "Review each indicator slide with agency leadership before external distribution.",
-    "Contact: kurt@childmetrix.com",
-    "Acknowledgments: Children's Bureau CFSR Round 4 Data Profile; ChildMetrix."
+    glue("CFSR Round 4 Data Profile: {period_display}")
   )
+
+  if (length(meets_standard) > 0) {
+    closing <- c(closing, glue("Meets/exceeds national standard ({length(meets_standard)}): {paste(meets_standard, collapse = ', ')}"))
+  }
+
+  if (length(below_standard) > 0) {
+    closing <- c(closing, glue("Below national standard ({length(below_standard)}): {paste(below_standard, collapse = ', ')}"))
+  }
+
+  closing <- c(
+    closing,
+    "",
+    "Review each indicator slide with agency leadership before external distribution.",
+    "Source: Children's Bureau CFSR Round 4 Data Profile",
+    "Contact: kurt@childmetrix.com"
+  )
+
+  # Filter out empty strings for bullet list
+  closing <- closing[nzchar(trimws(closing))]
+
   ppt <- ph_with(
     ppt,
     value = unordered_list(level_list = rep(1, length(closing)), str_list = closing),
@@ -596,21 +685,51 @@ add_closing_slide <- function(ppt, state, period) {
 }
 
 
-#' Save Presentation
+#' Save Presentation (local + Azure Blob upload)
+#'
+#' Saves the presentation to local filesystem and uploads to Azure Blob Storage
+#' (processed container) so it's available for web download.
+#'
+#' @param ppt officer ppt object
+#' @param state State code
+#' @param period Profile period
+#' @return Character. Local path to saved presentation
 #'
 save_presentation <- function(ppt, state, period) {
-  output_dir <- glue("states/{tolower(state)}/cfsr/presentations/{period}")
+  sl <- tolower(state)
+  state_upper <- toupper(state)
+  filename <- glue("{state_upper}_CFSR_Presentation_{period}.pptx")
+  
+  # Local save path
+  output_dir <- glue("states/{sl}/cfsr/presentations/{period}")
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     message(glue("Created directory: {output_dir}"))
   }
-
-  state_upper <- toupper(state)
-  filename <- glue("{state_upper}_CFSR_Presentation_{period}.pptx")
   output_path <- file.path(output_dir, filename)
 
+  # Save to local filesystem
   print(ppt, target = output_path)
-  message(glue("Presentation saved to: {output_path}"))
+  message(glue("Presentation saved locally: {output_path}"))
+
+  # Upload to Azure Blob Storage (processed container) for web serving
+  # Blob path mirrors the local path structure
+  blob_path <- glue("{sl}/cfsr/presentations/{period}/{filename}")
+  
+  tryCatch({
+    # Check if Azure upload function is available (from paths.R)
+    if (exists("upload_blob") && exists("AZURE_BLOB_ENDPOINT") && 
+        nzchar(AZURE_BLOB_ENDPOINT)) {
+      upload_blob(output_path, AZURE_BLOB_CONTAINER_PROCESSED, blob_path)
+      message(glue("Uploaded to Azure Blob: processed/{blob_path}"))
+    } else {
+      message("Azure Blob not configured - presentation saved locally only")
+    }
+  }, error = function(e) {
+    warning(glue("Failed to upload to Azure Blob: {e$message}"))
+    message("Presentation available locally only")
+  })
+
   output_path
 }
 
@@ -672,8 +791,8 @@ generate_cfsr_presentation <- function(state,
   )
   message(glue("Added indicator slides ({nrow(data$dictionary)} indicators)"))
 
-  ppt <- add_closing_slide(ppt, state, period)
-  message("Added closing slide")
+  ppt <- add_closing_slide(ppt, data, state, period)
+  message("Added closing/summary slide")
 
   file_path <- save_presentation(ppt, state, period)
 

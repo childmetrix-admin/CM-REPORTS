@@ -121,14 +121,18 @@
   invisible(NULL)
 }
 
+#' Capture CFSR dashboard screenshots for PPT embedding
+#'
+#' Uses viewport dimensions matched to Kurt's template placeholders:
+#' - "Top Banner with Picture": 12.89 x 5.38 inches -> wide viewport
+#' - "Side Panel with Picture": 8.67 x 7.05 inches -> more square viewport
+#'
 #' @return Invisibly, character vector of paths written (or skipped on failure).
 #' @export
 capture_cfsr_screenshots <- function(state,
                                      period,
                                      out_dir,
-                                     delay = 8,
-                                     vwidth = 1200,
-                                     vheight = 800) {
+                                     delay = 8) {
   if (!requireNamespace("webshot2", quietly = TRUE)) {
     stop("Install webshot2 for automated screenshots: install.packages('webshot2')")
   }
@@ -149,11 +153,24 @@ capture_cfsr_screenshots <- function(state,
 
   written <- character()
 
-  shots <- list(
+  # Viewport dimensions matched to Kurt's template placeholders (at ~150 DPI for crisp images)
+  # "Top Banner with Picture": 12.89 x 5.38 inches
+  vwidth_wide <- 1934
+  vheight_wide <- 807
+  # "Side Panel with Picture": 8.67 x 7.05 inches (but wider viewport for full chart visibility)
+  vwidth_panel <- 1300
+  vheight_panel <- 1058
+
+  # Summary app - uses "Top Banner with Picture" layout (wide)
+  shots_wide <- list(
     list(
       path = file.path(out_dir, paste0(sl, "_summary_app_", period, ".png")),
       url = append_export(paste0(summ_base, "/?state=", st, "&profile=", period))
-    ),
+    )
+  )
+
+  # RSP and Observed overview - use "Side Panel with Picture" layout
+  shots_panel <- list(
     list(
       path = file.path(out_dir, paste0(sl, "_rsp_overview_", period, ".png")),
       url = append_export(paste0(
@@ -170,6 +187,7 @@ capture_cfsr_screenshots <- function(state,
     )
   )
 
+  # Indicator screenshots - use "Side Panel with Picture" layout
   dict <- read.csv(
     "domains/cfsr/extraction/cfsr_round4_indicators_dictionary.csv",
     stringsAsFactors = FALSE,
@@ -180,21 +198,42 @@ capture_cfsr_screenshots <- function(state,
   for (ind in indicators) {
     tab <- .cfsr_measures_tab_for_indicator(ind)
     stem <- .cfsr_indicator_screenshot_stem(ind)
-    shots <- c(shots, list(list(
+    shots_panel <- c(shots_panel, list(list(
       path = file.path(out_dir, paste0(sl, "_", stem, "_", period, ".png")),
       url = append_export(paste0(meas_base, "/?state=", st, "&profile=", period, "&tab=", tab))
     )))
   }
 
-  for (sh in shots) {
-    message("Capturing: ", basename(sh$path))
+  # Capture wide screenshots (summary app)
+  for (sh in shots_wide) {
+    message("Capturing (wide): ", basename(sh$path))
     tryCatch(
       {
         webshot2::webshot(
           url = sh$url,
           file = sh$path,
-          vwidth = vwidth,
-          vheight = vheight,
+          vwidth = vwidth_wide,
+          vheight = vheight_wide,
+          delay = delay
+        )
+        written <- c(written, sh$path)
+      },
+      error = function(e) {
+        warning("webshot failed for ", sh$url, " — ", conditionMessage(e))
+      }
+    )
+  }
+
+  # Capture panel screenshots (RSP, Observed, indicators)
+  for (sh in shots_panel) {
+    message("Capturing (panel): ", basename(sh$path))
+    tryCatch(
+      {
+        webshot2::webshot(
+          url = sh$url,
+          file = sh$path,
+          vwidth = vwidth_panel,
+          vheight = vheight_panel,
           delay = delay
         )
         written <- c(written, sh$path)
