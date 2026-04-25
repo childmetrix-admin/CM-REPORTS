@@ -1,3 +1,6 @@
+const crypto = require("crypto");
+if (!globalThis.crypto) globalThis.crypto = crypto;
+
 const { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions } = require("@azure/storage-blob");
 
 module.exports = async function (context, req) {
