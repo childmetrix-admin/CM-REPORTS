@@ -132,7 +132,8 @@
 capture_cfsr_screenshots <- function(state,
                                      period,
                                      out_dir,
-                                     delay = 8) {
+                                     delay = 10,
+                                     indicator_delay = 20) {
   if (!requireNamespace("webshot2", quietly = TRUE)) {
     stop("Install webshot2 for automated screenshots: install.packages('webshot2')")
   }
@@ -224,9 +225,12 @@ capture_cfsr_screenshots <- function(state,
     )
   }
 
-  # Capture panel screenshots (RSP, Observed, indicators)
-  for (sh in shots_panel) {
-    message("Capturing (panel): ", basename(sh$path))
+  # Capture overview panel screenshots (RSP, Observed) — these use the default tab
+  overview_shots <- shots_panel[seq_len(min(2, length(shots_panel)))]
+  indicator_shots <- if (length(shots_panel) > 2) shots_panel[3:length(shots_panel)] else list()
+
+  for (sh in overview_shots) {
+    message("Capturing (panel/overview): ", basename(sh$path))
     tryCatch(
       {
         webshot2::webshot(
@@ -235,6 +239,26 @@ capture_cfsr_screenshots <- function(state,
           vwidth = vwidth_panel,
           vheight = vheight_panel,
           delay = delay
+        )
+        written <- c(written, sh$path)
+      },
+      error = function(e) {
+        warning("webshot failed for ", sh$url, " — ", conditionMessage(e))
+      }
+    )
+  }
+
+  # Capture indicator screenshots — these require tab switch + data load + chart render
+  for (sh in indicator_shots) {
+    message("Capturing (panel/indicator): ", basename(sh$path))
+    tryCatch(
+      {
+        webshot2::webshot(
+          url = sh$url,
+          file = sh$path,
+          vwidth = vwidth_panel,
+          vheight = vheight_panel,
+          delay = indicator_delay
         )
         written <- c(written, sh$path)
       },
