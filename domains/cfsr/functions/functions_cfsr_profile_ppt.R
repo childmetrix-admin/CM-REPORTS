@@ -342,6 +342,15 @@ build_presentation_skeleton <- function(state, period, template_path = NULL, dat
   tp <- .cfsr_resolve_template_path(state, template_path)
   ppt <- read_pptx(tp)
 
+  # Remove any existing content slides from the template (keep only layouts)
+  n_existing <- length(ppt)
+  if (n_existing > 0) {
+    for (i in seq_len(n_existing)) {
+      ppt <- remove_slide(ppt, index = 1)
+    }
+    message(glue("Cleared {n_existing} existing slides from template"))
+  }
+
   state_name <- state_code_to_name(toupper(state))
   generation_date <- format(Sys.Date(), "%B %d, %Y")
 
