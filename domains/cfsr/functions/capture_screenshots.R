@@ -200,7 +200,7 @@ capture_cfsr_screenshots <- function(state,
     stem <- .cfsr_indicator_screenshot_stem(ind)
     shots_panel <- c(shots_panel, list(list(
       path = file.path(out_dir, paste0(sl, "_", stem, "_", period, ".png")),
-      url = append_export(paste0(meas_base, "/?state=", st, "&profile=", period, "&tab=", tab))
+      url = paste0(meas_base, "/?state=", st, "&profile=", period, "&export=true#shiny-tab-", tab)
     )))
   }
 

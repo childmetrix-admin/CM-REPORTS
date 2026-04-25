@@ -572,7 +572,7 @@ add_indicator_slides <- function(ppt, data, state, period,
     tab_q <- .cfsr_measures_tab_for_indicator(indicator_name)
     meas_url <- glue(
       "{.cfsr_public_measures_base()}/?state={toupper(state)}&profile={period}",
-      "&tab={tab_q}&export=true"
+      "&export=true#shiny-tab-{tab_q}"
     )
     ppt <- .cfsr_ph_image_or_text(
       ppt,
