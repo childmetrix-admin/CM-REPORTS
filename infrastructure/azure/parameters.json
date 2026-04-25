@@ -9,12 +9,9 @@
       "value": "childmetrix"
     },
     "sqlAdminUser": {
-      "value": ""
+      "value": "cmadmin"
     },
     "sqlAdminPassword": {
-      "value": ""
-    },
-    "customDomain": {
       "value": ""
     }
   }
