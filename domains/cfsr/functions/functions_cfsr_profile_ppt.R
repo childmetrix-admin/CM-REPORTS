@@ -326,7 +326,10 @@ build_indicator_bar_chart <- function(national_data,
                                       height = 7.05) {
   indicator_name <- dict_row$indicator[1]
   ind_df <- national_data %>%
-    filter(indicator == indicator_name, state != "National")
+    filter(indicator == indicator_name, state != "National") %>%
+    group_by(state) %>%
+    slice(1) %>%
+    ungroup()
 
   if (nrow(ind_df) == 0) {
     warning("No national data for indicator: ", indicator_name)
@@ -360,7 +363,7 @@ build_indicator_bar_chart <- function(national_data,
 
   ind_df <- ind_df %>%
     mutate(
-      state_label = factor(state, levels = rev(state)),
+      state_label = factor(state, levels = rev(unique(state))),
       perf_plot = ifelse(is.na(perf_display), 0, perf_display),
       label_text = ifelse(
         is.na(performance),
